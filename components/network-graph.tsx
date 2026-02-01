@@ -55,9 +55,10 @@ const connections: Edge[] = [
 
 export function NetworkGraph() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [nodes, setNodes] = useState<Node[]>([])
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null)
+  const nodesRef = useRef<Node[]>([])
+  const hoveredNodeRef = useRef<string | null>(null)
   const animationFrameRef = useRef<number>()
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null)
 
   // Initialize nodes with random positions
   useEffect(() => {
@@ -84,13 +85,11 @@ export function NetworkGraph() {
       }
     })
 
-    setNodes(initialNodes)
+    nodesRef.current = initialNodes
   }, [])
 
   // Physics simulation
   useEffect(() => {
-    if (nodes.length === 0) return
-
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -98,8 +97,7 @@ export function NetworkGraph() {
     if (!ctx) return
 
     const animate = () => {
-      // Apply forces
-      const newNodes = nodes.map((node) => ({ ...node }))
+      const newNodes = nodesRef.current.map((node) => ({ ...node }))
 
       // Repulsion between nodes
       for (let i = 0; i < newNodes.length; i++) {
@@ -154,7 +152,7 @@ export function NetworkGraph() {
         node.y = Math.max(margin, Math.min(canvas.height - margin, node.y))
       })
 
-      setNodes(newNodes)
+      nodesRef.current = newNodes
 
       // Draw
       ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -175,7 +173,7 @@ export function NetworkGraph() {
 
       // Draw nodes
       newNodes.forEach((node) => {
-        const isHovered = hoveredNode === node.id
+        const isHovered = hoveredNodeRef.current === node.id
 
         // Node circle
         ctx.beginPath()
@@ -203,7 +201,7 @@ export function NetworkGraph() {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [nodes, hoveredNode])
+  }, [])
 
   // Mouse interaction
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -215,7 +213,7 @@ export function NetworkGraph() {
     const mouseY = e.clientY - rect.top
 
     let foundNode: string | null = null
-    for (const node of nodes) {
+    for (const node of nodesRef.current) {
       const distance = Math.sqrt(
         (mouseX - node.x) ** 2 + (mouseY - node.y) ** 2
       )
@@ -225,7 +223,7 @@ export function NetworkGraph() {
       }
     }
 
-    setHoveredNode(foundNode)
+    hoveredNodeRef.current = foundNode
   }
 
   return (
@@ -242,12 +240,14 @@ export function NetworkGraph() {
           height={800}
           className="w-full h-auto"
           onMouseMove={handleMouseMove}
-          onMouseLeave={() => setHoveredNode(null)}
+          onMouseLeave={() => {
+            hoveredNodeRef.current = null
+          }}
         />
         
         {/* Legend */}
         <div className="mt-6 text-center text-white/40 text-sm">
-          <p>{'Hover over nodes to explore connections between cognitive concepts'}</p>
+          <p>Hover over nodes to explore connections between cognitive concepts</p>
         </div>
       </div>
     </motion.div>
