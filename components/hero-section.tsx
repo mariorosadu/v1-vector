@@ -42,21 +42,6 @@ export function HeroSection() {
         linesPerTarget={12}
       />
 
-      {/* Logo Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.2 }}
-        className="absolute top-0 left-0 right-0 z-20 flex justify-center py-8 md:py-12"
-      >
-        <TransparentLogo
-          src="/images/vector-logo.png"
-          alt="VECTÖR Logo"
-          className="h-48 md:h-72 lg:h-96 w-auto"
-          threshold={40}
-        />
-      </motion.header>
-
       {/* Main content */}
       <div className="relative z-10 min-h-screen flex items-center">
         <div className="container mx-auto px-6 md:px-12">
