@@ -44,7 +44,7 @@ export function StickyHeader() {
         }`}
       >
         <div className="container mx-auto px-6 md:px-12">
-          <div className="flex items-center justify-between py-8 md:py-12">
+          <div className="flex items-center justify-between py-3 md:py-8 lg:py-12">
             {/* Menu Button */}
             <motion.button
               initial={{ opacity: 0, x: -20 }}
@@ -79,7 +79,7 @@ export function StickyHeader() {
               <TransparentLogo
                 src="/images/vector-logo.png"
                 alt="VECTÖR Logo"
-                className="h-64 md:h-96 lg:h-[448px] w-auto"
+                className="h-20 md:h-48 lg:h-96 w-auto"
                 threshold={40}
               />
             </motion.button>
