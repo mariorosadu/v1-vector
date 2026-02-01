@@ -79,7 +79,7 @@ export function StickyHeader() {
               <TransparentLogo
                 src="/images/vector-logo.png"
                 alt="VECTÖR Logo"
-                className="h-32 md:h-48 lg:h-56 w-auto"
+                className="h-64 md:h-96 lg:h-[448px] w-auto"
                 threshold={40}
               />
             </motion.button>
