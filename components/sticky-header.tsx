@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { TransparentLogo } from "./transparent-logo"
 import { Menu, X } from "lucide-react"
@@ -14,6 +15,7 @@ const navigationItems = [
 ]
 
 export function StickyHeader() {
+  const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -63,14 +65,16 @@ export function StickyHeader() {
             </motion.button>
 
             {/* Logo - centered, no scaling */}
-            <motion.div
+            <motion.button
               initial={{ opacity: 0, y: -20 }}
               animate={{
                 opacity: 1,
                 y: 0,
               }}
               transition={{ duration: 0.3 }}
-              className="absolute left-1/2 -translate-x-1/2"
+              onClick={() => router.push("/")}
+              className="absolute left-1/2 -translate-x-1/2 cursor-pointer hover:opacity-80 transition-opacity"
+              aria-label="Go to home"
             >
               <TransparentLogo
                 src="/images/vector-logo.png"
@@ -78,7 +82,7 @@ export function StickyHeader() {
                 className="h-32 md:h-48 lg:h-56 w-auto"
                 threshold={40}
               />
-            </motion.div>
+            </motion.button>
 
             {/* Spacer for balance */}
             <div className="w-20" />
