@@ -10,6 +10,7 @@ const navigationItems = [
   { label: "Case Studies", href: "#case-studies" },
   { label: "Methodology", href: "#methodology" },
   { label: "Data", href: "#data" },
+  { label: "Map", href: "/map" },
 ]
 
 export function StickyHeader() {
@@ -41,7 +42,7 @@ export function StickyHeader() {
         }`}
       >
         <div className="container mx-auto px-6 md:px-12">
-          <div className="flex items-center justify-between py-4">
+          <div className="flex items-center justify-between py-8 md:py-12">
             {/* Menu Button */}
             <motion.button
               initial={{ opacity: 0, x: -20 }}
@@ -61,13 +62,12 @@ export function StickyHeader() {
               </span>
             </motion.button>
 
-            {/* Logo - centered */}
+            {/* Logo - centered, no scaling */}
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{
                 opacity: 1,
                 y: 0,
-                scale: scrolled ? 0.6 : 1,
               }}
               transition={{ duration: 0.3 }}
               className="absolute left-1/2 -translate-x-1/2"
@@ -75,11 +75,7 @@ export function StickyHeader() {
               <TransparentLogo
                 src="/images/vector-logo.png"
                 alt="VECTÖR Logo"
-                className={`transition-all duration-300 ${
-                  scrolled
-                    ? "h-12 md:h-16"
-                    : "h-32 md:h-48 lg:h-56"
-                } w-auto`}
+                className="h-32 md:h-48 lg:h-56 w-auto"
                 threshold={40}
               />
             </motion.div>
