@@ -127,15 +127,13 @@
 
 /* Mobile header scaling */
 @media (max-width: 640px) {
-  header, nav {
-    height: 96px;
-    padding: 24px 20px;
+  nav {
+    height: 96px !important;
+    padding-top: 24px !important;
+    padding-bottom: 24px !important;
   }
-  .logo, .logo img, .logo svg {
-    height: 48px;
+  .logo img, .logo svg {
+    height: 48px !important;
     width: auto;
-  }
-  .menu-button, nav {
-    transform: scale(1.6);
   }
 }

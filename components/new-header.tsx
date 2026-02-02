@@ -74,12 +74,12 @@ export function NewHeader() {
 
             <button
               onClick={() => router.push("/")}
-              className="absolute left-1/2 -translate-x-1/2 hover:opacity-80 transition-opacity hidden lg:block"
+              className="absolute left-1/2 -translate-x-1/2 hover:opacity-80 transition-opacity logo"
             >
               <img
                 src="/images/vector-logo.svg"
                 alt="VECTÖR"
-                className="h-8 w-auto"
+                className="h-6 sm:h-8 w-auto"
               />
             </button>
 
