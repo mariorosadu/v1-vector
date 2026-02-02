@@ -60,6 +60,8 @@ export function NetworkGraph() {
   const animationFrameRef = useRef<number>()
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
+  const [inputValue, setInputValue] = useState("")
+  const [activeKeywords, setActiveKeywords] = useState<string[]>(keywords)
 
   // Initialize nodes with random positions
   useEffect(() => {
@@ -70,8 +72,8 @@ export function NetworkGraph() {
     const centerY = canvas.height / 2
     const radius = Math.min(canvas.width, canvas.height) * 0.35
 
-    const initialNodes: Node[] = keywords.map((keyword, index) => {
-      const angle = (index / keywords.length) * Math.PI * 2
+    const initialNodes: Node[] = activeKeywords.map((keyword, index) => {
+      const angle = (index / activeKeywords.length) * Math.PI * 2
       const x = centerX + Math.cos(angle) * radius
       const y = centerY + Math.sin(angle) * radius
 
@@ -87,7 +89,7 @@ export function NetworkGraph() {
     })
 
     nodesRef.current = initialNodes
-  }, [])
+  }, [activeKeywords])
 
   // Physics simulation
   useEffect(() => {
@@ -308,6 +310,34 @@ export function NetworkGraph() {
     }
   }
 
+  const handleInputSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmedValue = inputValue.trim()
+    
+    if (!trimmedValue) return
+
+    const operation = trimmedValue[0]
+    const keyword = trimmedValue.slice(1).trim()
+
+    if (operation === '+') {
+      // Add keyword if it doesn't exist
+      if (keyword && !activeKeywords.includes(keyword)) {
+        setActiveKeywords([...activeKeywords, keyword])
+        setSelectedNode(null)
+      }
+    } else if (operation === '-') {
+      // Remove keyword if it exists
+      if (keyword && activeKeywords.includes(keyword)) {
+        setActiveKeywords(activeKeywords.filter(k => k !== keyword))
+        if (selectedNode === keyword) {
+          setSelectedNode(null)
+        }
+      }
+    }
+
+    setInputValue("")
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -331,6 +361,19 @@ export function NetworkGraph() {
         {/* Legend */}
         <div className="mt-6 text-center text-white/40 text-sm">
           <p>Click on nodes to focus and explore connections between cognitive concepts</p>
+        </div>
+
+        {/* Input field for adding/removing keywords */}
+        <div className="mt-6 flex justify-center">
+          <form onSubmit={handleInputSubmit} className="w-full max-w-md">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Use - or + before a keyword to add or remove it from the map"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all"
+            />
+          </form>
         </div>
       </div>
     </motion.div>
