@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -15,6 +15,17 @@ const navigationItems = [
 export function NewHeader() {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show navbar logo after scrolling 400px (when hero logo is mostly out of view)
+      setScrolled(window.scrollY > 400)
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   return (
     <>
@@ -72,16 +83,38 @@ export function NewHeader() {
               </button>
             </div>
 
-            <button
-              onClick={() => router.push("/")}
-              className="absolute left-1/2 -translate-x-1/2 hover:opacity-80 transition-opacity logo"
-            >
-              <img
-                src="/images/vector-logo.svg"
-                alt="VECTÖR"
-                className="h-6 sm:h-8 w-auto"
-              />
-            </button>
+            <AnimatePresence>
+              {scrolled && (
+                <motion.button
+                  onClick={() => router.push("/")}
+                  className="absolute left-1/2 -translate-x-1/2 hover:opacity-80 transition-opacity logo overflow-hidden"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ 
+                    opacity: 1, 
+                    y: 0,
+                  }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <motion.div
+                    animate={{
+                      x: [0, -2, 2, -1, 1, 0],
+                    }}
+                    transition={{
+                      duration: 0.4,
+                      times: [0, 0.2, 0.4, 0.6, 0.8, 1],
+                      ease: "easeInOut"
+                    }}
+                  >
+                    <img
+                      src="/images/vector-logo.svg"
+                      alt="VECTÖR"
+                      className="h-6 sm:h-8 w-auto"
+                    />
+                  </motion.div>
+                </motion.button>
+              )}
+            </AnimatePresence>
 
             {/* Right - Navigation Links (Desktop) */}
             <div className="hidden lg:flex items-center gap-8">
