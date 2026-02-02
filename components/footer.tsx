@@ -3,7 +3,6 @@
 import { motion } from "framer-motion"
 import { useInView } from "framer-motion"
 import { useRef } from "react"
-import TransparentLogo from "./TransparentLogo" // Import the TransparentLogo component
 
 export function Footer() {
   const ref = useRef(null)

@@ -3,7 +3,6 @@
 import { motion } from "framer-motion"
 import { AnimatedLines } from "./animated-lines"
 import { InfoCard } from "./info-card"
-import { TransparentLogo } from "./transparent-logo"
 
 const categories = [
   {

@@ -78,7 +78,7 @@ export function StickyHeader() {
               <img
                 src="/images/vector-logo.svg"
                 alt="VECTÖR Logo"
-                className="h-20 md:h-48 lg:h-96 w-auto"
+                className="h-16 md:h-24 lg:h-32 w-auto"
               />
             </motion.button>
 
