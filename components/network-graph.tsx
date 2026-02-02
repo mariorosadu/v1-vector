@@ -259,8 +259,11 @@ export function NetworkGraph() {
     if (!canvas) return
 
     const rect = canvas.getBoundingClientRect()
-    const mouseX = e.clientX - rect.left
-    const mouseY = e.clientY - rect.top
+    // Scale mouse coordinates to match canvas internal dimensions
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    const mouseX = (e.clientX - rect.left) * scaleX
+    const mouseY = (e.clientY - rect.top) * scaleY
 
     let foundNode: string | null = null
     for (const node of nodesRef.current) {
@@ -281,8 +284,11 @@ export function NetworkGraph() {
     if (!canvas) return
 
     const rect = canvas.getBoundingClientRect()
-    const mouseX = e.clientX - rect.left
-    const mouseY = e.clientY - rect.top
+    // Scale mouse coordinates to match canvas internal dimensions
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    const mouseX = (e.clientX - rect.left) * scaleX
+    const mouseY = (e.clientY - rect.top) * scaleY
 
     let clickedNode: string | null = null
     for (const node of nodesRef.current) {
