@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import { BrutalistLines } from "./brutalist-lines"
 
 const navigationItems = [
   { label: "Publications", href: "#publications" },
@@ -209,8 +210,11 @@ export function NewHeader() {
       </AnimatePresence>
 
       {/* Hero Section with Large Logo */}
-      <section className="relative min-h-[80vh] bg-[#0f0f0f] flex items-center justify-center pt-16">
-        <div className="container mx-auto px-6 md:px-12">
+      <section className="relative min-h-[80vh] bg-[#0f0f0f] flex items-center justify-center pt-16 overflow-hidden">
+        {/* Brutalist descending lines */}
+        <BrutalistLines />
+        
+        <div className="container mx-auto px-6 md:px-12 relative z-10">
           <div className="text-center">
             {/* Large Central Logo */}
             <motion.div
