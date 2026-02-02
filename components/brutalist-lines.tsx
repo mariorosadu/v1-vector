@@ -3,102 +3,156 @@
 import { motion } from "framer-motion"
 
 export function BrutalistLines() {
-  // Generate sophisticated particle field with depth and movement
-  const particles = Array.from({ length: 80 }, (_, i) => {
-    const size = Math.random() * 3 + 1 // 1-4px
-    const depth = Math.random() // 0-1 for layering
-    
+  // Dramatic light beams radiating from center
+  const beams = Array.from({ length: 24 }, (_, i) => {
+    const angle = (i / 24) * 360
     return {
       id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size,
-      depth,
-      delay: Math.random() * 2,
-      duration: 15 + Math.random() * 10, // 15-25s slow drift
-      opacity: 0.1 + depth * 0.4, // Closer particles are brighter
-      blur: (1 - depth) * 2, // Further particles are blurrier
+      angle,
+      delay: i * 0.05,
+      length: 100 + Math.random() * 50,
     }
   })
 
-  // Generate floating geometric wireframes
-  const geometries = Array.from({ length: 6 }, (_, i) => ({
+  // Large explosive particles
+  const explosiveParticles = Array.from({ length: 50 }, (_, i) => {
+    const angle = (i / 50) * Math.PI * 2
+    const distance = 200 + Math.random() * 400
+    
+    return {
+      id: i,
+      angle,
+      distance,
+      size: 4 + Math.random() * 12,
+      delay: Math.random() * 0.5,
+    }
+  })
+
+  // Distorted grid
+  const gridLines = Array.from({ length: 20 }, (_, i) => ({
     id: i,
-    x: 20 + i * 15,
-    y: 20 + (i % 2) * 40,
-    size: 60 + Math.random() * 100,
-    rotation: Math.random() * 360,
-    delay: i * 0.5,
-    duration: 20 + Math.random() * 10,
+    position: (i / 20) * 100,
+    delay: i * 0.02,
   }))
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Floating particles */}
-      {particles.map((particle) => (
+      {/* Dramatic light beams */}
+      {beams.map((beam) => (
         <motion.div
-          key={particle.id}
-          className="absolute rounded-full bg-white"
+          key={`beam-${beam.id}`}
+          className="absolute top-1/2 left-1/2 origin-left"
+          style={{
+            transform: `rotate(${beam.angle}deg)`,
+            width: `${beam.length}%`,
+            height: '2px',
+          }}
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ 
+            scaleX: [0, 1, 0.8, 1],
+            opacity: [0, 0.3, 0.1, 0.2],
+          }}
+          transition={{
+            duration: 3,
+            delay: beam.delay,
+            repeat: Infinity,
+            repeatDelay: 2,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/50 to-transparent" 
+               style={{ filter: 'blur(1px)' }} />
+        </motion.div>
+      ))}
+
+      {/* Explosive particle burst */}
+      {explosiveParticles.map((particle) => (
+        <motion.div
+          key={`particle-${particle.id}`}
+          className="absolute top-1/2 left-1/2 rounded-full bg-white"
           style={{
             width: particle.size,
             height: particle.size,
-            left: `${particle.x}%`,
-            top: `${particle.y}%`,
-            opacity: particle.opacity,
-            filter: `blur(${particle.blur}px)`,
+          }}
+          initial={{ 
+            x: 0, 
+            y: 0,
+            opacity: 0,
+            scale: 0,
           }}
           animate={{
-            y: [0, -30, 0],
-            x: [0, 15, 0],
-            opacity: [particle.opacity, particle.opacity * 1.5, particle.opacity],
-            scale: [1, 1.2, 1],
+            x: Math.cos(particle.angle) * particle.distance,
+            y: Math.sin(particle.angle) * particle.distance,
+            opacity: [0, 1, 0.5, 0],
+            scale: [0, 1.5, 1, 0.5],
           }}
           transition={{
-            duration: particle.duration,
+            duration: 4,
             delay: particle.delay,
             repeat: Infinity,
+            repeatDelay: 3,
+            ease: "easeOut",
+          }}
+        />
+      ))}
+
+      {/* Distorted perspective grid - vertical */}
+      {gridLines.map((line) => (
+        <motion.div
+          key={`v-grid-${line.id}`}
+          className="absolute top-0 bottom-0 w-[1px] bg-gradient-to-b from-transparent via-white/20 to-transparent"
+          style={{ left: `${line.position}%` }}
+          initial={{ scaleY: 0, opacity: 0 }}
+          animate={{
+            scaleY: [0, 1, 0.95, 1],
+            opacity: [0, 0.3, 0.15, 0.2],
+            x: [0, -10, 5, 0],
+          }}
+          transition={{
+            duration: 2.5,
+            delay: line.delay,
+            repeat: Infinity,
+            repeatDelay: 4,
             ease: "easeInOut",
           }}
         />
       ))}
 
-      {/* Floating geometric wireframes */}
-      {geometries.map((geo) => (
+      {/* Distorted perspective grid - horizontal */}
+      {gridLines.map((line) => (
         <motion.div
-          key={`geo-${geo.id}`}
-          className="absolute border border-white/10"
-          style={{
-            left: `${geo.x}%`,
-            top: `${geo.y}%`,
-            width: geo.size,
-            height: geo.size,
-          }}
+          key={`h-grid-${line.id}`}
+          className="absolute left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent"
+          style={{ top: `${line.position}%` }}
+          initial={{ scaleX: 0, opacity: 0 }}
           animate={{
-            rotate: [geo.rotation, geo.rotation + 360],
-            y: [0, -20, 0],
-            opacity: [0.05, 0.15, 0.05],
+            scaleX: [0, 1, 0.95, 1],
+            opacity: [0, 0.3, 0.15, 0.2],
+            y: [0, -10, 5, 0],
           }}
           transition={{
-            duration: geo.duration,
-            delay: geo.delay,
+            duration: 2.5,
+            delay: line.delay + 0.1,
             repeat: Infinity,
-            ease: "linear",
+            repeatDelay: 4,
+            ease: "easeInOut",
           }}
         />
       ))}
 
-      {/* Radial gradient glow emanating from center */}
+      {/* Massive pulsing aura */}
       <motion.div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[1200px] rounded-full"
         style={{
-          background: "radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 30%, transparent 70%)",
+          filter: "blur(40px)",
         }}
         animate={{
-          scale: [1, 1.1, 1],
-          opacity: [0.3, 0.5, 0.3],
+          scale: [1, 1.3, 1],
+          opacity: [0.3, 0.7, 0.3],
         }}
         transition={{
-          duration: 8,
+          duration: 5,
           repeat: Infinity,
           ease: "easeInOut",
         }}
