@@ -3,25 +3,25 @@
 import { motion } from "framer-motion"
 
 export function BrutalistLines() {
-  // Generate array of lines with varying positions and heights
-  const lines = Array.from({ length: 40 }, (_, i) => {
-    const totalLines = 40
+  // Generate array of horizontal lines with varying positions and widths
+  const lines = Array.from({ length: 30 }, (_, i) => {
+    const totalLines = 30
     const centerIndex = totalLines / 2
     
-    // Calculate horizontal position - spread from left to right
-    const xPosition = (i / totalLines) * 100
+    // Calculate vertical position - spread from top to bottom
+    const yPosition = (i / totalLines) * 100
     
-    // Calculate convergence angle - lines converge toward center bottom
+    // Calculate width variation - lines converge toward center
     const distanceFromCenter = Math.abs(i - centerIndex)
-    const convergenceOffset = distanceFromCenter * 2.5 // Angle of convergence
+    const widthReduction = distanceFromCenter * 1.5
+    const width = Math.max(40, 90 - widthReduction)
     
     return {
       id: i,
-      left: `${xPosition}%`,
-      height: `${60 + Math.random() * 40}%`, // Varying heights
-      delay: i * 0.03, // Stagger animation
-      rotate: i < centerIndex ? convergenceOffset : -convergenceOffset,
-      opacity: 0.3 + Math.random() * 0.4,
+      top: `${yPosition}%`,
+      width: `${width}%`, // Varying widths
+      delay: i * 0.08, // Slower stagger for comfort
+      opacity: 0.15 + Math.random() * 0.2, // Softer opacity
     }
   })
 
@@ -30,24 +30,26 @@ export function BrutalistLines() {
       {lines.map((line) => (
         <motion.div
           key={line.id}
-          className="absolute top-0 w-[1px] bg-white origin-top"
+          className="absolute left-0 h-[1px] bg-white origin-left"
           style={{
-            left: line.left,
-            height: line.height,
+            top: line.top,
+            width: line.width,
             opacity: line.opacity,
           }}
           initial={{
-            scaleY: 0,
+            scaleX: 0,
+            x: -100,
             opacity: 0,
           }}
           animate={{
-            scaleY: 1,
+            scaleX: 1,
+            x: 0,
             opacity: line.opacity,
           }}
           transition={{
-            duration: 1.5,
+            duration: 3.5,
             delay: line.delay,
-            ease: [0.22, 1, 0.36, 1],
+            ease: [0.25, 0.1, 0.25, 1], // Smooth, comforting easing
           }}
         />
       ))}
