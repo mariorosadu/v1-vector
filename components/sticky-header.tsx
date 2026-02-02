@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { TransparentLogo } from "./transparent-logo"
 import { Menu, X } from "lucide-react"
 
 const navigationItems = [
@@ -76,11 +75,10 @@ export function StickyHeader() {
               className="absolute left-1/2 -translate-x-1/2 cursor-pointer hover:opacity-80 transition-opacity"
               aria-label="Go to home"
             >
-              <TransparentLogo
-                src="/images/vector-logo.png"
+              <img
+                src="/images/vector-logo.svg"
                 alt="VECTÖR Logo"
                 className="h-20 md:h-48 lg:h-96 w-auto"
-                threshold={40}
               />
             </motion.button>
 
