@@ -59,6 +59,7 @@ export function NetworkGraph() {
   const hoveredNodeRef = useRef<string | null>(null)
   const animationFrameRef = useRef<number>()
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
+  const [selectedNode, setSelectedNode] = useState<string | null>(null)
 
   // Initialize nodes with random positions
   useEffect(() => {
@@ -99,45 +100,77 @@ export function NetworkGraph() {
     const animate = () => {
       const newNodes = nodesRef.current.map((node) => ({ ...node }))
 
-      // Repulsion between nodes
-      for (let i = 0; i < newNodes.length; i++) {
-        for (let j = i + 1; j < newNodes.length; j++) {
-          const dx = newNodes[j].x - newNodes[i].x
-          const dy = newNodes[j].y - newNodes[i].y
-          const distance = Math.sqrt(dx * dx + dy * dy)
-          const minDistance = 120
+      // If a node is selected, apply special positioning
+      if (selectedNode) {
+        const selectedNodeObj = newNodes.find((n) => n.id === selectedNode)
+        const otherNodes = newNodes.filter((n) => n.id !== selectedNode)
 
-          if (distance < minDistance && distance > 0) {
-            const force = (minDistance - distance) * 0.01
-            const angle = Math.atan2(dy, dx)
-            newNodes[i].vx -= Math.cos(angle) * force
-            newNodes[i].vy -= Math.sin(angle) * force
-            newNodes[j].vx += Math.cos(angle) * force
-            newNodes[j].vy += Math.sin(angle) * force
+        if (selectedNodeObj) {
+          // Move selected node to the left side and center vertically
+          const targetX = canvas.width * 0.25
+          const targetY = canvas.height * 0.5
+          const dx = targetX - selectedNodeObj.x
+          const dy = targetY - selectedNodeObj.y
+          selectedNodeObj.vx += dx * 0.05
+          selectedNodeObj.vy += dy * 0.05
+
+          // Position other nodes on the right side in a circular pattern
+          otherNodes.forEach((node, index) => {
+            const rightCenterX = canvas.width * 0.7
+            const rightCenterY = canvas.height * 0.5
+            const radius = Math.min(canvas.width, canvas.height) * 0.25
+            const angle = (index / otherNodes.length) * Math.PI * 2
+            const targetNodeX = rightCenterX + Math.cos(angle) * radius
+            const targetNodeY = rightCenterY + Math.sin(angle) * radius
+
+            const nodeDx = targetNodeX - node.x
+            const nodeDy = targetNodeY - node.y
+            node.vx += nodeDx * 0.05
+            node.vy += nodeDy * 0.05
+          })
+        }
+      } else {
+        // Normal physics when no node is selected
+        // Repulsion between nodes
+        for (let i = 0; i < newNodes.length; i++) {
+          for (let j = i + 1; j < newNodes.length; j++) {
+            const dx = newNodes[j].x - newNodes[i].x
+            const dy = newNodes[j].y - newNodes[i].y
+            const distance = Math.sqrt(dx * dx + dy * dy)
+            const minDistance = 120
+
+            if (distance < minDistance && distance > 0) {
+              const force = (minDistance - distance) * 0.01
+              const angle = Math.atan2(dy, dx)
+              newNodes[i].vx -= Math.cos(angle) * force
+              newNodes[i].vy -= Math.sin(angle) * force
+              newNodes[j].vx += Math.cos(angle) * force
+              newNodes[j].vy += Math.sin(angle) * force
+            }
           }
         }
+
+        // Attraction along edges
+        connections.forEach((edge) => {
+          const sourceNode = newNodes.find((n) => n.id === edge.source)
+          const targetNode = newNodes.find((n) => n.id === edge.target)
+          if (!sourceNode || !targetNode) return
+
+          const dx = targetNode.x - sourceNode.x
+          const dy = targetNode.y - sourceNode.y
+          const distance = Math.sqrt(dx * dx + dy * dy)
+          const targetDistance = 150
+
+          if (distance > 0) {
+            const force = (distance - targetDistance) * 0.005
+            const angle = Math.atan2(dy, dx)
+            sourceNode.vx += Math.cos(angle) * force
+            sourceNode.vy += Math.sin(angle) * force
+            targetNode.vx -= Math.cos(angle) * force
+            targetNode.vy -= Math.sin(angle) * force
+          }
+        })
       }
-
-      // Attraction along edges
-      connections.forEach((edge) => {
-        const sourceNode = newNodes.find((n) => n.id === edge.source)
-        const targetNode = newNodes.find((n) => n.id === edge.target)
-        if (!sourceNode || !targetNode) return
-
-        const dx = targetNode.x - sourceNode.x
-        const dy = targetNode.y - sourceNode.y
-        const distance = Math.sqrt(dx * dx + dy * dy)
-        const targetDistance = 150
-
-        if (distance > 0) {
-          const force = (distance - targetDistance) * 0.005
-          const angle = Math.atan2(dy, dx)
-          sourceNode.vx += Math.cos(angle) * force
-          sourceNode.vy += Math.sin(angle) * force
-          targetNode.vx -= Math.cos(angle) * force
-          targetNode.vy -= Math.sin(angle) * force
-        }
-      })
 
       // Update positions and apply damping
       newNodes.forEach((node) => {
@@ -174,21 +207,38 @@ export function NetworkGraph() {
       // Draw nodes
       newNodes.forEach((node) => {
         const isHovered = hoveredNodeRef.current === node.id
+        const isSelected = selectedNode === node.id
 
-        // Node circle
+        // Node circle - larger if selected
+        const nodeRadius = isSelected ? node.radius * 2.5 : node.radius
         ctx.beginPath()
-        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2)
-        ctx.fillStyle = isHovered
-          ? "rgba(255, 255, 255, 0.8)"
-          : "rgba(255, 255, 255, 0.3)"
+        ctx.arc(node.x, node.y, nodeRadius, 0, Math.PI * 2)
+        
+        if (isSelected) {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.9)"
+        } else if (isHovered) {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.8)"
+        } else {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.3)"
+        }
         ctx.fill()
 
-        // Node label
-        ctx.font = isHovered ? "14px Inter" : "12px Inter"
-        ctx.fillStyle = isHovered ? "#fff" : "rgba(255, 255, 255, 0.7)"
+        // Node label - larger if selected
+        if (isSelected) {
+          ctx.font = "bold 20px Inter"
+          ctx.fillStyle = "#fff"
+        } else if (isHovered) {
+          ctx.font = "14px Inter"
+          ctx.fillStyle = "#fff"
+        } else {
+          ctx.font = "12px Inter"
+          ctx.fillStyle = "rgba(255, 255, 255, 0.7)"
+        }
+        
         ctx.textAlign = "center"
         ctx.textBaseline = "middle"
-        ctx.fillText(node.label, node.x, node.y - 20)
+        const labelOffset = isSelected ? -35 : -20
+        ctx.fillText(node.label, node.x, node.y + labelOffset)
       })
 
       animationFrameRef.current = requestAnimationFrame(animate)
@@ -201,7 +251,7 @@ export function NetworkGraph() {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [])
+  }, [selectedNode])
 
   // Mouse interaction
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -209,8 +259,11 @@ export function NetworkGraph() {
     if (!canvas) return
 
     const rect = canvas.getBoundingClientRect()
-    const mouseX = e.clientX - rect.left
-    const mouseY = e.clientY - rect.top
+    // Scale mouse coordinates to match canvas internal dimensions
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    const mouseX = (e.clientX - rect.left) * scaleX
+    const mouseY = (e.clientY - rect.top) * scaleY
 
     let foundNode: string | null = null
     for (const node of nodesRef.current) {
@@ -226,6 +279,35 @@ export function NetworkGraph() {
     hoveredNodeRef.current = foundNode
   }
 
+  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    // Scale mouse coordinates to match canvas internal dimensions
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    const mouseX = (e.clientX - rect.left) * scaleX
+    const mouseY = (e.clientY - rect.top) * scaleY
+
+    let clickedNode: string | null = null
+    for (const node of nodesRef.current) {
+      const distance = Math.sqrt(
+        (mouseX - node.x) ** 2 + (mouseY - node.y) ** 2
+      )
+      if (distance < node.radius + 20) {
+        clickedNode = node.id
+        break
+      }
+    }
+
+    if (clickedNode) {
+      setSelectedNode(clickedNode === selectedNode ? null : clickedNode)
+    } else {
+      setSelectedNode(null)
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -238,8 +320,9 @@ export function NetworkGraph() {
           ref={canvasRef}
           width={1200}
           height={800}
-          className="w-full h-auto"
+          className="w-full h-auto cursor-pointer"
           onMouseMove={handleMouseMove}
+          onClick={handleClick}
           onMouseLeave={() => {
             hoveredNodeRef.current = null
           }}
@@ -247,7 +330,7 @@ export function NetworkGraph() {
         
         {/* Legend */}
         <div className="mt-6 text-center text-white/40 text-sm">
-          <p>Hover over nodes to explore connections between cognitive concepts</p>
+          <p>Click on nodes to focus and explore connections between cognitive concepts</p>
         </div>
       </div>
     </motion.div>
