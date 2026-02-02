@@ -35,7 +35,7 @@ const keywords = [
   "Information Processing",
 ]
 
-const connections: Edge[] = [
+const initialConnections: Edge[] = [
   { source: "Emergent", target: "Complex Systems" },
   { source: "Emergent", target: "Pattern Recognition" },
   { source: "Decision", target: "Cognition" },
@@ -60,6 +60,10 @@ export function NetworkGraph() {
   const animationFrameRef = useRef<number>()
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
+  const [inputValue, setInputValue] = useState("")
+  const [activeKeywords, setActiveKeywords] = useState<string[]>(keywords)
+  const [connections, setConnections] = useState<Edge[]>(initialConnections)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   // Initialize nodes with random positions
   useEffect(() => {
@@ -70,8 +74,8 @@ export function NetworkGraph() {
     const centerY = canvas.height / 2
     const radius = Math.min(canvas.width, canvas.height) * 0.35
 
-    const initialNodes: Node[] = keywords.map((keyword, index) => {
-      const angle = (index / keywords.length) * Math.PI * 2
+    const initialNodes: Node[] = activeKeywords.map((keyword, index) => {
+      const angle = (index / activeKeywords.length) * Math.PI * 2
       const x = centerX + Math.cos(angle) * radius
       const y = centerY + Math.sin(angle) * radius
 
@@ -87,7 +91,7 @@ export function NetworkGraph() {
     })
 
     nodesRef.current = initialNodes
-  }, [])
+  }, [activeKeywords])
 
   // Physics simulation
   useEffect(() => {
@@ -308,6 +312,82 @@ export function NetworkGraph() {
     }
   }
 
+  const handleInputSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmedValue = inputValue.trim()
+    
+    if (!trimmedValue || isProcessing) return
+
+    const operation = trimmedValue[0]
+    const keyword = trimmedValue.slice(1).trim()
+
+    if (operation === '+') {
+      // Add keyword if it doesn't exist
+      if (keyword && !activeKeywords.includes(keyword)) {
+        setIsProcessing(true)
+        setInputValue("")
+        
+        try {
+          // Call LLM to suggest connections
+          console.log("[v0] Requesting connections for:", keyword)
+          const response = await fetch("/api/suggest-connections", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              newKeyword: keyword,
+              existingKeywords: activeKeywords,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error("Failed to get suggestions")
+          }
+
+          const data = await response.json()
+          console.log("[v0] Suggested connections:", data.connections)
+
+          // Add the keyword and connections
+          setActiveKeywords([...activeKeywords, keyword])
+          
+          // Add new edges to the connections array
+          const newConnections: Edge[] = data.connections
+            .filter((target: string) => activeKeywords.includes(target))
+            .map((target: string) => ({
+              source: keyword,
+              target: target,
+            }))
+
+          setConnections([...connections, ...newConnections])
+          setSelectedNode(null)
+        } catch (error) {
+          console.error("[v0] Error getting suggestions:", error)
+          // Still add the keyword even if LLM fails, but without connections
+          setActiveKeywords([...activeKeywords, keyword])
+          setSelectedNode(null)
+        } finally {
+          setIsProcessing(false)
+        }
+      }
+    } else if (operation === '-') {
+      // Remove keyword if it exists
+      if (keyword && activeKeywords.includes(keyword)) {
+        setActiveKeywords(activeKeywords.filter(k => k !== keyword))
+        // Remove all connections involving this keyword
+        setConnections(
+          connections.filter(
+            (edge) => edge.source !== keyword && edge.target !== keyword
+          )
+        )
+        if (selectedNode === keyword) {
+          setSelectedNode(null)
+        }
+        setInputValue("")
+      }
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -331,6 +411,27 @@ export function NetworkGraph() {
         {/* Legend */}
         <div className="mt-6 text-center text-white/40 text-sm">
           <p>Click on nodes to focus and explore connections between cognitive concepts</p>
+        </div>
+
+        {/* Input field for adding/removing keywords */}
+        <div className="mt-6 flex justify-center">
+          <form onSubmit={handleInputSubmit} className="w-full max-w-md">
+            <div className="relative">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Use - or + before a keyword to add or remove it from the map"
+                disabled={isProcessing}
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              {isProcessing && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+          </form>
         </div>
       </div>
     </motion.div>
