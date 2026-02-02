@@ -3,56 +3,106 @@
 import { motion } from "framer-motion"
 
 export function BrutalistLines() {
-  // Generate array of horizontal lines with varying positions and widths
-  const lines = Array.from({ length: 30 }, (_, i) => {
-    const totalLines = 30
-    const centerIndex = totalLines / 2
-    
-    // Calculate vertical position - spread from top to bottom
-    const yPosition = (i / totalLines) * 100
-    
-    // Calculate width variation - lines converge toward center
-    const distanceFromCenter = Math.abs(i - centerIndex)
-    const widthReduction = distanceFromCenter * 1.5
-    const width = Math.max(40, 90 - widthReduction)
+  // Generate sophisticated particle field with depth and movement
+  const particles = Array.from({ length: 80 }, (_, i) => {
+    const size = Math.random() * 3 + 1 // 1-4px
+    const depth = Math.random() // 0-1 for layering
     
     return {
       id: i,
-      top: `${yPosition}%`,
-      width: `${width}%`, // Varying widths
-      delay: i * 0.08, // Slower stagger for comfort
-      opacity: 0.15 + Math.random() * 0.2, // Softer opacity
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size,
+      depth,
+      delay: Math.random() * 2,
+      duration: 15 + Math.random() * 10, // 15-25s slow drift
+      opacity: 0.1 + depth * 0.4, // Closer particles are brighter
+      blur: (1 - depth) * 2, // Further particles are blurrier
     }
   })
 
+  // Generate floating geometric wireframes
+  const geometries = Array.from({ length: 6 }, (_, i) => ({
+    id: i,
+    x: 20 + i * 15,
+    y: 20 + (i % 2) * 40,
+    size: 60 + Math.random() * 100,
+    rotation: Math.random() * 360,
+    delay: i * 0.5,
+    duration: 20 + Math.random() * 10,
+  }))
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {lines.map((line) => (
+      {/* Floating particles */}
+      {particles.map((particle) => (
         <motion.div
-          key={line.id}
-          className="absolute left-0 h-[1px] bg-white origin-left"
+          key={particle.id}
+          className="absolute rounded-full bg-white"
           style={{
-            top: line.top,
-            width: line.width,
-            opacity: line.opacity,
-          }}
-          initial={{
-            scaleX: 0,
-            x: -100,
-            opacity: 0,
+            width: particle.size,
+            height: particle.size,
+            left: `${particle.x}%`,
+            top: `${particle.y}%`,
+            opacity: particle.opacity,
+            filter: `blur(${particle.blur}px)`,
           }}
           animate={{
-            scaleX: 1,
-            x: 0,
-            opacity: line.opacity,
+            y: [0, -30, 0],
+            x: [0, 15, 0],
+            opacity: [particle.opacity, particle.opacity * 1.5, particle.opacity],
+            scale: [1, 1.2, 1],
           }}
           transition={{
-            duration: 3.5,
-            delay: line.delay,
-            ease: [0.25, 0.1, 0.25, 1], // Smooth, comforting easing
+            duration: particle.duration,
+            delay: particle.delay,
+            repeat: Infinity,
+            ease: "easeInOut",
           }}
         />
       ))}
+
+      {/* Floating geometric wireframes */}
+      {geometries.map((geo) => (
+        <motion.div
+          key={`geo-${geo.id}`}
+          className="absolute border border-white/10"
+          style={{
+            left: `${geo.x}%`,
+            top: `${geo.y}%`,
+            width: geo.size,
+            height: geo.size,
+          }}
+          animate={{
+            rotate: [geo.rotation, geo.rotation + 360],
+            y: [0, -20, 0],
+            opacity: [0.05, 0.15, 0.05],
+          }}
+          transition={{
+            duration: geo.duration,
+            delay: geo.delay,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+      ))}
+
+      {/* Radial gradient glow emanating from center */}
+      <motion.div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full"
+        style={{
+          background: "radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)",
+        }}
+        animate={{
+          scale: [1, 1.1, 1],
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
     </div>
   )
 }
