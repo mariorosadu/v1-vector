@@ -3,7 +3,6 @@
 import { motion } from "framer-motion"
 import { useInView } from "framer-motion"
 import { useRef } from "react"
-import { TransparentLogo } from "./transparent-logo"
 
 export function Footer() {
   const ref = useRef(null)
@@ -19,11 +18,10 @@ export function Footer() {
             transition={{ duration: 0.8 }}
             className="md:col-span-2"
           >
-            <TransparentLogo
-              src="/images/vector-logo.png"
+            <img
+              src="/images/vector-logo.svg"
               alt="VECTÖR Logo"
               className="h-8 w-auto mb-6"
-              threshold={40}
             />
             <p className="text-white/50 text-sm leading-relaxed max-w-sm">
               Navigating the intersection of human cognition and artificial
