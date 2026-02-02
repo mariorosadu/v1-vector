@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -15,6 +15,17 @@ const navigationItems = [
 export function NewHeader() {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show navbar logo after scrolling 400px (when hero logo is mostly out of view)
+      setScrolled(window.scrollY > 400)
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   return (
     <>
@@ -72,16 +83,74 @@ export function NewHeader() {
               </button>
             </div>
 
-            <button
-              onClick={() => router.push("/")}
-              className="absolute left-1/2 -translate-x-1/2 hover:opacity-80 transition-opacity hidden lg:block"
-            >
-              <img
-                src="/images/vector-logo.svg"
-                alt="VECTÖR"
-                className="h-8 w-auto"
-              />
-            </button>
+            <AnimatePresence>
+              {scrolled && (
+                <motion.button
+                  onClick={() => router.push("/")}
+                  className="absolute left-1/2 -translate-x-1/2 hover:opacity-80 transition-opacity logo"
+                  initial={{ 
+                    opacity: 0,
+                    y: 40,
+                    scale: 1.3,
+                    filter: "blur(8px)"
+                  }}
+                  animate={{ 
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                    filter: "blur(0px)"
+                  }}
+                  exit={{ 
+                    opacity: 0,
+                    y: -20,
+                    scale: 0.9,
+                    filter: "blur(4px)"
+                  }}
+                  transition={{ 
+                    duration: 0.6,
+                    ease: [0.22, 1, 0.36, 1] // Custom cubic-bezier for smooth easing
+                  }}
+                >
+                  <motion.div
+                    className="relative"
+                    initial={{ rotateX: 15 }}
+                    animate={{ rotateX: 0 }}
+                    transition={{
+                      duration: 0.6,
+                      ease: [0.22, 1, 0.36, 1]
+                    }}
+                  >
+                    {/* Chromatic aberration effect layers */}
+                    <motion.img
+                      src="/images/vector-logo.svg"
+                      alt=""
+                      className="h-6 sm:h-8 w-auto absolute inset-0 opacity-30"
+                      initial={{ x: -2, filter: "hue-rotate(0deg)" }}
+                      animate={{ x: 0, filter: "hue-rotate(0deg)" }}
+                      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                      style={{ mixBlendMode: 'screen' }}
+                      aria-hidden="true"
+                    />
+                    <motion.img
+                      src="/images/vector-logo.svg"
+                      alt=""
+                      className="h-6 sm:h-8 w-auto absolute inset-0 opacity-30"
+                      initial={{ x: 2, filter: "hue-rotate(180deg)" }}
+                      animate={{ x: 0, filter: "hue-rotate(0deg)" }}
+                      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                      style={{ mixBlendMode: 'screen' }}
+                      aria-hidden="true"
+                    />
+                    {/* Main logo */}
+                    <img
+                      src="/images/vector-logo.svg"
+                      alt="VECTÖR"
+                      className="h-6 sm:h-8 w-auto relative"
+                    />
+                  </motion.div>
+                </motion.button>
+              )}
+            </AnimatePresence>
 
             {/* Right - Navigation Links (Desktop) */}
             <div className="hidden lg:flex items-center gap-8">

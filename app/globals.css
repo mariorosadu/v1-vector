@@ -124,3 +124,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Mobile header scaling */
+@media (max-width: 640px) {
+  nav {
+    height: 96px !important;
+    padding-top: 24px !important;
+    padding-bottom: 24px !important;
+  }
+  .logo img, .logo svg {
+    height: 48px !important;
+    width: auto;
+  }
+}
