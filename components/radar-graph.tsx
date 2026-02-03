@@ -85,7 +85,7 @@ export function RadarGraph() {
     ctx.strokeStyle = "rgba(255, 255, 255, 0.2)"
     ctx.lineWidth = 1
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)"
-    ctx.font = "12px Inter"
+    ctx.font = "bold 16px Inter"
 
     dimensions.forEach((dimension, index) => {
       const angle = (index / numDimensions) * Math.PI * 2 - Math.PI / 2
@@ -99,7 +99,7 @@ export function RadarGraph() {
       ctx.stroke()
 
       // Draw label
-      const labelDistance = maxRadius + 30
+      const labelDistance = maxRadius + 40
       const labelX = centerX + Math.cos(angle) * labelDistance
       const labelY = centerY + Math.sin(angle) * labelDistance
 
@@ -112,8 +112,8 @@ export function RadarGraph() {
       if (words.length > 2) {
         const line1 = words.slice(0, Math.ceil(words.length / 2)).join(" ")
         const line2 = words.slice(Math.ceil(words.length / 2)).join(" ")
-        ctx.fillText(line1, labelX, labelY - 8)
-        ctx.fillText(line2, labelX, labelY + 8)
+        ctx.fillText(line1, labelX, labelY - 12)
+        ctx.fillText(line2, labelX, labelY + 12)
       } else {
         ctx.fillText(dimension, labelX, labelY)
       }
