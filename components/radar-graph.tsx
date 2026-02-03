@@ -81,24 +81,24 @@ export function RadarGraph() {
       setAnimationPhase("loading")
       setLoadingProgress(20) // Start at 20 seconds
       
+      let counter = 20
+      
       // 20 second countdown timer
       const timerInterval = setInterval(() => {
-        setLoadingProgress((prev) => {
-          const newValue = prev - 1
-          if (newValue <= 0) {
-            clearInterval(timerInterval)
-            setAnimationPhase("keywords-enter")
-            return 0
-          }
-          return newValue
-        })
+        counter--
+        setLoadingProgress(counter)
+        
+        if (counter <= 0) {
+          clearInterval(timerInterval)
+          setAnimationPhase("keywords-enter")
+        }
       }, 1000)
       
       return () => {
         clearInterval(timerInterval)
       }
     }
-  }, [profiles.length, animationPhase])
+  }, [profiles.length])
 
   // Initialize keyword nodes from both profiles
   const initializeKeywordNodes = () => {
