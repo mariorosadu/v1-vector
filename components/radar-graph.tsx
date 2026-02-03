@@ -90,7 +90,8 @@ export function RadarGraph() {
         
         if (counter <= 0) {
           clearInterval(timerInterval)
-          setAnimationPhase("keywords-enter")
+          // First fade the graph, then show nodes
+          setAnimationPhase("graph-fade")
         }
       }, 1000)
       
@@ -100,30 +101,31 @@ export function RadarGraph() {
     }
   }, [profiles.length])
 
-  // Initialize keyword nodes from both profiles
+  // Initialize keyword nodes from both profiles - starting in a straight line
   const initializeKeywordNodes = () => {
     const canvas = animationCanvasRef.current
     if (!canvas) return
     
     const nodes: KeywordNode[] = []
-    const centerX = canvas.width / 2
-    const centerY = canvas.height / 2
     
     profiles.forEach((profile, profileIndex) => {
       const strengths = getTopStrengths(profile.skillData)
       const color = PROFILE_COLORS[profileIndex].stroke
       
       strengths.forEach((keyword, i) => {
-        // Start from outside the canvas
-        const angle = ((profileIndex * 7 + i) / 14) * Math.PI * 2
-        const startDistance = Math.max(canvas.width, canvas.height) * 0.8
+        // Start from left (profile 0) or right (profile 1) outside the canvas
+        // Arranged in a vertical line like organized children
+        const startX = profileIndex === 0 ? -100 : canvas.width + 100
+        const spacing = 120
+        const totalHeight = (strengths.length - 1) * spacing
+        const startY = (canvas.height - totalHeight) / 2 + i * spacing
         
         nodes.push({
           id: `${profileIndex}-${i}`,
           keyword,
           color,
-          x: centerX + Math.cos(angle) * startDistance,
-          y: centerY + Math.sin(angle) * startDistance,
+          x: startX,
+          y: startY,
           vx: 0,
           vy: 0,
           profileIndex,
@@ -134,24 +136,18 @@ export function RadarGraph() {
     setKeywordNodes(nodes)
   }
 
-  // Keywords enter animation
+  // Keywords enter animation - nodes march in from the sides like organized children
   useEffect(() => {
     if (animationPhase !== "keywords-enter") return
     
-    console.log("[v0] Entering keywords-enter phase")
-    
-    // Initialize nodes when entering this phase
-    initializeKeywordNodes()
-    
     const canvas = animationCanvasRef.current
-    if (!canvas) {
-      console.log("[v0] Canvas not ready")
-      return
-    }
+    if (!canvas) return
     
     const centerX = canvas.width / 2
     const centerY = canvas.height / 2
-    const targetRadius = Math.min(canvas.width, canvas.height) * 0.35
+    
+    // Store starting positions
+    const startPositions = keywordNodes.map(node => ({ x: node.x, y: node.y }))
     
     let frame = 0
     const totalFrames = 120 // 2 seconds at 60fps
@@ -162,12 +158,19 @@ export function RadarGraph() {
       const eased = 1 - Math.pow(1 - progress, 3) // ease out cubic
       
       setKeywordNodes(prev => prev.map((node, i) => {
-        const angle = ((node.profileIndex * 7 + (i % 7)) / 14) * Math.PI * 2
-        const targetX = centerX + Math.cos(angle) * targetRadius * (0.6 + Math.random() * 0.4)
-        const targetY = centerY + Math.sin(angle) * targetRadius * (0.6 + Math.random() * 0.4)
-        const startDistance = Math.max(canvas.width, canvas.height) * 0.8
-        const startX = centerX + Math.cos(angle) * startDistance
-        const startY = centerY + Math.sin(angle) * startDistance
+        // Target positions - spread out in the canvas
+        const nodeIndex = i % 7
+        const spacing = 140
+        const totalHeight = 6 * spacing
+        const targetY = (centerY - totalHeight / 2) + nodeIndex * spacing
+        
+        // Profile 0 goes to left side, profile 1 goes to right side
+        const targetX = node.profileIndex === 0 
+          ? centerX - 250 
+          : centerX + 250
+        
+        const startX = startPositions[i]?.x ?? node.x
+        const startY = startPositions[i]?.y ?? node.y
         
         return {
           ...node,
@@ -179,16 +182,16 @@ export function RadarGraph() {
       if (progress < 1) {
         animationFrameRef.current = requestAnimationFrame(animate)
       } else {
-        // Start fading the graph
-        setAnimationPhase("graph-fade")
+        // Start floating phase
+        setAnimationPhase("floating")
       }
     }
     
     animationFrameRef.current = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(animationFrameRef.current)
-  }, [animationPhase])
+  }, [animationPhase, keywordNodes.length])
 
-  // Graph fade animation
+  // Graph fade animation - then trigger keywords enter
   useEffect(() => {
     if (animationPhase !== "graph-fade") return
     
@@ -203,7 +206,9 @@ export function RadarGraph() {
       if (progress < 1) {
         animationFrameRef.current = requestAnimationFrame(animate)
       } else {
-        setAnimationPhase("floating")
+        // After graph fades, initialize nodes and start enter animation
+        initializeKeywordNodes()
+        setAnimationPhase("keywords-enter")
       }
     }
     
@@ -211,48 +216,63 @@ export function RadarGraph() {
     return () => cancelAnimationFrame(animationFrameRef.current)
   }, [animationPhase])
 
-  // Floating animation
+  // Floating animation with orbiting pairs
   useEffect(() => {
     if (animationPhase !== "floating" && animationPhase !== "playing") return
     
     const canvas = animationCanvasRef.current
     if (!canvas) return
     
-    // Start playing after 3 seconds of floating
+    // Start playing after 2 seconds of floating
     let floatingTime = 0
-    const playStartTime = 3000
+    const playStartTime = 2000
     let hasStartedPlaying = false
     
     const animate = () => {
       floatingTime += 16 // roughly 60fps
       
+      // Update orbit angle
+      orbitAngleRef.current += 0.03
+      
       setKeywordNodes(prev => {
-        const centerX = canvas.width / 2
-        const centerY = canvas.height / 2
-        
         return prev.map(node => {
-          // Add gentle floating motion
-          const time = Date.now() / 1000
-          const floatX = Math.sin(time * 0.5 + parseFloat(node.id) * 1.5) * 2
-          const floatY = Math.cos(time * 0.7 + parseFloat(node.id) * 1.3) * 2
+          // Check if this node is part of the playing pair
+          const isPlaying = playingPair[0]?.id === node.id || playingPair[1]?.id === node.id
           
-          // Soft boundary bounce
-          let newX = node.x + node.vx + floatX
-          let newY = node.y + node.vy + floatY
-          let newVx = node.vx * 0.98
-          let newVy = node.vy * 0.98
-          
-          const padding = 100
-          if (newX < padding || newX > canvas.width - padding) {
-            newVx = -newVx * 0.5
+          if (isPlaying && animationPhase === "playing") {
+            // Orbiting motion around center
+            const orbitRadius = 80
+            const center = orbitCenterRef.current
+            const isFirst = playingPair[0]?.id === node.id
+            const angleOffset = isFirst ? 0 : Math.PI
+            
+            const targetX = center.x + Math.cos(orbitAngleRef.current + angleOffset) * orbitRadius
+            const targetY = center.y + Math.sin(orbitAngleRef.current + angleOffset) * orbitRadius
+            
+            // Smooth movement toward orbit position
+            return {
+              ...node,
+              x: node.x + (targetX - node.x) * 0.1,
+              y: node.y + (targetY - node.y) * 0.1,
+              vx: 0,
+              vy: 0,
+            }
+          } else {
+            // Gentle floating motion for non-playing nodes
+            const time = Date.now() / 1000
+            const floatX = Math.sin(time * 0.3 + parseFloat(node.id.split('-')[1]) * 1.5) * 1.5
+            const floatY = Math.cos(time * 0.4 + parseFloat(node.id.split('-')[1]) * 1.3) * 1.5
+            
+            let newX = node.x + floatX
+            let newY = node.y + floatY
+            
+            // Keep nodes in bounds
+            const padding = 80
             newX = Math.max(padding, Math.min(canvas.width - padding, newX))
-          }
-          if (newY < padding || newY > canvas.height - padding) {
-            newVy = -newVy * 0.5
             newY = Math.max(padding, Math.min(canvas.height - padding, newY))
+            
+            return { ...node, x: newX, y: newY }
           }
-          
-          return { ...node, x: newX, y: newY, vx: newVx, vy: newVy }
         })
       })
       
@@ -268,10 +288,17 @@ export function RadarGraph() {
     
     animationFrameRef.current = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(animationFrameRef.current)
-  }, [animationPhase])
+  }, [animationPhase, playingPair])
 
-  // Select a pair to play
+  // Orbiting pair state
+  const orbitAngleRef = useRef(0)
+  const orbitCenterRef = useRef({ x: 0, y: 0 })
+  
+  // Select a pair to play - they will orbit each other
   const selectPlayingPair = () => {
+    const canvas = animationCanvasRef.current
+    if (!canvas) return
+    
     setKeywordNodes(prev => {
       const profile0Nodes = prev.filter(n => n.profileIndex === 0)
       const profile1Nodes = prev.filter(n => n.profileIndex === 1)
@@ -281,32 +308,15 @@ export function RadarGraph() {
         const node1 = profile1Nodes[Math.floor(Math.random() * profile1Nodes.length)]
         setPlayingPair([node0, node1])
         
-        // Give them velocities toward center
-        const canvas = animationCanvasRef.current
-        if (canvas) {
-          const centerX = canvas.width / 2
-          const centerY = canvas.height / 2
-          
-          return prev.map(n => {
-            if (n.id === node0.id || n.id === node1.id) {
-              const dx = centerX - n.x
-              const dy = centerY - n.y
-              const dist = Math.sqrt(dx * dx + dy * dy)
-              return {
-                ...n,
-                vx: (dx / dist) * 8,
-                vy: (dy / dist) * 8,
-              }
-            }
-            return n
-          })
-        }
+        // Set orbit center to canvas center
+        orbitCenterRef.current = { x: canvas.width / 2, y: canvas.height / 2 }
+        orbitAngleRef.current = 0
       }
       return prev
     })
     
-    // Select new pair every 4 seconds
-    setTimeout(selectPlayingPair, 4000)
+    // Select new pair every 6 seconds
+    setTimeout(selectPlayingPair, 6000)
   }
 
   // Draw animation canvas
@@ -360,38 +370,47 @@ export function RadarGraph() {
       
       // Draw keyword nodes
       keywordNodes.forEach(node => {
+        const isPlaying = playingPair[0]?.id === node.id || playingPair[1]?.id === node.id
+        const nodeSize = isPlaying ? 30 : 24
+        const glowSize = isPlaying ? 60 : 45
+        
         // Draw glow
-        const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, 40)
-        gradient.addColorStop(0, node.color.replace("0.8", "0.3"))
+        const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowSize)
+        gradient.addColorStop(0, node.color.replace("0.8", isPlaying ? "0.5" : "0.3"))
         gradient.addColorStop(1, "transparent")
         ctx.fillStyle = gradient
         ctx.beginPath()
-        ctx.arc(node.x, node.y, 40, 0, Math.PI * 2)
+        ctx.arc(node.x, node.y, glowSize, 0, Math.PI * 2)
         ctx.fill()
         
         // Draw node circle
         ctx.beginPath()
-        ctx.arc(node.x, node.y, 20, 0, Math.PI * 2)
+        ctx.arc(node.x, node.y, nodeSize, 0, Math.PI * 2)
         ctx.fillStyle = node.color.replace("0.8", "0.9")
         ctx.fill()
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)"
-        ctx.lineWidth = 2
+        ctx.strokeStyle = isPlaying ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.5)"
+        ctx.lineWidth = isPlaying ? 3 : 2
         ctx.stroke()
         
-        // Draw keyword text
+        // Draw keyword text - bigger font
         ctx.fillStyle = "white"
-        ctx.font = "bold 11px Inter"
+        ctx.font = isPlaying ? "bold 16px Inter" : "bold 14px Inter"
         ctx.textAlign = "center"
         ctx.textBaseline = "middle"
         
-        // Truncate and wrap text
-        const maxWidth = 80
+        // Wrap text for longer keywords
         const words = node.keyword.split(" ")
+        const lineHeight = isPlaying ? 18 : 16
+        const yOffset = isPlaying ? -50 : -42
+        
         if (words.length > 2) {
-          ctx.fillText(words.slice(0, 2).join(" "), node.x, node.y - 30)
-          ctx.fillText(words.slice(2).join(" "), node.x, node.y - 18)
+          ctx.fillText(words.slice(0, 2).join(" "), node.x, node.y + yOffset)
+          ctx.fillText(words.slice(2).join(" "), node.x, node.y + yOffset + lineHeight)
+        } else if (words.length === 2) {
+          ctx.fillText(words[0], node.x, node.y + yOffset)
+          ctx.fillText(words[1], node.x, node.y + yOffset + lineHeight)
         } else {
-          ctx.fillText(node.keyword, node.x, node.y - 25)
+          ctx.fillText(node.keyword, node.x, node.y + yOffset + lineHeight / 2)
         }
       })
       
@@ -519,8 +538,6 @@ export function RadarGraph() {
           const nodeX = centerX + Math.cos(angle) * nodeRadius
           const nodeY = centerY + Math.sin(angle) * nodeRadius
 
-          console.log(`[v0] ${profile.name} - ${dimension}: ${skillValue}, radius: ${nodeRadius}, maxRadius: ${maxRadius}`)
-
           // Draw node
           ctx.beginPath()
           ctx.arc(nodeX, nodeY, 5, 0, Math.PI * 2)
@@ -542,8 +559,6 @@ export function RadarGraph() {
     setIsProcessing(true)
 
     try {
-      console.log("[v0] Processing profile:", inputName)
-      
       const response = await fetch("/api/parse-skills", {
         method: "POST",
         headers: {
@@ -560,7 +575,6 @@ export function RadarGraph() {
       }
 
       const data = await response.json()
-      console.log("[v0] Parsed skill data:", data.skillData)
 
       // Add new profile with next available color
       const newProfile: ProfileData = {
