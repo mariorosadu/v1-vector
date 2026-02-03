@@ -10,6 +10,7 @@ const navigationItems = [
   { label: "Methodology", href: "#methodology" },
   { label: "Data", href: "#data" },
   { label: "Map", href: "/map" },
+  { label: "Profile Analysis", href: "/profile-analysis" },
 ]
 
 export function NewHeader() {
@@ -44,6 +45,12 @@ export function NewHeader() {
                 <a
                   key={item.label}
                   href={item.href}
+                  onClick={(e) => {
+                    if (item.href.startsWith('/')) {
+                      e.preventDefault()
+                      router.push(item.href)
+                    }
+                  }}
                   className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
                 >
                   {item.label}
@@ -158,6 +165,12 @@ export function NewHeader() {
                 <a
                   key={item.label}
                   href={item.href}
+                  onClick={(e) => {
+                    if (item.href.startsWith('/')) {
+                      e.preventDefault()
+                      router.push(item.href)
+                    }
+                  }}
                   className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
                 >
                   {item.label}
@@ -194,7 +207,13 @@ export function NewHeader() {
                   >
                     <a
                       href={item.href}
-                      onClick={() => setMenuOpen(false)}
+                      onClick={(e) => {
+                        setMenuOpen(false)
+                        if (item.href.startsWith('/')) {
+                          e.preventDefault()
+                          router.push(item.href)
+                        }
+                      }}
                       className="block text-white text-4xl font-light tracking-tight hover:text-white/60 transition-colors text-center"
                       style={{ fontFamily: "var(--font-heading)" }}
                     >
