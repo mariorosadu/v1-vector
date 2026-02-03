@@ -15,43 +15,91 @@ export async function POST(request: NextRequest) {
     // Mock implementation - replace with actual LLM call
     const mockSkillData: { [key: string]: number } = {}
     
-    // Simple keyword matching for demo purposes
-    const text = skillsText.toLowerCase()
+    // Create a seed from the text to ensure consistent but different results per unique input
+    const textHash = skillsText.split('').reduce((acc, char) => {
+      return ((acc << 5) - acc) + char.charCodeAt(0)
+    }, 0)
     
-    dimensions.forEach((dimension: string) => {
-      // Default value
+    // Simple seeded random function
+    const seededRandom = (seed: number, min: number, max: number) => {
+      const x = Math.sin(seed) * 10000
+      const random = x - Math.floor(x)
+      return Math.floor(random * (max - min + 1)) + min
+    }
+    
+    // Enhanced keyword matching with text analysis
+    const text = skillsText.toLowerCase()
+    const wordCount = skillsText.split(/\s+/).length
+    
+    dimensions.forEach((dimension: string, index: number) => {
       let value = 0
+      const dimensionSeed = textHash + index
       
-      // Add basic keyword matching logic as placeholder
+      // Keyword-based scoring with multiple levels
       if (dimension === "Senioridade real") {
-        if (text.includes("senior") || text.includes("lead") || text.includes("principal")) value = 8
-        else if (text.includes("mid") || text.includes("pleno")) value = 5
-        else if (text.includes("junior")) value = 3
+        if (text.includes("senior") || text.includes("lead") || text.includes("principal") || text.includes("staff")) {
+          value = seededRandom(dimensionSeed, 7, 10)
+        } else if (text.includes("mid") || text.includes("pleno") || text.includes("intermediate")) {
+          value = seededRandom(dimensionSeed, 4, 7)
+        } else if (text.includes("junior") || text.includes("entry")) {
+          value = seededRandom(dimensionSeed, 2, 5)
+        } else {
+          value = seededRandom(dimensionSeed, 3, 6)
+        }
       } else if (dimension === "Arquitetura de sistemas") {
-        if (text.includes("arquitetura") || text.includes("architecture") || text.includes("design patterns")) value = 7
+        const keywords = ["arquitetura", "architecture", "design patterns", "microservices", "distributed", "system design", "scalability"]
+        const matches = keywords.filter(kw => text.includes(kw)).length
+        value = matches > 0 ? seededRandom(dimensionSeed, 5 + matches, 10) : seededRandom(dimensionSeed, 1, 4)
       } else if (dimension === "Cloud & infra") {
-        if (text.includes("aws") || text.includes("azure") || text.includes("gcp") || text.includes("cloud")) value = 6
+        const keywords = ["aws", "azure", "gcp", "cloud", "kubernetes", "docker", "devops", "terraform", "infrastructure"]
+        const matches = keywords.filter(kw => text.includes(kw)).length
+        value = matches > 0 ? seededRandom(dimensionSeed, 4 + matches, 9) : seededRandom(dimensionSeed, 1, 4)
       } else if (dimension === "ML / AI aplicado") {
-        if (text.includes("machine learning") || text.includes("ai") || text.includes("ml") || text.includes("deep learning")) value = 7
+        const keywords = ["machine learning", "ai", "ml", "deep learning", "neural network", "model", "tensorflow", "pytorch"]
+        const matches = keywords.filter(kw => text.includes(kw)).length
+        value = matches > 0 ? seededRandom(dimensionSeed, 5 + matches, 10) : seededRandom(dimensionSeed, 0, 3)
       } else if (dimension === "Data engineering") {
-        if (text.includes("data") || text.includes("etl") || text.includes("pipeline")) value = 6
+        const keywords = ["data", "etl", "pipeline", "spark", "hadoop", "data warehouse", "big data", "sql"]
+        const matches = keywords.filter(kw => text.includes(kw)).length
+        value = matches > 0 ? seededRandom(dimensionSeed, 4 + matches, 9) : seededRandom(dimensionSeed, 1, 4)
       } else if (dimension === "Liderança / ownership") {
-        if (text.includes("lead") || text.includes("liderança") || text.includes("manager") || text.includes("ownership")) value = 7
+        const keywords = ["lead", "liderança", "manager", "ownership", "team", "mentor", "leadership"]
+        const matches = keywords.filter(kw => text.includes(kw)).length
+        value = matches > 0 ? seededRandom(dimensionSeed, 5 + matches, 10) : seededRandom(dimensionSeed, 2, 5)
       } else if (dimension === "Produto & negócio") {
-        if (text.includes("produto") || text.includes("product") || text.includes("business") || text.includes("negócio")) value = 6
+        const keywords = ["produto", "product", "business", "negócio", "strategy", "roadmap", "stakeholder"]
+        const matches = keywords.filter(kw => text.includes(kw)).length
+        value = matches > 0 ? seededRandom(dimensionSeed, 4 + matches, 9) : seededRandom(dimensionSeed, 1, 4)
       } else if (dimension === "Growth / métricas / ROI") {
-        if (text.includes("growth") || text.includes("metrics") || text.includes("roi") || text.includes("kpi")) value = 5
+        const keywords = ["growth", "metrics", "roi", "kpi", "analytics", "conversion", "revenue"]
+        const matches = keywords.filter(kw => text.includes(kw)).length
+        value = matches > 0 ? seededRandom(dimensionSeed, 4 + matches, 9) : seededRandom(dimensionSeed, 1, 4)
       } else if (dimension === "Pesquisa acadêmica") {
-        if (text.includes("phd") || text.includes("research") || text.includes("academic") || text.includes("paper")) value = 6
+        const keywords = ["phd", "research", "academic", "paper", "publication", "thesis", "conference"]
+        const matches = keywords.filter(kw => text.includes(kw)).length
+        value = matches > 0 ? seededRandom(dimensionSeed, 6 + matches, 10) : seededRandom(dimensionSeed, 0, 3)
       } else if (dimension === "Comunicação executiva") {
-        if (text.includes("presentation") || text.includes("stakeholder") || text.includes("executive")) value = 6
+        const keywords = ["presentation", "stakeholder", "executive", "communication", "public speaking"]
+        const matches = keywords.filter(kw => text.includes(kw)).length
+        value = matches > 0 ? seededRandom(dimensionSeed, 4 + matches, 9) : seededRandom(dimensionSeed, 2, 5)
       } else if (dimension === "Escopo de impacto") {
-        if (text.includes("company-wide") || text.includes("organization") || text.includes("strategic")) value = 7
-        else if (text.includes("team") || text.includes("squad")) value = 5
+        const keywords = ["company-wide", "organization", "strategic", "cross-functional", "enterprise"]
+        const teamKeywords = ["team", "squad", "department"]
+        if (keywords.some(kw => text.includes(kw))) {
+          value = seededRandom(dimensionSeed, 7, 10)
+        } else if (teamKeywords.some(kw => text.includes(kw))) {
+          value = seededRandom(dimensionSeed, 4, 7)
+        } else {
+          value = seededRandom(dimensionSeed, 2, 5)
+        }
       } else if (dimension === "Raridade de perfil") {
-        // Calculate based on combination of other skills
-        value = 5
+        // Calculate based on text uniqueness and length
+        const uniquenessScore = Math.min(wordCount / 20, 1)
+        value = seededRandom(dimensionSeed + wordCount, 3, 8) + Math.floor(uniquenessScore * 2)
       }
+      
+      // Ensure value is between 0 and 10
+      value = Math.min(Math.max(value, 0), 10)
       
       if (value > 0) {
         mockSkillData[dimension] = value
