@@ -76,33 +76,26 @@ export function RadarGraph() {
 
   // Trigger animation sequence when 2 profiles are added
   useEffect(() => {
-    console.log("[v0] Animation trigger check:", profiles.length, animationPhase)
     if (profiles.length === 2 && animationPhase === "idle") {
-      console.log("[v0] Starting animation sequence")
       // Start the loading phase
       setAnimationPhase("loading")
-      setLoadingProgress(0)
+      setLoadingProgress(20) // Start at 20 seconds
       
-      // 30 second loading bar
-      const loadingDuration = 30000
-      const startTime = Date.now()
-      
-      const loadingInterval = setInterval(() => {
-        const elapsed = Date.now() - startTime
-        const progress = Math.min(elapsed / loadingDuration, 1)
-        console.log("[v0] Loading progress:", progress)
-        setLoadingProgress(progress)
-        
-        if (progress >= 1) {
-          console.log("[v0] Loading complete, initializing nodes")
-          clearInterval(loadingInterval)
-          setAnimationPhase("keywords-enter")
-        }
-      }, 50)
+      // 20 second countdown timer
+      const timerInterval = setInterval(() => {
+        setLoadingProgress((prev) => {
+          const newValue = prev - 1
+          if (newValue <= 0) {
+            clearInterval(timerInterval)
+            setAnimationPhase("keywords-enter")
+            return 0
+          }
+          return newValue
+        })
+      }, 1000)
       
       return () => {
-        console.log("[v0] Cleaning up loading interval")
-        clearInterval(loadingInterval)
+        clearInterval(timerInterval)
       }
     }
   }, [profiles.length, animationPhase])
@@ -631,17 +624,16 @@ export function RadarGraph() {
             }}
           />
           
-          {/* Loading bar */}
+          {/* Timer */}
           {animationPhase === "loading" && (
             <div className="absolute bottom-4 left-4 right-4 md:bottom-8 md:left-8 md:right-8">
-              <div className="text-white/60 text-sm mb-2 text-center">
-                Analyzing profiles... {Math.round(loadingProgress * 100)}%
-              </div>
-              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-indigo-500 to-pink-500 transition-all duration-100"
-                  style={{ width: `${loadingProgress * 100}%` }}
-                />
+              <div className="text-center">
+                <div className="text-white text-6xl font-bold mb-2 tabular-nums">
+                  {loadingProgress}
+                </div>
+                <div className="text-white/60 text-sm">
+                  Analyzing profiles...
+                </div>
               </div>
             </div>
           )}
