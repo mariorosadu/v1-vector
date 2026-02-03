@@ -122,6 +122,22 @@ export async function POST(request: NextRequest) {
           // Calculate based on text uniqueness and length
           const uniquenessScore = Math.min(wordCount / 20, 1)
           value = seededRandom(dimensionSeed + wordCount, 3, 8) + Math.floor(uniquenessScore * 2)
+        } else if (dimension === "Aderência ATS genérico") {
+          const keywords = ["ats", "resume", "keywords", "standard", "formato", "estrutura"]
+          const matches = keywords.filter(kw => lowerText.includes(kw)).length
+          value = matches > 0 ? seededRandom(dimensionSeed, 5 + matches, 9) : seededRandom(dimensionSeed, 3, 6)
+        } else if (dimension === "MLOps") {
+          const keywords = ["mlops", "ml operations", "cicd", "model deployment", "pipeline", "monitoring", "model serving"]
+          const matches = keywords.filter(kw => lowerText.includes(kw)).length
+          value = matches > 0 ? seededRandom(dimensionSeed, 5 + matches, 10) : seededRandom(dimensionSeed, 1, 4)
+        } else if (dimension === "Lakehouse Engineering") {
+          const keywords = ["lakehouse", "delta lake", "iceberg", "datalake", "warehouse", "analytics engineering"]
+          const matches = keywords.filter(kw => lowerText.includes(kw)).length
+          value = matches > 0 ? seededRandom(dimensionSeed, 5 + matches, 10) : seededRandom(dimensionSeed, 1, 4)
+        } else if (dimension === "Modelagem estatística aplicada") {
+          const keywords = ["estatística", "statistical", "regression", "statistical modeling", "probability", "bayesian", "anova"]
+          const matches = keywords.filter(kw => lowerText.includes(kw)).length
+          value = matches > 0 ? seededRandom(dimensionSeed, 5 + matches, 10) : seededRandom(dimensionSeed, 1, 4)
         }
         
         // Ensure value is between 0 and 10

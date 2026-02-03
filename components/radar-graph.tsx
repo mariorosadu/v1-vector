@@ -18,6 +18,10 @@ const dimensions = [
   "Liderança / ownership",
   "Comunicação executiva",
   "Raridade de perfil",
+  "Aderência ATS genérico",
+  "MLOps",
+  "Lakehouse Engineering",
+  "Modelagem estatística aplicada",
 ]
 
 interface SkillData {
@@ -314,7 +318,7 @@ export function RadarGraph() {
                     <textarea
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
-                      placeholder="Ex: Senioridade real 5.0; Escopo de impacto 6.0; Arquitetura de sistemas 6.5; Produto & negócio 5.5; Growth / métricas / ROI 6.0; Cloud & infra 8.0; Data engineering 8.5; ML / AI aplicado 8.5; Pesquisa acadêmica 6.0; Liderança / ownership 5.0; Comunicação executiva 6.0; Raridade de perfil 6.0"
+                      placeholder="Ex: Senioridade real 5.0; Escopo de impacto 6.0; Arquitetura de sistemas 6.5; Produto & negócio 5.5; Growth / métricas / ROI 6.0; Cloud & infra 8.0; Data engineering 8.5; ML / AI aplicado 8.5; Pesquisa acadêmica 6.0; Liderança / ownership 5.0; Comunicação executiva 6.0; Raridade de perfil 6.0; Aderência ATS genérico 7.0; MLOps 7.5; Lakehouse Engineering 8.0; Modelagem estatística aplicada 7.5"
                       disabled={isProcessing}
                       rows={8}
                       className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed resize-none text-sm"
@@ -351,7 +355,7 @@ export function RadarGraph() {
             </h3>
             <ul className="text-white/40 text-xs space-y-2">
               <li>{'• Digite o nome do profissional'}</li>
-              <li>{'• Cole os valores das 12 dimensões'}</li>
+              <li>{'• Cole os valores das 16 dimensões'}</li>
               <li>{'• Ou descreva habilidades em texto livre'}</li>
               <li>{'• Compare até 2 perfis simultaneamente'}</li>
               <li>{'• Gráficos sobrepostos mostram diferenças'}</li>
