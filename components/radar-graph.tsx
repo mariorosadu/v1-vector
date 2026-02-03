@@ -37,7 +37,8 @@ const PROFILE_COLORS = [
 
 export function RadarGraph() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [inputName, setInputName] = useState("")
+  const [inputText, setInputText] = useState("")
   const [profiles, setProfiles] = useState<ProfileData[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -176,53 +177,44 @@ export function RadarGraph() {
   const handleInputSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!fileInputRef.current?.files?.[0] || isProcessing || profiles.length >= 2) return
-
-    const file = fileInputRef.current.files[0]
-    
-    // Validate file type
-    if (!file.type.includes('pdf')) {
-      alert('Por favor, selecione um arquivo PDF')
-      return
-    }
+    if (!inputName.trim() || !inputText.trim() || isProcessing || profiles.length >= 2) return
 
     setIsProcessing(true)
 
     try {
-      console.log("[v0] Processing PDF:", file.name)
+      console.log("[v0] Processing profile:", inputName)
       
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('dimensions', JSON.stringify(dimensions))
-
-      const response = await fetch("/api/parse-pdf", {
+      const response = await fetch("/api/parse-skills", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          skillsText: inputText,
+          dimensions: dimensions,
+        }),
       })
 
       if (!response.ok) {
-        throw new Error("Failed to parse PDF")
+        throw new Error("Failed to parse skills")
       }
 
       const data = await response.json()
-      console.log("[v0] Parsed profile from PDF:", data.name, data.skillData)
+      console.log("[v0] Parsed skill data:", data.skillData)
 
       // Add new profile with next available color
       const newProfile: ProfileData = {
-        name: data.name,
+        name: inputName,
         skillData: data.skillData,
         color: PROFILE_COLORS[profiles.length] || PROFILE_COLORS[0],
       }
 
       setProfiles((prev) => [...prev, newProfile])
-      
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
-      }
+      setInputName("")
+      setInputText("")
     } catch (error) {
-      console.error("[v0] Error processing PDF:", error)
-      alert("Erro ao processar PDF. Por favor, tente novamente.")
+      console.error("[v0] Error parsing skills:", error)
+      alert("Erro ao processar perfil. Por favor, tente novamente.")
     } finally {
       setIsProcessing(false)
     }
@@ -302,56 +294,46 @@ export function RadarGraph() {
               <form onSubmit={handleInputSubmit} className="space-y-4">
                 <div>
                   <label className="block text-white/60 text-sm mb-2">
-                    Upload CV/Resume (PDF)
+                    Nome
+                  </label>
+                  <input
+                    type="text"
+                    value={inputName}
+                    onChange={(e) => setInputName(e.target.value)}
+                    placeholder="Ex: João Silva"
+                    disabled={isProcessing}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/60 text-sm mb-2">
+                    Competências (copie os valores ou descreva)
                   </label>
                   <div className="relative">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".pdf"
+                    <textarea
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      placeholder="Ex: Senioridade real 5.0; Escopo de impacto 6.0; Arquitetura de sistemas 6.5; Produto & negócio 5.5; Growth / métricas / ROI 6.0; Cloud & infra 8.0; Data engineering 8.5; ML / AI aplicado 8.5; Pesquisa acadêmica 6.0; Liderança / ownership 5.0; Comunicação executiva 6.0; Raridade de perfil 6.0"
                       disabled={isProcessing}
-                      className="hidden"
-                      onChange={(e) => {
-                        // Trigger form submission when file is selected
-                        if (e.target.files?.[0]) {
-                          const form = e.currentTarget.form
-                          if (form) {
-                            const submitEvent = new Event('submit', { bubbles: true, cancelable: true })
-                            form.dispatchEvent(submitEvent)
-                          }
-                        }
-                      }}
+                      rows={8}
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed resize-none text-sm"
                     />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isProcessing}
-                      className="w-full px-4 py-8 border-2 border-dashed border-white/20 rounded-lg text-white/60 hover:text-white/80 hover:border-white/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-2"
-                    >
-                      {isProcessing ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                          <span className="text-sm">Processing PDF...</span>
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                          <span className="text-sm">Click to upload PDF</span>
-                          <span className="text-xs text-white/40">or drag and drop</span>
-                        </>
-                      )}
-                    </button>
+                    {isProcessing && (
+                      <div className="absolute right-3 top-3">
+                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <input
+                <button
                   type="submit"
-                  value="Submit"
-                  disabled={true}
-                  className="hidden"
-                />
+                  disabled={isProcessing || !inputName.trim() || !inputText.trim()}
+                  className="w-full px-6 py-3 bg-white/10 border border-white/20 rounded-lg text-white text-sm tracking-wide hover:bg-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isProcessing ? "Analisando..." : "Adicionar Perfil"}
+                </button>
               </form>
             ) : (
               <div className="text-center text-white/40 text-sm">
@@ -365,14 +347,14 @@ export function RadarGraph() {
           {/* Instructions */}
           <div className="bg-black/20 rounded-lg border border-white/10 p-6 backdrop-blur-sm">
             <h3 className="text-white/60 text-sm font-semibold mb-2">
-              How it works
+              Como funciona
             </h3>
             <ul className="text-white/40 text-xs space-y-2">
-              <li>{'• Upload a PDF CV or resume'}</li>
-              <li>{'• Name extracted from document'}</li>
-              <li>{'• AI analyzes across 12 dimensions'}</li>
-              <li>{'• Add up to 2 profiles for comparison'}</li>
-              <li>{'• Overlapping profiles show differences'}</li>
+              <li>{'• Digite o nome do profissional'}</li>
+              <li>{'• Cole os valores das 12 dimensões'}</li>
+              <li>{'• Ou descreva habilidades em texto livre'}</li>
+              <li>{'• Compare até 2 perfis simultaneamente'}</li>
+              <li>{'• Gráficos sobrepostos mostram diferenças'}</li>
             </ul>
           </div>
         </div>
