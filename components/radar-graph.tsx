@@ -37,8 +37,7 @@ const PROFILE_COLORS = [
 
 export function RadarGraph() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [inputValue, setInputValue] = useState("")
-  const [inputName, setInputName] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [profiles, setProfiles] = useState<ProfileData[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -176,47 +175,54 @@ export function RadarGraph() {
 
   const handleInputSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const trimmedValue = inputValue.trim()
-    const trimmedName = inputName.trim()
     
-    if (!trimmedValue || !trimmedName || isProcessing || profiles.length >= 2) return
+    if (!fileInputRef.current?.files?.[0] || isProcessing || profiles.length >= 2) return
+
+    const file = fileInputRef.current.files[0]
+    
+    // Validate file type
+    if (!file.type.includes('pdf')) {
+      alert('Por favor, selecione um arquivo PDF')
+      return
+    }
 
     setIsProcessing(true)
 
     try {
-      // Call LLM to parse skills and assign values
-      console.log("[v0] Parsing skills for:", trimmedName, trimmedValue)
-      const response = await fetch("/api/parse-skills", {
+      console.log("[v0] Processing PDF:", file.name)
+      
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('dimensions', JSON.stringify(dimensions))
+
+      const response = await fetch("/api/parse-pdf", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          skillsText: trimmedValue,
-          dimensions: dimensions,
-        }),
+        body: formData,
       })
 
       if (!response.ok) {
-        throw new Error("Failed to parse skills")
+        throw new Error("Failed to parse PDF")
       }
 
       const data = await response.json()
-      console.log("[v0] Parsed skill data:", data.skillData)
+      console.log("[v0] Parsed profile from PDF:", data.name, data.skillData)
 
       // Add new profile with next available color
       const newProfile: ProfileData = {
-        name: trimmedName,
+        name: data.name,
         skillData: data.skillData,
         color: PROFILE_COLORS[profiles.length] || PROFILE_COLORS[0],
       }
 
       setProfiles((prev) => [...prev, newProfile])
-      setInputValue("")
-      setInputName("")
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
     } catch (error) {
-      console.error("[v0] Error parsing skills:", error)
-      // Handle error - could show a message to user
+      console.error("[v0] Error processing PDF:", error)
+      alert("Erro ao processar PDF. Por favor, tente novamente.")
     } finally {
       setIsProcessing(false)
     }
@@ -296,46 +302,56 @@ export function RadarGraph() {
               <form onSubmit={handleInputSubmit} className="space-y-4">
                 <div>
                   <label className="block text-white/60 text-sm mb-2">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    value={inputName}
-                    onChange={(e) => setInputName(e.target.value)}
-                    placeholder="e.g., John Doe"
-                    disabled={isProcessing}
-                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-white/60 text-sm mb-2">
-                    Skills & Experience
+                    Upload CV/Resume (PDF)
                   </label>
                   <div className="relative">
-                    <textarea
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      placeholder="Describe professional experience, skills, and competencies..."
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf"
                       disabled={isProcessing}
-                      rows={6}
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed resize-none text-sm"
+                      className="hidden"
+                      onChange={(e) => {
+                        // Trigger form submission when file is selected
+                        if (e.target.files?.[0]) {
+                          const form = e.currentTarget.form
+                          if (form) {
+                            const submitEvent = new Event('submit', { bubbles: true, cancelable: true })
+                            form.dispatchEvent(submitEvent)
+                          }
+                        }
+                      }}
                     />
-                    {isProcessing && (
-                      <div className="absolute right-3 top-3">
-                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isProcessing}
+                      className="w-full px-4 py-8 border-2 border-dashed border-white/20 rounded-lg text-white/60 hover:text-white/80 hover:border-white/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-2"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                          <span className="text-sm">Processing PDF...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          <span className="text-sm">Click to upload PDF</span>
+                          <span className="text-xs text-white/40">or drag and drop</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
 
-                <button
+                <input
                   type="submit"
-                  disabled={isProcessing || !inputValue.trim() || !inputName.trim()}
-                  className="w-full px-6 py-3 bg-white/10 border border-white/20 rounded-lg text-white text-sm tracking-wide hover:bg-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isProcessing ? "Analyzing..." : "Analyze Profile"}
-                </button>
+                  value="Submit"
+                  disabled={true}
+                  className="hidden"
+                />
               </form>
             ) : (
               <div className="text-center text-white/40 text-sm">
@@ -352,7 +368,8 @@ export function RadarGraph() {
               How it works
             </h3>
             <ul className="text-white/40 text-xs space-y-2">
-              <li>{'• Enter a name and skills description'}</li>
+              <li>{'• Upload a PDF CV or resume'}</li>
+              <li>{'• Name extracted from document'}</li>
               <li>{'• AI analyzes across 12 dimensions'}</li>
               <li>{'• Add up to 2 profiles for comparison'}</li>
               <li>{'• Overlapping profiles show differences'}</li>
