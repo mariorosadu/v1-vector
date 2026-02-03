@@ -76,7 +76,9 @@ export function RadarGraph() {
 
   // Trigger animation sequence when 2 profiles are added
   useEffect(() => {
+    console.log("[v0] Animation trigger check:", profiles.length, animationPhase)
     if (profiles.length === 2 && animationPhase === "idle") {
+      console.log("[v0] Starting animation sequence")
       // Start the loading phase
       setAnimationPhase("loading")
       setLoadingProgress(0)
@@ -88,17 +90,20 @@ export function RadarGraph() {
       const loadingInterval = setInterval(() => {
         const elapsed = Date.now() - startTime
         const progress = Math.min(elapsed / loadingDuration, 1)
+        console.log("[v0] Loading progress:", progress)
         setLoadingProgress(progress)
         
         if (progress >= 1) {
+          console.log("[v0] Loading complete, initializing nodes")
           clearInterval(loadingInterval)
-          // Initialize keyword nodes
-          initializeKeywordNodes()
           setAnimationPhase("keywords-enter")
         }
       }, 50)
       
-      return () => clearInterval(loadingInterval)
+      return () => {
+        console.log("[v0] Cleaning up loading interval")
+        clearInterval(loadingInterval)
+      }
     }
   }, [profiles.length, animationPhase])
 
@@ -140,8 +145,16 @@ export function RadarGraph() {
   useEffect(() => {
     if (animationPhase !== "keywords-enter") return
     
+    console.log("[v0] Entering keywords-enter phase")
+    
+    // Initialize nodes when entering this phase
+    initializeKeywordNodes()
+    
     const canvas = animationCanvasRef.current
-    if (!canvas) return
+    if (!canvas) {
+      console.log("[v0] Canvas not ready")
+      return
+    }
     
     const centerX = canvas.width / 2
     const centerY = canvas.height / 2
