@@ -638,11 +638,9 @@ export function RadarGraph() {
                 Analyzing profiles... {Math.round(loadingProgress * 100)}%
               </div>
               <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-indigo-500 to-pink-500"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${loadingProgress * 100}%` }}
-                  transition={{ duration: 0.1 }}
+                <div
+                  className="h-full bg-gradient-to-r from-indigo-500 to-pink-500 transition-all duration-100"
+                  style={{ width: `${loadingProgress * 100}%` }}
                 />
               </div>
             </div>
