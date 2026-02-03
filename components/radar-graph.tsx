@@ -66,6 +66,15 @@ export function RadarGraph() {
       ctx.beginPath()
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
       ctx.stroke()
+      
+      // Draw level number
+      if (level % 2 === 0) {
+        ctx.fillStyle = "rgba(255, 255, 255, 0.3)"
+        ctx.font = "10px Inter"
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+        ctx.fillText(level.toString(), centerX, centerY - radius - 8)
+      }
     }
 
     // Draw axes and labels
@@ -149,6 +158,8 @@ export function RadarGraph() {
           const nodeRadius = (maxRadius / levels) * skillValue
           const nodeX = centerX + Math.cos(angle) * nodeRadius
           const nodeY = centerY + Math.sin(angle) * nodeRadius
+
+          console.log(`[v0] ${profile.name} - ${dimension}: ${skillValue}, radius: ${nodeRadius}, maxRadius: ${maxRadius}`)
 
           // Draw node
           ctx.beginPath()
