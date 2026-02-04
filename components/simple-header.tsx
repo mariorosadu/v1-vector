@@ -50,21 +50,40 @@ export function SimpleHeader() {
             {/* Center - Logo */}
             <motion.button
               onClick={() => router.push("/")}
-              className="hover:opacity-80 transition-opacity"
+              className="hover:opacity-80 transition-opacity absolute left-1/2 -translate-x-1/2 lg:relative lg:left-auto lg:translate-x-0"
               whileHover={{ scale: 1.05 }}
             >
               <img
                 src="/images/vector-logo.svg"
                 alt="VECTÖR"
-                className="h-8 w-auto"
+                className="h-5 lg:h-8 w-auto"
               />
             </motion.button>
 
-            {/* Mobile - Menu Button */}
-            <div className="lg:hidden">
+            {/* Right - Navigation Links (Desktop) / Menu Button (Mobile) */}
+            <div className="flex items-center gap-8">
+              <div className="hidden lg:flex items-center gap-8">
+                {navigationItems.slice(3).map((item) => (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    onClick={(e) => {
+                      if (item.href.startsWith('/')) {
+                        e.preventDefault()
+                        router.push(item.href)
+                      }
+                    }}
+                    className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
+
+              {/* Mobile Menu Button */}
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="text-white/60 hover:text-white transition-colors"
+                className="lg:hidden text-white/60 hover:text-white transition-colors"
                 aria-label="Toggle menu"
               >
                 <svg
@@ -91,28 +110,6 @@ export function SimpleHeader() {
                 </svg>
               </button>
             </div>
-
-            {/* Right - Navigation Links (Desktop) */}
-            <div className="hidden lg:flex items-center gap-8">
-              {navigationItems.slice(3).map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  onClick={(e) => {
-                    if (item.href.startsWith('/')) {
-                      e.preventDefault()
-                      router.push(item.href)
-                    }
-                  }}
-                  className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
-                >
-                  {item.label}
-                </a>
-              ))}
-            </div>
-
-            {/* Mobile - Empty spacer for balance */}
-            <div className="lg:hidden w-6" />
           </div>
         </div>
       </motion.nav>

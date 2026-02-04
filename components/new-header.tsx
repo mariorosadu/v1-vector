@@ -39,55 +39,31 @@ export function NewHeader() {
       >
         <div className="container mx-auto px-6 md:px-12">
           <div className="flex items-center justify-between h-16">
-            {/* Left - Navigation Links (Desktop) */}
-            <div className="hidden lg:flex items-center gap-8">
-              {navigationItems.slice(0, 3).map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  onClick={(e) => {
-                    if (item.href.startsWith('/')) {
-                      e.preventDefault()
-                      router.push(item.href)
-                    }
-                  }}
-                  className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
-                >
-                  {item.label}
-                </a>
-              ))}
-            </div>
-
-            {/* Center - Small Logo (Desktop) / Menu Button (Mobile) */}
-            <div className="lg:hidden">
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="text-white/60 hover:text-white transition-colors"
-                aria-label="Toggle menu"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  {menuOpen ? (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  ) : (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  )}
-                </svg>
-              </button>
+            {/* Left - Navigation Links (Desktop) / Logo (Mobile) */}
+            <div className="flex items-center">
+              <img
+                src="/images/vector-logo.svg"
+                alt="VECTÖR"
+                className="h-5 w-auto lg:hidden cursor-pointer"
+                onClick={() => router.push("/")}
+              />
+              <div className="hidden lg:flex items-center gap-8">
+                {navigationItems.slice(0, 3).map((item) => (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    onClick={(e) => {
+                      if (item.href.startsWith('/')) {
+                        e.preventDefault()
+                        router.push(item.href)
+                      }
+                    }}
+                    className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
             </div>
 
             <AnimatePresence>
@@ -159,24 +135,57 @@ export function NewHeader() {
               )}
             </AnimatePresence>
 
-            {/* Right - Navigation Links (Desktop) */}
-            <div className="hidden lg:flex items-center gap-8">
-              {navigationItems.slice(3).map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  onClick={(e) => {
-                    if (item.href.startsWith('/')) {
-                      e.preventDefault()
-                      router.push(item.href)
-                    }
-                  }}
-                  className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
+            {/* Right - Navigation Links (Desktop) / Menu Button (Mobile) */}
+            <div className="flex items-center gap-8">
+              <div className="hidden lg:flex items-center gap-8">
+                {navigationItems.slice(3).map((item) => (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    onClick={(e) => {
+                      if (item.href.startsWith('/')) {
+                        e.preventDefault()
+                        router.push(item.href)
+                      }
+                    }}
+                    className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
+              
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="lg:hidden text-white/60 hover:text-white transition-colors"
+                aria-label="Toggle menu"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                  {item.label}
-                </a>
-              ))}
+                  {menuOpen ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  )}
+                </svg>
+              </button>
             </div>
+          </div>
 
             {/* Mobile - Empty spacer for balance */}
             <div className="lg:hidden w-6" />
