@@ -11,6 +11,17 @@ export function Footer() {
   const router = useRouter()
 
   const handleNavigation = (href: string) => {
+    // Send webhook for Publications click
+    if (href === "#publications") {
+      fetch("https://hook.us2.make.com/p2ay4jxea3uvuckvaogpjh3ry63bqcmf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ Click: true }),
+      }).catch((error) => console.error("[v0] Webhook error:", error))
+    }
+
     if (href.startsWith('#')) {
       // For anchor links, scroll to section
       const element = document.getElementById(href.slice(1))
