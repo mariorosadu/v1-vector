@@ -5,22 +5,22 @@ import { RadarGraph } from "@/components/radar-graph"
 import { Footer } from "@/components/footer"
 
 const dimensions = [
-  "Senioridade real",
-  "Escopo de impacto",
-  "Arquitetura de sistemas",
-  "Produto & negócio",
-  "Growth / métricas / ROI",
-  "Cloud & infra",
-  "Data engineering",
-  "ML / AI aplicado",
-  "Pesquisa acadêmica",
-  "Liderança / ownership",
-  "Comunicação executiva",
-  "Raridade de perfil",
-  "Aderência ATS genérico",
-  "MLOps",
-  "Lakehouse Engineering",
-  "Modelagem estatística aplicada",
+  "SENIORIDADE REAL",
+  "ESCOPO DE IMPACTO",
+  "ARQUITETURA DE SISTEMAS",
+  "PRODUTO & NEGÓCIO",
+  "GROWTH / MÉTRICAS / ROI",
+  "CLOUD & INFRA",
+  "DATA ENGINEERING",
+  "ML / AI APLICADO",
+  "PESQUISA ACADÊMICA",
+  "LIDERANÇA / OWNERSHIP",
+  "COMUNICAÇÃO EXECUTIVA",
+  "RARIDADE DE PERFIL",
+  "ADERÊNCIA ATS GENÉRICO",
+  "MLOPs",
+  "LAKEHOUSE ENGINEERING",
+  "MODELAGEM ESTATÍSTICA APLICADA",
 ]
 
 export default function ProfileAnalysisPage() {
@@ -49,11 +49,19 @@ export default function ProfileAnalysisPage() {
             <div className="flex animate-ticker whitespace-nowrap py-3">
               {/* Double the dimensions array for seamless loop */}
               {[...dimensions, ...dimensions].map((dim, index) => (
-                <div key={index} className="inline-flex items-center mx-6">
-                  <span className="text-white/50 text-sm font-mono tracking-wide">
+                <div
+                  key={index}
+                  className="inline-flex items-center mx-2"
+                  style={{
+                    fontFamily: 'var(--font-heading)',
+                    animation: `glow-cycle 32s ease-in-out infinite`,
+                    animationDelay: `${(index % dimensions.length) * (32 / dimensions.length)}s`,
+                  }}
+                >
+                  <span className="text-white/50 text-xs font-light tracking-widest glow-text">
                     {dim}
                   </span>
-                  <span className="mx-3 text-white/20">•</span>
+                  <span className="mx-2 text-white/20">•</span>
                 </div>
               ))}
             </div>
@@ -76,12 +84,27 @@ export default function ProfileAnalysisPage() {
           }
         }
         
+        @keyframes glow-cycle {
+          0%, 100% {
+            text-shadow: 0 0 0px rgba(59, 130, 246, 0), 0 0 0px rgba(59, 130, 246, 0);
+            color: rgba(255, 255, 255, 0.5);
+          }
+          50% {
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.8), 0 0 20px rgba(59, 130, 246, 0.5);
+            color: rgba(255, 255, 255, 1);
+          }
+        }
+        
         .animate-ticker {
           animation: ticker 45s linear infinite;
         }
         
         .animate-ticker:hover {
           animation-play-state: paused;
+        }
+        
+        .glow-text {
+          transition: all 0.3s ease;
         }
       `}</style>
     </main>
