@@ -1,6 +1,6 @@
 "use client"
 
-import { StickyHeader } from "@/components/sticky-header"
+import { NewHeader } from "@/components/new-header"
 import { RadarGraph } from "@/components/radar-graph"
 import { Footer } from "@/components/footer"
 
@@ -26,7 +26,7 @@ const dimensions = [
 export default function ProfileAnalysisPage() {
   return (
     <main className="bg-[#0f0f0f] min-h-screen">
-      <StickyHeader />
+      <NewHeader />
       
       {/* Main Content */}
       <div className="pt-64 md:pt-80 pb-20 px-6 md:px-12">
