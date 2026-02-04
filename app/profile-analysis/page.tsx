@@ -86,14 +86,31 @@ export default function ProfileAnalysisPage() {
         }
         
         @keyframes spotlight-pulse {
-          0%, 100% {
-            box-shadow: inset 0 0 30px rgba(30, 58, 138, 0.3), 
-                        inset 0 0 60px rgba(30, 58, 138, 0.1);
+          0% {
+            box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.4), 
+                        inset 0 0 40px rgba(59, 130, 246, 0.2);
           }
-          50% {
-            box-shadow: inset 0 0 50px rgba(30, 58, 138, 0.5), 
-                        inset 0 0 90px rgba(30, 58, 138, 0.2),
-                        0 0 40px rgba(20, 83, 45, 0.3);
+          25% {
+            box-shadow: inset 0 0 60px rgba(59, 130, 246, 0.8), 
+                        inset 0 0 100px rgba(59, 130, 246, 0.4),
+                        0 0 60px rgba(59, 130, 246, 0.6);
+          }
+          30% {
+            box-shadow: inset 0 0 15px rgba(59, 130, 246, 0.2), 
+                        inset 0 0 30px rgba(59, 130, 246, 0.1);
+          }
+          55% {
+            box-shadow: inset 0 0 50px rgba(59, 130, 246, 0.7), 
+                        inset 0 0 80px rgba(59, 130, 246, 0.3),
+                        0 0 50px rgba(59, 130, 246, 0.5);
+          }
+          60% {
+            box-shadow: inset 0 0 15px rgba(59, 130, 246, 0.2), 
+                        inset 0 0 30px rgba(59, 130, 246, 0.1);
+          }
+          100% {
+            box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.4), 
+                        inset 0 0 40px rgba(59, 130, 246, 0.2);
           }
         }
         
@@ -116,7 +133,7 @@ export default function ProfileAnalysisPage() {
           transform: translateX(-50%);
           pointer-events: none;
           z-index: 5;
-          animation: spotlight-pulse 3s ease-in-out infinite;
+          animation: spotlight-pulse 1.5s ease-in-out infinite;
           border-radius: 50%;
           filter: blur(40px);
         }
