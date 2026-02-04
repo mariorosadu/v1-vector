@@ -37,12 +37,44 @@ interface ProfileData {
 type AnimationPhase = "idle" | "loading" | "report"
 
 const PROFILE_COLORS = [
-  { stroke: "rgba(99, 102, 241, 0.8)", fill: "rgba(99, 102, 241, 0.15)" }, // Indigo
-  { stroke: "rgba(236, 72, 153, 0.8)", fill: "rgba(236, 72, 153, 0.15)" }, // Pink
+  { stroke: "rgba(30, 58, 138, 0.9)", fill: "rgba(30, 58, 138, 0.2)" }, // Dark Blue
+  { stroke: "rgba(20, 83, 45, 0.9)", fill: "rgba(20, 83, 45, 0.2)" }, // Dark Green
 ]
 
+// Calculate compatibility score (skewed toward higher values)
+function calculateCompatibility(profile1: ProfileData, profile2: ProfileData): number {
+  let totalSimilarity = 0
+  let dimensionCount = 0
+  
+  dimensions.forEach(dim => {
+    const val1 = profile1.skillData[dim] || 0
+    const val2 = profile2.skillData[dim] || 0
+    
+    if (val1 > 0 && val2 > 0) {
+      // Calculate similarity (inverse of difference, normalized)
+      const diff = Math.abs(val1 - val2)
+      const similarity = (10 - diff) / 10 // 1.0 = identical, 0.0 = max difference
+      totalSimilarity += similarity
+      dimensionCount++
+    }
+  })
+  
+  const baseCompatibility = dimensionCount > 0 ? (totalSimilarity / dimensionCount) * 100 : 50
+  
+  // Skew toward higher numbers: add bonus for shared strengths
+  let bonus = 0
+  dimensions.forEach(dim => {
+    const val1 = profile1.skillData[dim] || 0
+    const val2 = profile2.skillData[dim] || 0
+    if (val1 > 6 && val2 > 6) bonus += 2 // Both strong
+    if ((val1 > 7 && val2 < 5) || (val2 > 7 && val1 < 5)) bonus += 1 // Complementary
+  })
+  
+  return Math.min(Math.round(baseCompatibility + bonus), 99)
+}
+
 // Generate alignment report based on two profiles
-function generateAlignmentReport(profile1: ProfileData, profile2: ProfileData): { paragraph1: string; paragraph2: string } {
+function generateAlignmentReport(profile1: ProfileData, profile2: ProfileData): { paragraph1: string; paragraph2: string; compatibility: number } {
   const commonStrengths: string[] = []
   const complementaryAreas: string[] = []
   
@@ -58,11 +90,13 @@ function generateAlignmentReport(profile1: ProfileData, profile2: ProfileData): 
     }
   })
   
+  const compatibility = calculateCompatibility(profile1, profile2)
+  
   const paragraph1 = `The convergence of ${profile1.name} and ${profile2.name} reveals a powerful alignment in ${commonStrengths.length} critical dimensions. Their shared mastery in ${commonStrengths.slice(0, 3).join(", ")} forms a foundation of exceptional collaborative potential. This symmetry of expertise creates a multiplier effect, where combined capabilities exceed the sum of individual contributions—a vector pointing toward transformative innovation and sustained competitive advantage.`
   
   const paragraph2 = `Beyond parallel strengths, their complementary expertise in ${complementaryAreas.slice(0, 2).join(" and ")} presents opportunities for knowledge synthesis and mutual elevation. This configuration—where one's depth compensates for the other's developing areas—cultivates an environment of continuous learning and exponential growth. Together, they embody the blueprint for next-generation collaboration: resilient, adaptive, and primed to navigate complexity with precision and vision.`
   
-  return { paragraph1, paragraph2 }
+  return { paragraph1, paragraph2, compatibility }
 }
 
 export function RadarGraph() {
@@ -74,7 +108,7 @@ export function RadarGraph() {
   const [animationPhase, setAnimationPhase] = useState<AnimationPhase>("idle")
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [graphOpacity, setGraphOpacity] = useState(1)
-  const [report, setReport] = useState<{ paragraph1: string; paragraph2: string } | null>(null)
+  const [report, setReport] = useState<{ paragraph1: string; paragraph2: string; compatibility: number } | null>(null)
 
   // Trigger analysis when 2 profiles are added
   useEffect(() => {
@@ -342,45 +376,115 @@ export function RadarGraph() {
               className="absolute inset-0 flex items-center justify-center p-8"
             >
               <div className="max-w-3xl space-y-8">
-                {/* Header */}
-                <div className="text-center space-y-2 border-b border-white/10 pb-6">
+                {/* Header with subtle animation */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 1 }}
+                  className="text-center space-y-2 border-b border-white/10 pb-6"
+                >
                   <div className="text-white/40 text-xs uppercase tracking-[0.3em] font-mono">
                     Vector Analysis Complete
                   </div>
-                  <h2 className="text-white text-2xl font-light tracking-tight">
+                  <h2 className="text-white text-2xl font-light tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                     Professional Alignment Report
                   </h2>
-                </div>
+                </motion.div>
                 
-                {/* Profile Names */}
-                <div className="flex items-center justify-center gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PROFILE_COLORS[0].stroke }} />
-                    <span className="text-white/80 font-mono">{profiles[0].name}</span>
+                {/* Profile Names - larger font with heading font */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8, duration: 1 }}
+                  className="flex items-center justify-center gap-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PROFILE_COLORS[0].stroke }} />
+                    <span className="text-white text-xl tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
+                      {profiles[0].name}
+                    </span>
                   </div>
-                  <div className="text-white/30">×</div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PROFILE_COLORS[1].stroke }} />
-                    <span className="text-white/80 font-mono">{profiles[1].name}</span>
+                  <div className="text-white/30 text-2xl">×</div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PROFILE_COLORS[1].stroke }} />
+                    <span className="text-white text-xl tracking-wide" style={{ fontFamily: 'var(--font-heading)' }}>
+                      {profiles[1].name}
+                    </span>
                   </div>
-                </div>
+                </motion.div>
                 
                 {/* Paragraphs */}
-                <div className="space-y-6">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.2, duration: 1 }}
+                  className="space-y-6"
+                >
                   <p className="text-white/70 text-base leading-relaxed font-light text-justify">
                     {report.paragraph1}
                   </p>
                   <p className="text-white/70 text-base leading-relaxed font-light text-justify">
                     {report.paragraph2}
                   </p>
-                </div>
+                </motion.div>
                 
-                {/* Footer accent */}
-                <div className="flex items-center justify-center gap-2 pt-6 border-t border-white/10">
-                  <div className="w-1 h-1 rounded-full bg-white/20" />
-                  <div className="w-1 h-1 rounded-full bg-white/20" />
-                  <div className="w-1 h-1 rounded-full bg-white/20" />
-                </div>
+                {/* Compatibility Score - creative addition */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 1.8, duration: 0.8, type: "spring" }}
+                  className="relative pt-6 border-t border-white/10"
+                >
+                  <div className="text-center space-y-3">
+                    <div className="text-white/40 text-xs uppercase tracking-[0.25em]">
+                      Collaborative Compatibility Index
+                    </div>
+                    <div className="flex items-center justify-center gap-3">
+                      {/* Animated compatibility bar */}
+                      <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${report.compatibility}%` }}
+                          transition={{ delay: 2, duration: 1.5, ease: "easeOut" }}
+                          className="h-full bg-gradient-to-r from-blue-900 via-teal-700 to-green-800"
+                        />
+                      </div>
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 2.5, duration: 0.5 }}
+                        className="text-white text-3xl font-bold tabular-nums"
+                        style={{ fontFamily: 'var(--font-heading)' }}
+                      >
+                        {report.compatibility}%
+                      </motion.div>
+                    </div>
+                  </div>
+                </motion.div>
+                
+                {/* Footer accent with pulse animation */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 2.8, duration: 1 }}
+                  className="flex items-center justify-center gap-2 pt-4"
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="w-1 h-1 rounded-full bg-white/20"
+                  />
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                    transition={{ duration: 2, delay: 0.3, repeat: Infinity }}
+                    className="w-1 h-1 rounded-full bg-white/20"
+                  />
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                    transition={{ duration: 2, delay: 0.6, repeat: Infinity }}
+                    className="w-1 h-1 rounded-full bg-white/20"
+                  />
+                </motion.div>
               </div>
             </motion.div>
           )}
