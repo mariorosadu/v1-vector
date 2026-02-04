@@ -54,7 +54,7 @@ export default function ProfileAnalysisPage() {
                   className="inline-flex items-center mx-2"
                   style={{
                     fontFamily: 'var(--font-heading)',
-                    animation: `glow-cycle 32s ease-in-out infinite`,
+                    animation: `color-pulse 32s ease-in-out infinite`,
                     animationDelay: `${(index % dimensions.length) * (32 / dimensions.length)}s`,
                   }}
                 >
@@ -84,14 +84,12 @@ export default function ProfileAnalysisPage() {
           }
         }
         
-        @keyframes glow-cycle {
+        @keyframes color-pulse {
           0%, 100% {
-            text-shadow: 0 0 0px rgba(59, 130, 246, 0), 0 0 0px rgba(59, 130, 246, 0);
             color: rgba(255, 255, 255, 0.5);
           }
           50% {
-            text-shadow: 0 0 10px rgba(59, 130, 246, 0.8), 0 0 20px rgba(59, 130, 246, 0.5);
-            color: rgba(255, 255, 255, 1);
+            color: rgba(0, 0, 0, 1);
           }
         }
         
@@ -104,7 +102,7 @@ export default function ProfileAnalysisPage() {
         }
         
         .glow-text {
-          transition: all 0.3s ease;
+          transition: color 0.3s ease;
         }
       `}</style>
     </main>
