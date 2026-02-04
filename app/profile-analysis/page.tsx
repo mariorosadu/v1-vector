@@ -1,6 +1,6 @@
 "use client"
 
-import { NewHeader } from "@/components/new-header"
+import { SimpleHeader } from "@/components/simple-header"
 import { RadarGraph } from "@/components/radar-graph"
 import { Footer } from "@/components/footer"
 
@@ -26,22 +26,19 @@ const dimensions = [
 export default function ProfileAnalysisPage() {
   return (
     <main className="bg-[#0f0f0f] min-h-screen">
-      <NewHeader />
+      <SimpleHeader />
       
       {/* Main Content */}
-      <div className="pt-64 md:pt-80 pb-20 px-6 md:px-12">
+      <div className="pt-32 md:pt-40 pb-20 px-6 md:px-12">
         <div className="container mx-auto">
-          {/* Page Title */}
-          <div className="text-center mb-8">
+          {/* Page Title - Minimal */}
+          <div className="text-center mb-12">
             <h1 
-              className="text-4xl md:text-6xl lg:text-7xl font-light text-white mb-6 tracking-tight"
+              className="text-4xl md:text-6xl lg:text-7xl font-light text-white mb-4 tracking-tight"
               style={{ fontFamily: "var(--font-heading)" }}
             >
               Profile Analysis
             </h1>
-            <p className="text-white/60 text-lg md:text-xl max-w-2xl mx-auto">
-              {'Visualize professional competence across multiple dimensions using AI-powered analysis.'}
-            </p>
           </div>
 
           {/* Ticker */}

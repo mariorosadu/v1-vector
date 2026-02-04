@@ -1,13 +1,13 @@
 "use client"
 
-import { NewHeader } from "@/components/new-header"
+import { SimpleHeader } from "@/components/simple-header"
 import { NetworkGraph } from "@/components/network-graph"
 import { Footer } from "@/components/footer"
 
 export default function MapPage() {
   return (
     <main className="bg-[#0f0f0f] min-h-screen">
-      <NewHeader />
+      <SimpleHeader />
       
       {/* Main Content */}
       <div className="pt-64 md:pt-80 pb-20 px-6 md:px-12">
