@@ -186,10 +186,6 @@ export function NewHeader() {
               </button>
             </div>
           </div>
-
-            {/* Mobile - Empty spacer for balance */}
-            <div className="lg:hidden w-6" />
-          </div>
         </div>
       </motion.nav>
 
