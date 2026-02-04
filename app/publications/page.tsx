@@ -17,6 +17,12 @@ const publications = [
     description: "The study shows that research software engineers define sustainability as the long-term usability and reuse of the software artefact itself, not the project that funded it, and empirically split it into intrinsic qualities (documentation, tests, readability, modularity, standards, usefulness) and extrinsic conditions (openness, community, resourcing, active maintenance, support, infra-independence). It distills these findings into concrete guidance: treat software as enduring research infrastructure by prioritizing quality, active maintenance, discoverability, and community-backed resourcing.",
     downloadUrl: "/papers/paper2.pdf",
   },
+  {
+    id: 3,
+    title: "Cognitive Sight Theory",
+    description: "Cognitive Sight Theory reframes cognition as resolution over a field (not a single \"IQ-like\" scalar): each person has a σ-center with a tight sight band (≈±1σ) where they can directly operate on structure, a wider sound band (≈±2σ) where they can only reconstruct via scaffolding, and beyond that a hard noise horizon where communication becomes non-decodable regardless of explanation quality—predicting persistent miscoordination and \"isolation at distance\" as an information-theoretic channel-capacity failure, and prescribing resolution cascades (e.g., 2σ relays) to preserve signal across institutions.",
+    downloadUrl: "/papers/cognitive-sight-theory.pdf",
+  },
 ]
 
 export default function PublicationsPage() {
