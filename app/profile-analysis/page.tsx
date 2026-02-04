@@ -46,23 +46,23 @@ export default function ProfileAnalysisPage() {
 
           {/* Ticker */}
           <div className="mb-12 overflow-hidden relative border-y border-white/10 bg-white/5">
-            <div className="flex animate-ticker whitespace-nowrap py-3 ticker-container">
-              {/* Highlight overlay for middle position */}
-              <div className="ticker-highlight" />
-              
+            {/* Spotlight effect in center */}
+            <div className="ticker-spotlight" />
+            
+            <div className="flex animate-ticker whitespace-nowrap py-4 ticker-container">
               {/* Double the dimensions array for seamless loop */}
               {[...dimensions, ...dimensions].map((dim, index) => (
                 <div
                   key={index}
-                  className="inline-flex items-center mx-2 ticker-item"
+                  className="inline-flex items-center mx-3 ticker-item"
                   style={{
                     fontFamily: 'var(--font-heading)',
                   }}
                 >
-                  <span className="text-white/50 text-xs font-light tracking-widest">
+                  <span className="text-white/40 text-xs font-light tracking-widest transition-all duration-300">
                     {dim}
                   </span>
-                  <span className="mx-2 text-white/20">•</span>
+                  <span className="mx-3 text-white/20">•</span>
                 </div>
               ))}
             </div>
@@ -85,6 +85,18 @@ export default function ProfileAnalysisPage() {
           }
         }
         
+        @keyframes spotlight-pulse {
+          0%, 100% {
+            box-shadow: inset 0 0 30px rgba(30, 58, 138, 0.3), 
+                        inset 0 0 60px rgba(30, 58, 138, 0.1);
+          }
+          50% {
+            box-shadow: inset 0 0 50px rgba(30, 58, 138, 0.5), 
+                        inset 0 0 90px rgba(30, 58, 138, 0.2),
+                        0 0 40px rgba(20, 83, 45, 0.3);
+          }
+        }
+        
         .ticker-container {
           position: relative;
           animation: ticker 45s linear infinite;
@@ -94,32 +106,35 @@ export default function ProfileAnalysisPage() {
           animation-play-state: paused;
         }
         
-        /* Highlight overlay for center item */
-        .ticker-highlight {
+        /* Animated spotlight effect */
+        .ticker-spotlight {
           position: absolute;
           top: 0;
           left: 50%;
-          width: 200px;
+          width: 300px;
           height: 100%;
           transform: translateX(-50%);
           pointer-events: none;
-          z-index: 10;
-          background: linear-gradient(to right, 
-            transparent 0%, 
-            rgba(0, 0, 0, 0.3) 25%, 
-            rgba(0, 0, 0, 0.6) 50%, 
-            rgba(0, 0, 0, 0.3) 75%, 
-            transparent 100%);
-          mix-blend-mode: screen;
+          z-index: 5;
+          animation: spotlight-pulse 3s ease-in-out infinite;
+          border-radius: 50%;
+          filter: blur(40px);
         }
         
         .ticker-item {
           position: relative;
           z-index: 1;
+          transition: all 0.3s ease;
         }
         
-        .ticker-item span:first-child {
-          transition: color 0.1s ease;
+        /* Center items get enhanced styling */
+        .ticker-container:nth-child(1) {
+          perspective: 1000px;
+        }
+        
+        .ticker-item:hover span:first-child {
+          color: rgba(255, 255, 255, 0.9);
+          text-shadow: 0 0 10px rgba(30, 58, 138, 0.6);
         }
       `}</style>
     </main>
