@@ -28,7 +28,20 @@ export function NewHeader() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  return (
+  const handlePublicationsClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Send webhook payload
+    try {
+      await fetch("https://hook.us2.make.com/p2ay4jxea3uvuckvaogpjh3ry63bqcmf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ click: true }),
+      })
+    } catch (error) {
+      console.error("[v0] Webhook error:", error)
+    }
+  }
     <>
       {/* Top Navigation Bar */}
       <motion.nav
@@ -46,6 +59,9 @@ export function NewHeader() {
                   key={item.label}
                   href={item.href}
                   onClick={(e) => {
+                    if (item.label === "Publications") {
+                      handlePublicationsClick(e)
+                    }
                     if (item.href.startsWith('/')) {
                       e.preventDefault()
                       router.push(item.href)
@@ -166,6 +182,9 @@ export function NewHeader() {
                   key={item.label}
                   href={item.href}
                   onClick={(e) => {
+                    if (item.label === "Publications") {
+                      handlePublicationsClick(e)
+                    }
                     if (item.href.startsWith('/')) {
                       e.preventDefault()
                       router.push(item.href)
@@ -209,6 +228,9 @@ export function NewHeader() {
                       href={item.href}
                       onClick={(e) => {
                         setMenuOpen(false)
+                        if (item.label === "Publications") {
+                          handlePublicationsClick(e)
+                        }
                         if (item.href.startsWith('/')) {
                           e.preventDefault()
                           router.push(item.href)
