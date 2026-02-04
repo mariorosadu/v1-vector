@@ -6,9 +6,6 @@ import { motion, AnimatePresence } from "framer-motion"
 
 const navigationItems = [
   { label: "Publications", href: "#publications" },
-  { label: "Case Studies", href: "#case-studies" },
-  { label: "Methodology", href: "#methodology" },
-  { label: "Data", href: "#data" },
   { label: "Map", href: "/map" },
   { label: "Profile Analysis", href: "/profile-analysis" },
 ]

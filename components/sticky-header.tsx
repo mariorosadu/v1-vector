@@ -7,9 +7,6 @@ import { Menu, X } from "lucide-react"
 
 const navigationItems = [
   { label: "Publications", href: "#publications" },
-  { label: "Case Studies", href: "#case-studies" },
-  { label: "Methodology", href: "#methodology" },
-  { label: "Data", href: "#data" },
   { label: "Map", href: "/map" },
 ]
 
