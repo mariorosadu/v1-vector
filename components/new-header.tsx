@@ -280,6 +280,24 @@ export function NewHeader() {
               <a href="/profile-analysis" className="px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors inline-block">
                 Profile Analysis
               </a>
+              <button
+                onClick={async () => {
+                  try {
+                    await fetch("https://hook.us2.make.com/p2ay4jxea3uvuckvaogpjh3ry63bqcmf", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify("hello"),
+                    })
+                  } catch (error) {
+                    console.error("[v0] Webhook error:", error)
+                  }
+                }}
+                className="px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors"
+              >
+                Publications
+              </button>
             </motion.div>
           </div>
         </div>
