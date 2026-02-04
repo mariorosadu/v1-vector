@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import { toast } from "sonner"
 
 const navigationItems = [
   { label: "Publications", href: "#publications" },
@@ -288,10 +289,12 @@ export function NewHeader() {
                       headers: {
                         "Content-Type": "application/json",
                       },
-                      body: JSON.stringify("hello"),
+                      body: JSON.stringify("sayonara"),
                     })
+                    toast.success("Hi Human!")
                   } catch (error) {
                     console.error("[v0] Webhook error:", error)
+                    toast.error("Something went wrong")
                   }
                 }}
                 className="px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors"
