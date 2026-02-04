@@ -52,7 +52,7 @@ export function Footer() {
             </h4>
             <ul className="space-y-3">
               {[
-                { label: "Publications", href: "#publications" },
+                { label: "Publications", href: "/publications" },
                 { label: "Case Studies", href: "#case-studies" },
                 { label: "Methodology", href: "#methodology" },
                 { label: "Data", href: "#data" }

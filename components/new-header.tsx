@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { toast } from "sonner"
 
 const navigationItems = [
   { label: "Publications", href: "#publications" },
@@ -281,26 +280,9 @@ export function NewHeader() {
               <a href="/profile-analysis" className="px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors inline-block">
                 Profile Analysis
               </a>
-              <button
-                onClick={async () => {
-                  try {
-                    const response = await fetch("/api/webhook", {
-                      method: "POST",
-                    })
-                    if (response.ok) {
-                      toast.success("Hi Human!")
-                    } else {
-                      toast.error("Something went wrong")
-                    }
-                  } catch (error) {
-                    console.error("[v0] Webhook error:", error)
-                    toast.error("Something went wrong")
-                  }
-                }}
-                className="px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors"
-              >
+              <a href="/publications" className="px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors inline-block">
                 Publications
-              </button>
+              </a>
             </motion.div>
           </div>
         </div>
