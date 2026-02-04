@@ -284,14 +284,14 @@ export function NewHeader() {
               <button
                 onClick={async () => {
                   try {
-                    await fetch("https://hook.us2.make.com/p2ay4jxea3uvuckvaogpjh3ry63bqcmf", {
+                    const response = await fetch("/api/webhook", {
                       method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify("sayonara"),
                     })
-                    toast.success("Hi Human!")
+                    if (response.ok) {
+                      toast.success("Hi Human!")
+                    } else {
+                      toast.error("Something went wrong")
+                    }
                   } catch (error) {
                     console.error("[v0] Webhook error:", error)
                     toast.error("Something went wrong")
