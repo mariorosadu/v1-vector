@@ -7,8 +7,8 @@ import { Download, FileText } from "lucide-react"
 const publications = [
   {
     id: 1,
-    title: "Paper 1",
-    description: "Research paper exploring cognitive frameworks and decision-making processes in the context of artificial intelligence systems.",
+    title: "Research Paper on Software Sustainability",
+    description: "Interviewing 9 research software engineers, the paper finds developers define \"software sustainability\" primarily as the long-term reusability and maintainability of the software artifact (not the funding project), and it decomposes this into intrinsic factors (documentation, tests, readability, modularity, reuse of libraries/standards) and extrinsic factors (open availability, shared ownership, resourcing, active maintenance, support, infra-independence).",
     downloadUrl: "/papers/paper1.pdf",
     date: "2024",
   },
