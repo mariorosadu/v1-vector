@@ -274,12 +274,12 @@ export function NewHeader() {
               transition={{ duration: 0.8, delay: 0.8 }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
-              <button className="px-8 py-3 bg-white text-[#0f0f0f] text-sm font-medium tracking-wide hover:bg-white/90 transition-colors">
-                Explore Framework
-              </button>
-              <button className="px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors">
-                Learn More
-              </button>
+              <a href="/map" className="px-8 py-3 bg-white text-[#0f0f0f] text-sm font-medium tracking-wide hover:bg-white/90 transition-colors inline-block">
+                Cognitive Map
+              </a>
+              <a href="/profile-analysis" className="px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors inline-block">
+                Profile Analysis
+              </a>
             </motion.div>
           </div>
         </div>
