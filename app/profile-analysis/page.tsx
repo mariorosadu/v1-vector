@@ -46,19 +46,20 @@ export default function ProfileAnalysisPage() {
 
           {/* Ticker */}
           <div className="mb-12 overflow-hidden relative border-y border-white/10 bg-white/5">
-            <div className="flex animate-ticker whitespace-nowrap py-3">
+            <div className="flex animate-ticker whitespace-nowrap py-3 ticker-container">
+              {/* Highlight overlay for middle position */}
+              <div className="ticker-highlight" />
+              
               {/* Double the dimensions array for seamless loop */}
               {[...dimensions, ...dimensions].map((dim, index) => (
                 <div
                   key={index}
-                  className="inline-flex items-center mx-2"
+                  className="inline-flex items-center mx-2 ticker-item"
                   style={{
                     fontFamily: 'var(--font-heading)',
-                    animation: `color-pulse 32s ease-in-out infinite`,
-                    animationDelay: `${(index % dimensions.length) * (32 / dimensions.length)}s`,
                   }}
                 >
-                  <span className="text-white/50 text-xs font-light tracking-widest glow-text">
+                  <span className="text-white/50 text-xs font-light tracking-widest">
                     {dim}
                   </span>
                   <span className="mx-2 text-white/20">•</span>
@@ -84,25 +85,41 @@ export default function ProfileAnalysisPage() {
           }
         }
         
-        @keyframes color-pulse {
-          0%, 100% {
-            color: rgba(255, 255, 255, 0.5);
-          }
-          50% {
-            color: rgba(0, 0, 0, 1);
-          }
-        }
-        
-        .animate-ticker {
+        .ticker-container {
+          position: relative;
           animation: ticker 45s linear infinite;
         }
         
-        .animate-ticker:hover {
+        .ticker-container:hover {
           animation-play-state: paused;
         }
         
-        .glow-text {
-          transition: color 0.3s ease;
+        /* Highlight overlay for center item */
+        .ticker-highlight {
+          position: absolute;
+          top: 0;
+          left: 50%;
+          width: 200px;
+          height: 100%;
+          transform: translateX(-50%);
+          pointer-events: none;
+          z-index: 10;
+          background: linear-gradient(to right, 
+            transparent 0%, 
+            rgba(0, 0, 0, 0.3) 25%, 
+            rgba(0, 0, 0, 0.6) 50%, 
+            rgba(0, 0, 0, 0.3) 75%, 
+            transparent 100%);
+          mix-blend-mode: screen;
+        }
+        
+        .ticker-item {
+          position: relative;
+          z-index: 1;
+        }
+        
+        .ticker-item span:first-child {
+          transition: color 0.1s ease;
         }
       `}</style>
     </main>
