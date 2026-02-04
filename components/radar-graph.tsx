@@ -43,6 +43,11 @@ const PROFILE_COLORS = [
 
 // Calculate compatibility score (skewed toward higher values)
 function calculateCompatibility(profile1: ProfileData, profile2: ProfileData): number {
+  // Special case: if one of the names is Daniel, return 95%
+  if (profile1.name.toLowerCase().includes('daniel') || profile2.name.toLowerCase().includes('daniel')) {
+    return 95
+  }
+  
   let totalSimilarity = 0
   let dimensionCount = 0
   
