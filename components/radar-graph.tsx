@@ -34,52 +34,53 @@ interface ProfileData {
   color: { stroke: string; fill: string }
 }
 
-interface KeywordNode {
-  id: string
-  keyword: string
-  color: string
-  x: number
-  y: number
-  vx: number
-  vy: number
-  profileIndex: number
-}
-
-type AnimationPhase = "idle" | "loading" | "keywords-enter" | "graph-fade" | "floating" | "playing"
+type AnimationPhase = "idle" | "loading" | "report"
 
 const PROFILE_COLORS = [
   { stroke: "rgba(99, 102, 241, 0.8)", fill: "rgba(99, 102, 241, 0.15)" }, // Indigo
   { stroke: "rgba(236, 72, 153, 0.8)", fill: "rgba(236, 72, 153, 0.15)" }, // Pink
 ]
 
-// Get top 7 strengths for a profile
-function getTopStrengths(skillData: SkillData): string[] {
-  return Object.entries(skillData)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 7)
-    .map(([key]) => key)
+// Generate alignment report based on two profiles
+function generateAlignmentReport(profile1: ProfileData, profile2: ProfileData): { paragraph1: string; paragraph2: string } {
+  const commonStrengths: string[] = []
+  const complementaryAreas: string[] = []
+  
+  // Find common high-value dimensions (both > 6)
+  dimensions.forEach(dim => {
+    const val1 = profile1.skillData[dim] || 0
+    const val2 = profile2.skillData[dim] || 0
+    
+    if (val1 > 6 && val2 > 6) {
+      commonStrengths.push(dim)
+    } else if ((val1 > 7 && val2 < 5) || (val2 > 7 && val1 < 5)) {
+      complementaryAreas.push(dim)
+    }
+  })
+  
+  const paragraph1 = `The convergence of ${profile1.name} and ${profile2.name} reveals a powerful alignment in ${commonStrengths.length} critical dimensions. Their shared mastery in ${commonStrengths.slice(0, 3).join(", ")} forms a foundation of exceptional collaborative potential. This symmetry of expertise creates a multiplier effect, where combined capabilities exceed the sum of individual contributions—a vector pointing toward transformative innovation and sustained competitive advantage.`
+  
+  const paragraph2 = `Beyond parallel strengths, their complementary expertise in ${complementaryAreas.slice(0, 2).join(" and ")} presents opportunities for knowledge synthesis and mutual elevation. This configuration—where one's depth compensates for the other's developing areas—cultivates an environment of continuous learning and exponential growth. Together, they embody the blueprint for next-generation collaboration: resilient, adaptive, and primed to navigate complexity with precision and vision.`
+  
+  return { paragraph1, paragraph2 }
 }
 
 export function RadarGraph() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const animationCanvasRef = useRef<HTMLCanvasElement>(null)
-  const animationFrameRef = useRef<number>(0)
   const [inputName, setInputName] = useState("")
   const [inputText, setInputText] = useState("")
   const [profiles, setProfiles] = useState<ProfileData[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [animationPhase, setAnimationPhase] = useState<AnimationPhase>("idle")
   const [loadingProgress, setLoadingProgress] = useState(0)
-  const [keywordNodes, setKeywordNodes] = useState<KeywordNode[]>([])
   const [graphOpacity, setGraphOpacity] = useState(1)
-  const [playingPair, setPlayingPair] = useState<[KeywordNode | null, KeywordNode | null]>([null, null])
+  const [report, setReport] = useState<{ paragraph1: string; paragraph2: string } | null>(null)
 
-  // Trigger animation sequence when 2 profiles are added
+  // Trigger analysis when 2 profiles are added
   useEffect(() => {
     if (profiles.length === 2 && animationPhase === "idle") {
-      // Start the loading phase
       setAnimationPhase("loading")
-      setLoadingProgress(20) // Start at 20 seconds
+      setLoadingProgress(20)
       
       let counter = 20
       
@@ -90,8 +91,23 @@ export function RadarGraph() {
         
         if (counter <= 0) {
           clearInterval(timerInterval)
-          // First fade the graph, then show nodes
-          setAnimationPhase("graph-fade")
+          
+          // Fade graph
+          let fadeFrame = 0
+          const fadeFrames = 60
+          
+          const fadeInterval = setInterval(() => {
+            fadeFrame++
+            setGraphOpacity(1 - fadeFrame / fadeFrames)
+            
+            if (fadeFrame >= fadeFrames) {
+              clearInterval(fadeInterval)
+              // Generate and show report
+              const alignmentReport = generateAlignmentReport(profiles[0], profiles[1])
+              setReport(alignmentReport)
+              setAnimationPhase("report")
+            }
+          }, 16)
         }
       }, 1000)
       
@@ -101,325 +117,7 @@ export function RadarGraph() {
     }
   }, [profiles.length])
 
-  // Initialize keyword nodes from both profiles - starting in a straight line
-  const initializeKeywordNodes = () => {
-    const canvas = animationCanvasRef.current
-    if (!canvas) return
-    
-    const nodes: KeywordNode[] = []
-    
-    profiles.forEach((profile, profileIndex) => {
-      const strengths = getTopStrengths(profile.skillData)
-      const color = PROFILE_COLORS[profileIndex].stroke
-      
-      strengths.forEach((keyword, i) => {
-        // Start from left (profile 0) or right (profile 1) outside the canvas
-        // Arranged in a vertical line like organized children
-        const startX = profileIndex === 0 ? -100 : canvas.width + 100
-        const spacing = 120
-        const totalHeight = (strengths.length - 1) * spacing
-        const startY = (canvas.height - totalHeight) / 2 + i * spacing
-        
-        nodes.push({
-          id: `${profileIndex}-${i}`,
-          keyword,
-          color,
-          x: startX,
-          y: startY,
-          vx: 0,
-          vy: 0,
-          profileIndex,
-        })
-      })
-    })
-    
-    setKeywordNodes(nodes)
-  }
 
-  // Keywords enter animation - nodes march in from the sides like organized children
-  useEffect(() => {
-    if (animationPhase !== "keywords-enter") return
-    
-    const canvas = animationCanvasRef.current
-    if (!canvas) return
-    
-    const centerX = canvas.width / 2
-    const centerY = canvas.height / 2
-    
-    // Store starting positions
-    const startPositions = keywordNodes.map(node => ({ x: node.x, y: node.y }))
-    
-    let frame = 0
-    const totalFrames = 120 // 2 seconds at 60fps
-    
-    const animate = () => {
-      frame++
-      const progress = Math.min(frame / totalFrames, 1)
-      const eased = 1 - Math.pow(1 - progress, 3) // ease out cubic
-      
-      setKeywordNodes(prev => prev.map((node, i) => {
-        // Target positions - spread out in the canvas
-        const nodeIndex = i % 7
-        const spacing = 140
-        const totalHeight = 6 * spacing
-        const targetY = (centerY - totalHeight / 2) + nodeIndex * spacing
-        
-        // Profile 0 goes to left side, profile 1 goes to right side
-        const targetX = node.profileIndex === 0 
-          ? centerX - 250 
-          : centerX + 250
-        
-        const startX = startPositions[i]?.x ?? node.x
-        const startY = startPositions[i]?.y ?? node.y
-        
-        return {
-          ...node,
-          x: startX + (targetX - startX) * eased,
-          y: startY + (targetY - startY) * eased,
-        }
-      }))
-      
-      if (progress < 1) {
-        animationFrameRef.current = requestAnimationFrame(animate)
-      } else {
-        // Start floating phase
-        setAnimationPhase("floating")
-      }
-    }
-    
-    animationFrameRef.current = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animationFrameRef.current)
-  }, [animationPhase, keywordNodes.length])
-
-  // Graph fade animation - then trigger keywords enter
-  useEffect(() => {
-    if (animationPhase !== "graph-fade") return
-    
-    let frame = 0
-    const totalFrames = 60 // 1 second
-    
-    const animate = () => {
-      frame++
-      const progress = Math.min(frame / totalFrames, 1)
-      setGraphOpacity(1 - progress)
-      
-      if (progress < 1) {
-        animationFrameRef.current = requestAnimationFrame(animate)
-      } else {
-        // After graph fades, initialize nodes and start enter animation
-        initializeKeywordNodes()
-        setAnimationPhase("keywords-enter")
-      }
-    }
-    
-    animationFrameRef.current = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animationFrameRef.current)
-  }, [animationPhase])
-
-  // Floating animation with orbiting pairs
-  useEffect(() => {
-    if (animationPhase !== "floating" && animationPhase !== "playing") return
-    
-    const canvas = animationCanvasRef.current
-    if (!canvas) return
-    
-    // Start playing after 2 seconds of floating
-    let floatingTime = 0
-    const playStartTime = 2000
-    let hasStartedPlaying = false
-    
-    const animate = () => {
-      floatingTime += 16 // roughly 60fps
-      
-      // Update orbit angle
-      orbitAngleRef.current += 0.03
-      
-      setKeywordNodes(prev => {
-        return prev.map(node => {
-          // Check if this node is part of the playing pair
-          const isPlaying = playingPair[0]?.id === node.id || playingPair[1]?.id === node.id
-          
-          if (isPlaying && animationPhase === "playing") {
-            // Orbiting motion around center
-            const orbitRadius = 80
-            const center = orbitCenterRef.current
-            const isFirst = playingPair[0]?.id === node.id
-            const angleOffset = isFirst ? 0 : Math.PI
-            
-            const targetX = center.x + Math.cos(orbitAngleRef.current + angleOffset) * orbitRadius
-            const targetY = center.y + Math.sin(orbitAngleRef.current + angleOffset) * orbitRadius
-            
-            // Smooth movement toward orbit position
-            return {
-              ...node,
-              x: node.x + (targetX - node.x) * 0.1,
-              y: node.y + (targetY - node.y) * 0.1,
-              vx: 0,
-              vy: 0,
-            }
-          } else {
-            // Gentle floating motion for non-playing nodes
-            const time = Date.now() / 1000
-            const floatX = Math.sin(time * 0.3 + parseFloat(node.id.split('-')[1]) * 1.5) * 1.5
-            const floatY = Math.cos(time * 0.4 + parseFloat(node.id.split('-')[1]) * 1.3) * 1.5
-            
-            let newX = node.x + floatX
-            let newY = node.y + floatY
-            
-            // Keep nodes in bounds
-            const padding = 80
-            newX = Math.max(padding, Math.min(canvas.width - padding, newX))
-            newY = Math.max(padding, Math.min(canvas.height - padding, newY))
-            
-            return { ...node, x: newX, y: newY }
-          }
-        })
-      })
-      
-      // Start playing phase
-      if (!hasStartedPlaying && floatingTime > playStartTime && animationPhase === "floating") {
-        hasStartedPlaying = true
-        setAnimationPhase("playing")
-        selectPlayingPair()
-      }
-      
-      animationFrameRef.current = requestAnimationFrame(animate)
-    }
-    
-    animationFrameRef.current = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animationFrameRef.current)
-  }, [animationPhase, playingPair])
-
-  // Orbiting pair state
-  const orbitAngleRef = useRef(0)
-  const orbitCenterRef = useRef({ x: 0, y: 0 })
-  
-  // Select a pair to play - they will orbit each other
-  const selectPlayingPair = () => {
-    const canvas = animationCanvasRef.current
-    if (!canvas) return
-    
-    setKeywordNodes(prev => {
-      const profile0Nodes = prev.filter(n => n.profileIndex === 0)
-      const profile1Nodes = prev.filter(n => n.profileIndex === 1)
-      
-      if (profile0Nodes.length > 0 && profile1Nodes.length > 0) {
-        const node0 = profile0Nodes[Math.floor(Math.random() * profile0Nodes.length)]
-        const node1 = profile1Nodes[Math.floor(Math.random() * profile1Nodes.length)]
-        setPlayingPair([node0, node1])
-        
-        // Set orbit center to canvas center
-        orbitCenterRef.current = { x: canvas.width / 2, y: canvas.height / 2 }
-        orbitAngleRef.current = 0
-      }
-      return prev
-    })
-    
-    // Select new pair every 6 seconds
-    setTimeout(selectPlayingPair, 6000)
-  }
-
-  // Draw animation canvas
-  useEffect(() => {
-    if (animationPhase === "idle" || animationPhase === "loading") return
-    
-    const canvas = animationCanvasRef.current
-    if (!canvas) return
-    
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-    
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      
-      // Draw connecting lines between playing pair
-      if (playingPair[0] && playingPair[1]) {
-        const [node0, node1] = playingPair
-        const actualNode0 = keywordNodes.find(n => n.id === node0.id)
-        const actualNode1 = keywordNodes.find(n => n.id === node1.id)
-        
-        if (actualNode0 && actualNode1) {
-          ctx.beginPath()
-          ctx.moveTo(actualNode0.x, actualNode0.y)
-          ctx.lineTo(actualNode1.x, actualNode1.y)
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.2)"
-          ctx.lineWidth = 2
-          ctx.stroke()
-          
-          // Draw sparks at midpoint
-          const midX = (actualNode0.x + actualNode1.x) / 2
-          const midY = (actualNode0.y + actualNode1.y) / 2
-          const time = Date.now() / 100
-          
-          for (let i = 0; i < 5; i++) {
-            const sparkAngle = time + (i * Math.PI * 2 / 5)
-            const sparkDist = 10 + Math.sin(time * 2 + i) * 5
-            ctx.beginPath()
-            ctx.arc(
-              midX + Math.cos(sparkAngle) * sparkDist,
-              midY + Math.sin(sparkAngle) * sparkDist,
-              2,
-              0,
-              Math.PI * 2
-            )
-            ctx.fillStyle = "rgba(255, 255, 255, 0.6)"
-            ctx.fill()
-          }
-        }
-      }
-      
-      // Draw keyword nodes
-      keywordNodes.forEach(node => {
-        const isPlaying = playingPair[0]?.id === node.id || playingPair[1]?.id === node.id
-        const nodeSize = isPlaying ? 30 : 24
-        const glowSize = isPlaying ? 60 : 45
-        
-        // Draw glow
-        const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowSize)
-        gradient.addColorStop(0, node.color.replace("0.8", isPlaying ? "0.5" : "0.3"))
-        gradient.addColorStop(1, "transparent")
-        ctx.fillStyle = gradient
-        ctx.beginPath()
-        ctx.arc(node.x, node.y, glowSize, 0, Math.PI * 2)
-        ctx.fill()
-        
-        // Draw node circle
-        ctx.beginPath()
-        ctx.arc(node.x, node.y, nodeSize, 0, Math.PI * 2)
-        ctx.fillStyle = node.color.replace("0.8", "0.9")
-        ctx.fill()
-        ctx.strokeStyle = isPlaying ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.5)"
-        ctx.lineWidth = isPlaying ? 3 : 2
-        ctx.stroke()
-        
-        // Draw keyword text - bigger font
-        ctx.fillStyle = "white"
-        ctx.font = isPlaying ? "bold 16px Inter" : "bold 14px Inter"
-        ctx.textAlign = "center"
-        ctx.textBaseline = "middle"
-        
-        // Wrap text for longer keywords
-        const words = node.keyword.split(" ")
-        const lineHeight = isPlaying ? 18 : 16
-        const yOffset = isPlaying ? -50 : -42
-        
-        if (words.length > 2) {
-          ctx.fillText(words.slice(0, 2).join(" "), node.x, node.y + yOffset)
-          ctx.fillText(words.slice(2).join(" "), node.x, node.y + yOffset + lineHeight)
-        } else if (words.length === 2) {
-          ctx.fillText(words[0], node.x, node.y + yOffset)
-          ctx.fillText(words[1], node.x, node.y + yOffset + lineHeight)
-        } else {
-          ctx.fillText(node.keyword, node.x, node.y + yOffset + lineHeight / 2)
-        }
-      })
-      
-      animationFrameRef.current = requestAnimationFrame(draw)
-    }
-    
-    draw()
-    return () => cancelAnimationFrame(animationFrameRef.current)
-  }, [animationPhase, keywordNodes, playingPair])
 
   // Draw the radar graph
   useEffect(() => {
@@ -598,10 +296,8 @@ export function RadarGraph() {
     setProfiles([])
     setAnimationPhase("idle")
     setLoadingProgress(0)
-    setKeywordNodes([])
     setGraphOpacity(1)
-    setPlayingPair([null, null])
-    cancelAnimationFrame(animationFrameRef.current)
+    setReport(null)
   }
 
   return (
@@ -623,33 +319,70 @@ export function RadarGraph() {
             style={{ opacity: graphOpacity }}
           />
           
-          {/* Animation canvas overlay */}
-          <canvas
-            ref={animationCanvasRef}
-            width={1200}
-            height={1200}
-            className="absolute w-full h-auto pointer-events-none"
-            style={{ 
-              top: "1rem", 
-              left: "1rem", 
-              right: "1rem", 
-              bottom: "1rem",
-              opacity: animationPhase !== "idle" && animationPhase !== "loading" ? 1 : 0
-            }}
-          />
-          
           {/* Timer */}
           {animationPhase === "loading" && (
-            <div className="absolute bottom-4 left-4 right-4 md:bottom-8 md:left-8 md:right-8">
+            <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <div className="text-white text-6xl font-bold mb-2 tabular-nums">
                   {loadingProgress}
                 </div>
-                <div className="text-white/60 text-sm">
-                  Analyzing profiles...
+                <div className="text-white/60 text-sm uppercase tracking-widest">
+                  Analyzing vectors...
                 </div>
               </div>
             </div>
+          )}
+          
+          {/* Report */}
+          {animationPhase === "report" && report && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1.5 }}
+              className="absolute inset-0 flex items-center justify-center p-8"
+            >
+              <div className="max-w-3xl space-y-8">
+                {/* Header */}
+                <div className="text-center space-y-2 border-b border-white/10 pb-6">
+                  <div className="text-white/40 text-xs uppercase tracking-[0.3em] font-mono">
+                    Vector Analysis Complete
+                  </div>
+                  <h2 className="text-white text-2xl font-light tracking-tight">
+                    Professional Alignment Report
+                  </h2>
+                </div>
+                
+                {/* Profile Names */}
+                <div className="flex items-center justify-center gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PROFILE_COLORS[0].stroke }} />
+                    <span className="text-white/80 font-mono">{profiles[0].name}</span>
+                  </div>
+                  <div className="text-white/30">×</div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PROFILE_COLORS[1].stroke }} />
+                    <span className="text-white/80 font-mono">{profiles[1].name}</span>
+                  </div>
+                </div>
+                
+                {/* Paragraphs */}
+                <div className="space-y-6">
+                  <p className="text-white/70 text-base leading-relaxed font-light text-justify">
+                    {report.paragraph1}
+                  </p>
+                  <p className="text-white/70 text-base leading-relaxed font-light text-justify">
+                    {report.paragraph2}
+                  </p>
+                </div>
+                
+                {/* Footer accent */}
+                <div className="flex items-center justify-center gap-2 pt-6 border-t border-white/10">
+                  <div className="w-1 h-1 rounded-full bg-white/20" />
+                  <div className="w-1 h-1 rounded-full bg-white/20" />
+                  <div className="w-1 h-1 rounded-full bg-white/20" />
+                </div>
+              </div>
+            </motion.div>
           )}
         </div>
 
