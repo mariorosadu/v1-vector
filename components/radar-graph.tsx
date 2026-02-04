@@ -589,26 +589,10 @@ export function RadarGraph() {
                 </button>
               </form>
             ) : (
-              <div className="space-y-4">
-                <div className="text-center text-white/40 text-sm">
-                  <p className="mb-4">
-                    Maximum of 2 profiles reached. Clear profiles to compare new ones.
-                  </p>
-                </div>
-                
-                {/* Competencies Reference */}
-                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                  <div className="text-white/60 text-xs uppercase tracking-wide mb-3 font-semibold">
-                    16 Competency Dimensions
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {dimensions.map((dim, index) => (
-                      <div key={index} className="text-white/50 text-xs leading-relaxed">
-                        {dim}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              <div className="text-center text-white/40 text-sm">
+                <p className="mb-4">
+                  Maximum of 2 profiles reached. Clear profiles to compare new ones.
+                </p>
               </div>
             )}
           </div>
