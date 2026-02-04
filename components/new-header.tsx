@@ -192,11 +192,38 @@ export function NewHeader() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 bg-[#0f0f0f]/98 backdrop-blur-xl z-40 lg:hidden"
-            onClick={() => setMenuOpen(false)}
+            className="fixed inset-0 bg-[#0f0f0f] z-[60] lg:hidden overflow-hidden"
+            style={{ 
+              paddingTop: 'env(safe-area-inset-top)',
+              paddingBottom: 'env(safe-area-inset-bottom)',
+            }}
           >
-            <div className="flex flex-col items-center justify-center h-full">
-              <nav className="space-y-8">
+            {/* Close button */}
+            <div className="absolute top-0 left-0 right-0 h-16 flex items-center justify-between px-6">
+              <button
+                onClick={() => setMenuOpen(false)}
+                className="text-white/60 hover:text-white transition-colors p-2"
+                aria-label="Close menu"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+              <div className="w-6" />
+            </div>
+            
+            <div className="flex flex-col items-center justify-center h-full px-6">
+              <nav className="space-y-6 w-full max-w-sm">
                 {navigationItems.map((item, index) => (
                   <motion.div
                     key={item.label}
@@ -214,7 +241,7 @@ export function NewHeader() {
                           router.push(item.href)
                         }
                       }}
-                      className="block text-white text-4xl font-light tracking-tight hover:text-white/60 transition-colors text-center"
+                      className="block text-white text-3xl font-light tracking-tight hover:text-white/60 transition-colors text-center py-2"
                       style={{ fontFamily: "var(--font-heading)" }}
                     >
                       {item.label}
