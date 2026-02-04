@@ -10,14 +10,12 @@ const publications = [
     title: "Research Paper on Software Sustainability",
     description: "Interviewing 9 research software engineers, the paper finds developers define \"software sustainability\" primarily as the long-term reusability and maintainability of the software artifact (not the funding project), and it decomposes this into intrinsic factors (documentation, tests, readability, modularity, reuse of libraries/standards) and extrinsic factors (open availability, shared ownership, resourcing, active maintenance, support, infra-independence).",
     downloadUrl: "/papers/paper1.pdf",
-    date: "2014",
   },
   {
     id: 2,
     title: "Research Software Sustainability: Artefact Longevity via Intrinsic Quality + Extrinsic Ecosystem",
     description: "The study shows that research software engineers define sustainability as the long-term usability and reuse of the software artefact itself, not the project that funded it, and empirically split it into intrinsic qualities (documentation, tests, readability, modularity, standards, usefulness) and extrinsic conditions (openness, community, resourcing, active maintenance, support, infra-independence). It distills these findings into concrete guidance: treat software as enduring research infrastructure by prioritizing quality, active maintenance, discoverability, and community-backed resourcing.",
     downloadUrl: "/papers/paper2.pdf",
-    date: "2014",
   },
 ]
 
@@ -61,10 +59,9 @@ export default function PublicationsPage() {
                       >
                         {pub.title}
                       </h3>
-                      <p className="text-white/50 text-sm mb-3">
+                      <p className="text-white/50 text-sm">
                         {pub.description}
                       </p>
-                      <span className="text-white/30 text-xs">{pub.date}</span>
                     </div>
                   </div>
                   <a
