@@ -3,10 +3,23 @@
 import { motion } from "framer-motion"
 import { useInView } from "framer-motion"
 import { useRef } from "react"
+import { useRouter } from "next/navigation"
 
 export function Footer() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-50px" })
+  const router = useRouter()
+
+  const handleNavigation = (href: string) => {
+    if (href.startsWith('#')) {
+      // For anchor links, scroll to section
+      const element = document.getElementById(href.slice(1))
+      element?.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      // For page navigation
+      router.push(href)
+    }
+  }
 
   return (
     <footer ref={ref} className="relative py-24 bg-[#0f0f0f] border-t border-white/5">
@@ -38,18 +51,21 @@ export function Footer() {
               Research
             </h4>
             <ul className="space-y-3">
-              {["Publications", "Case Studies", "Methodology", "Data"].map(
-                (item) => (
-                  <li key={item}>
-                    <a
-                      href="#"
-                      className="text-white/60 text-sm hover:text-white transition-colors"
-                    >
-                      {item}
-                    </a>
-                  </li>
-                )
-              )}
+              {[
+                { label: "Publications", href: "#publications" },
+                { label: "Case Studies", href: "#case-studies" },
+                { label: "Methodology", href: "#methodology" },
+                { label: "Data", href: "#data" }
+              ].map((item) => (
+                <li key={item.label}>
+                  <button
+                    onClick={() => handleNavigation(item.href)}
+                    className="text-white/60 text-sm hover:text-white transition-colors text-left"
+                  >
+                    {item.label}
+                  </button>
+                </li>
+              ))}
             </ul>
           </motion.div>
 
@@ -59,17 +75,20 @@ export function Footer() {
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             <h4 className="text-white/40 text-xs tracking-[0.2em] uppercase mb-4">
-              Company
+              Tools
             </h4>
             <ul className="space-y-3">
-              {["About", "Team", "Careers", "Contact"].map((item) => (
-                <li key={item}>
-                  <a
-                    href="#"
-                    className="text-white/60 text-sm hover:text-white transition-colors"
+              {[
+                { label: "Cognitive Map", href: "/map" },
+                { label: "Profile Analysis", href: "/profile-analysis" }
+              ].map((item) => (
+                <li key={item.label}>
+                  <button
+                    onClick={() => handleNavigation(item.href)}
+                    className="text-white/60 text-sm hover:text-white transition-colors text-left"
                   >
-                    {item}
-                  </a>
+                    {item.label}
+                  </button>
                 </li>
               ))}
             </ul>
