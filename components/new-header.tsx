@@ -5,10 +5,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 
 const navigationItems = [
-  { label: "Publications", href: "#publications" },
-  { label: "Case Studies", href: "#case-studies" },
-  { label: "Methodology", href: "#methodology" },
-  { label: "Data", href: "#data" },
+  { label: "Publications", href: "/publications" },
   { label: "Map", href: "/map" },
   { label: "Profile Analysis", href: "/profile-analysis" },
 ]
@@ -48,7 +45,7 @@ export function NewHeader() {
                 onClick={() => router.push("/")}
               />
               <div className="hidden lg:flex items-center gap-8">
-                {navigationItems.slice(0, 3).map((item) => (
+                {navigationItems.slice(0, 1).map((item) => (
                   <a
                     key={item.label}
                     href={item.href}
@@ -138,7 +135,7 @@ export function NewHeader() {
             {/* Right - Navigation Links (Desktop) / Menu Button (Mobile) */}
             <div className="flex items-center gap-8">
               <div className="hidden lg:flex items-center gap-8">
-                {navigationItems.slice(3).map((item) => (
+                {navigationItems.slice(1).map((item) => (
                   <a
                     key={item.label}
                     href={item.href}

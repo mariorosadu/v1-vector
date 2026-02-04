@@ -65,7 +65,7 @@ export function AboutSection() {
             { value: "47", label: "Research Papers" },
             { value: "12k+", label: "Decisions Analyzed" },
             { value: "89%", label: "Accuracy Improvement" },
-            { value: "150+", label: "Organizations" },
+            { value: "15+", label: "Organizations" },
           ].map((stat, index) => (
             <motion.div
               key={stat.label}
