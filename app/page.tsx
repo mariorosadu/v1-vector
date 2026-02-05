@@ -2,10 +2,12 @@ import { NewHeader } from "@/components/new-header"
 import { AboutSection } from "@/components/about-section"
 import { ProcessSection } from "@/components/process-section"
 import { Footer } from "@/components/footer"
+import { MobileScrollReveal } from "@/components/mobile-scroll-reveal"
 
 export default function HomePage() {
   return (
-    <main className="bg-[#0f0f0f]">
+    <main className="relative bg-[#0f0f0f]">
+      <MobileScrollReveal />
       <NewHeader />
       <AboutSection />
       <ProcessSection />
