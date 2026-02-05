@@ -36,23 +36,26 @@ export function NewHeader() {
       >
         <div className="container mx-auto px-6 md:px-12">
           <div className="flex items-center justify-between h-16">
-            {/* Left - Navigation Links (Desktop only) */}
-            <div className="hidden lg:flex items-center gap-8">
-              {navigationItems.slice(0, 1).map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  onClick={(e) => {
-                    if (item.href.startsWith('/')) {
-                      e.preventDefault()
-                      router.push(item.href)
-                    }
-                  }}
-                  className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
-                >
-                  {item.label}
-                </a>
-              ))}
+            {/* Left - Empty spacer (Mobile) / Navigation Links (Desktop) */}
+            <div className="flex items-center">
+              <div className="lg:hidden w-6" />
+              <div className="hidden lg:flex items-center gap-8">
+                {navigationItems.slice(0, 1).map((item) => (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    onClick={(e) => {
+                      if (item.href.startsWith('/')) {
+                        e.preventDefault()
+                        router.push(item.href)
+                      }
+                    }}
+                    className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
             </div>
 
             <AnimatePresence>
