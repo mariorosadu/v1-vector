@@ -36,31 +36,23 @@ export function NewHeader() {
       >
         <div className="container mx-auto px-6 md:px-12">
           <div className="flex items-center justify-between h-16">
-            {/* Left - Logo (Mobile) / Navigation Links (Desktop) */}
-            <div className="flex items-center">
-              <img
-                src="/images/vector-logo-full.svg"
-                alt="VECTÖR"
-                className="h-5 w-auto lg:hidden cursor-pointer"
-                onClick={() => router.push("/")}
-              />
-              <div className="hidden lg:flex items-center gap-8">
-                {navigationItems.slice(0, 1).map((item) => (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    onClick={(e) => {
-                      if (item.href.startsWith('/')) {
-                        e.preventDefault()
-                        router.push(item.href)
-                      }
-                    }}
-                    className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
-                  >
-                    {item.label}
-                  </a>
-                ))}
-              </div>
+            {/* Left - Navigation Links (Desktop only) */}
+            <div className="hidden lg:flex items-center gap-8">
+              {navigationItems.slice(0, 1).map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  onClick={(e) => {
+                    if (item.href.startsWith('/')) {
+                      e.preventDefault()
+                      router.push(item.href)
+                    }
+                  }}
+                  className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
+                >
+                  {item.label}
+                </a>
+              ))}
             </div>
 
             <AnimatePresence>
