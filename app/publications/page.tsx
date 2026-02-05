@@ -4,7 +4,7 @@ import { SimpleHeader } from "@/components/simple-header"
 import { Footer } from "@/components/footer"
 import { Download } from "lucide-react"
 
-// Custom Document Icon Component
+// Elegant Document Icon Component
 function DocumentIcon() {
   return (
     <svg
@@ -15,23 +15,31 @@ function DocumentIcon() {
       xmlns="http://www.w3.org/2000/svg"
       className="w-6 h-6"
     >
-      {/* Document background - black with blue accent */}
+      {/* Minimalist document outline */}
       <path
-        d="M4 2h12l4 4v16c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2z"
-        fill="#1a1a1a"
-        stroke="#3B82F6"
+        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"
+        stroke="currentColor"
         strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="text-white/40"
       />
-      {/* Highlight edge - blue */}
       <path
-        d="M16 2v4h4"
-        fill="#3B82F6"
-        opacity="0.3"
+        d="M14 2v6h6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="text-white/40"
       />
-      {/* Document lines - blue gradient */}
-      <line x1="8" y1="9" x2="16" y2="9" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="8" y1="13" x2="16" y2="13" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
-      <line x1="8" y1="17" x2="14" y2="17" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+      {/* Subtle content lines */}
+      <path
+        d="M10 12h4M10 16h4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        className="text-white/20"
+      />
     </svg>
   )
 }
@@ -88,7 +96,7 @@ export default function PublicationsPage() {
                 <div className="flex flex-col gap-4">
                   {/* Header with icon and title */}
                   <div className="flex items-start gap-4">
-                    <div className="p-3 bg-white/5 rounded-lg border border-blue-500/20 shrink-0">
+                    <div className="p-3 bg-white/5 rounded-lg border border-white/10 shrink-0 group-hover:bg-white/10 group-hover:border-white/20 transition-all">
                       <DocumentIcon />
                     </div>
                     <div className="flex-1 min-w-0">
