@@ -251,7 +251,7 @@ export function NewHeader() {
       </AnimatePresence>
 
       {/* Hero Section with Large Logo */}
-      <section className="relative min-h-[80vh] bg-[#0f0f0f] flex items-center justify-center pt-16 pb-32">
+      <section className="relative min-h-[85vh] bg-[#0f0f0f] flex items-center justify-center pt-32 pb-32">
         <div className="container mx-auto px-6 md:px-12 max-w-5xl">
           <div className="text-center relative z-10">
             {/* Large Central Logo */}

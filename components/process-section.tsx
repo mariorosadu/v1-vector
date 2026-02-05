@@ -36,7 +36,7 @@ export function ProcessSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
   return (
-    <section ref={ref} className="relative py-32 bg-[#0a0a0a]">
+    <section ref={ref} className="relative py-32 bg-[#0a0a0a]" style={{ scrollMarginTop: '64px' }}>
       <div className="container mx-auto px-6 md:px-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
