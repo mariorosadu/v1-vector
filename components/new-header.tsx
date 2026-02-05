@@ -236,13 +236,8 @@ export function NewHeader() {
               style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}
             >
               <ul className="space-y-1">
-                {navigationItems.map((item, index) => (
-                  <motion.li
-                    key={item.label}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                  >
+                {navigationItems.map((item) => (
+                  <li key={item.label}>
                     <a
                       href={item.href}
                       onClick={(e) => {
@@ -257,7 +252,7 @@ export function NewHeader() {
                     >
                       {item.label}
                     </a>
-                  </motion.li>
+                  </li>
                 ))}
               </ul>
             </nav>
