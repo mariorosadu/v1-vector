@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 
 const navigationItems = [
-  { label: "Publications", href: "#publications" },
+  { label: "Publications", href: "/publications" },
   { label: "Map", href: "/map" },
   { label: "Profile Analysis", href: "/profile-analysis" },
 ]
@@ -27,7 +27,7 @@ export function SimpleHeader() {
           <div className="flex items-center justify-between h-16">
             {/* Left - Navigation Links (Desktop) */}
             <div className="hidden lg:flex items-center gap-8">
-              {navigationItems.slice(0, 3).map((item) => (
+              {navigationItems.slice(0, 1).map((item) => (
                 <a
                   key={item.label}
                   href={item.href}
@@ -60,7 +60,7 @@ export function SimpleHeader() {
             {/* Right - Navigation Links (Desktop) / Menu Button (Mobile) */}
             <div className="flex items-center gap-8">
               <div className="hidden lg:flex items-center gap-8">
-                {navigationItems.slice(3).map((item) => (
+                {navigationItems.slice(1).map((item) => (
                   <a
                     key={item.label}
                     href={item.href}
