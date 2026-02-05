@@ -36,10 +36,10 @@ export function NewHeader() {
       >
         <div className="container mx-auto px-6 md:px-12">
           <div className="flex items-center justify-between h-16">
-            {/* Left - Navigation Links (Desktop) / Logo (Mobile) */}
+            {/* Left - Logo (Mobile) / Navigation Links (Desktop) */}
             <div className="flex items-center">
               <img
-                src="/images/vector-logo.svg"
+                src="/images/vector-logo-full.svg"
                 alt="VECTÖR"
                 className="h-5 w-auto lg:hidden cursor-pointer"
                 onClick={() => router.push("/")}
@@ -205,7 +205,7 @@ export function NewHeader() {
               }}
             >
               <img
-                src="/images/vector-logo.svg"
+                src="/images/vector-logo-full.svg"
                 alt="VECTÖR"
                 className="h-5 w-auto"
               />
@@ -272,7 +272,7 @@ export function NewHeader() {
               className="mb-12 flex justify-center"
             >
               <img
-                src="/images/vector-logo.svg"
+                src="/images/vector-logo-full.svg"
                 alt="VECTÖR"
                 className="w-full max-w-3xl h-auto"
               />
