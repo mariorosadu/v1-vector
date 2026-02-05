@@ -251,9 +251,9 @@ export function NewHeader() {
       </AnimatePresence>
 
       {/* Hero Section with Large Logo */}
-      <section className="relative min-h-[80vh] bg-[#0f0f0f] flex items-center justify-center pt-16">
-        <div className="container mx-auto px-6 md:px-12">
-          <div className="text-center">
+      <section className="relative min-h-[80vh] bg-[#0f0f0f] flex items-center justify-center pt-16 pb-32">
+        <div className="container mx-auto px-6 md:px-12 max-w-5xl">
+          <div className="text-center relative z-10">
             {/* Large Central Logo */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -306,15 +306,33 @@ export function NewHeader() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.8 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 relative z-10"
             >
-              <a href="/map" className="px-8 py-3 bg-white text-[#0f0f0f] text-sm font-medium tracking-wide hover:bg-white/90 transition-colors inline-block">
+              <a 
+                href="/map" 
+                className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 bg-white text-[#0f0f0f] text-sm font-medium tracking-wide hover:bg-white/90 transition-colors touch-manipulation"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
                 Cognitive Map
               </a>
-              <a href="/profile-analysis" className="px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors inline-block">
+              <a 
+                href="/profile-analysis" 
+                className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors touch-manipulation"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
                 Profile Analysis
               </a>
-              <a href="/publications" className="px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors inline-block">
+              <a 
+                href="/publications" 
+                className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors touch-manipulation"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
                 Publications
               </a>
             </motion.div>
