@@ -28,12 +28,7 @@ export function NewHeader() {
   return (
     <>
       {/* Top Navigation Bar */}
-      <motion.nav
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="fixed top-0 left-0 right-0 z-50 bg-[#0f0f0f]/80 backdrop-blur-md border-b border-white/5"
-      >
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0f0f0f]/80 backdrop-blur-md border-b border-white/5">
         <div className="container mx-auto px-6 md:px-12">
           <div className="flex items-center justify-between h-16">
             {/* Left - Empty spacer (Mobile) / Navigation Links (Desktop) */}
@@ -179,7 +174,7 @@ export function NewHeader() {
             </div>
           </div>
         </div>
-      </motion.nav>
+      </nav>
 
       {/* Mobile Navigation Menu */}
       <AnimatePresence>
