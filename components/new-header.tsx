@@ -36,14 +36,9 @@ export function NewHeader() {
       >
         <div className="container mx-auto px-6 md:px-12">
           <div className="flex items-center justify-between h-16">
-            {/* Left - Navigation Links (Desktop) / Logo (Mobile) */}
+            {/* Left - Empty spacer (Mobile) / Navigation Links (Desktop) */}
             <div className="flex items-center">
-              <img
-                src="/images/vector-logo.svg"
-                alt="VECTÖR"
-                className="h-5 w-auto lg:hidden cursor-pointer"
-                onClick={() => router.push("/")}
-              />
+              <div className="lg:hidden w-6" />
               <div className="hidden lg:flex items-center gap-8">
                 {navigationItems.slice(0, 1).map((item) => (
                   <a
@@ -205,7 +200,7 @@ export function NewHeader() {
               }}
             >
               <img
-                src="/images/vector-logo.svg"
+                src="/images/vector-logo-full.svg"
                 alt="VECTÖR"
                 className="h-5 w-auto"
               />
@@ -236,13 +231,8 @@ export function NewHeader() {
               style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}
             >
               <ul className="space-y-1">
-                {navigationItems.map((item, index) => (
-                  <motion.li
-                    key={item.label}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                  >
+                {navigationItems.map((item) => (
+                  <li key={item.label}>
                     <a
                       href={item.href}
                       onClick={(e) => {
@@ -257,7 +247,7 @@ export function NewHeader() {
                     >
                       {item.label}
                     </a>
-                  </motion.li>
+                  </li>
                 ))}
               </ul>
             </nav>
@@ -277,7 +267,7 @@ export function NewHeader() {
               className="mb-12 flex justify-center"
             >
               <img
-                src="/images/vector-logo.svg"
+                src="/images/vector-logo-full.svg"
                 alt="VECTÖR"
                 className="w-full max-w-3xl h-auto"
               />

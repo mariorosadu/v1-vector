@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 
 const navigationItems = [
-  { label: "Publications", href: "#publications" },
+  { label: "Publications", href: "/publications" },
   { label: "Map", href: "/map" },
   { label: "Profile Analysis", href: "/profile-analysis" },
 ]
@@ -25,42 +25,50 @@ export function SimpleHeader() {
       >
         <div className="container mx-auto px-6 md:px-12">
           <div className="flex items-center justify-between h-16">
-            {/* Left - Navigation Links (Desktop) */}
-            <div className="hidden lg:flex items-center gap-8">
-              {navigationItems.slice(0, 3).map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  onClick={(e) => {
-                    if (item.href.startsWith('/')) {
-                      e.preventDefault()
-                      router.push(item.href)
-                    }
-                  }}
-                  className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
-                >
-                  {item.label}
-                </a>
-              ))}
+            {/* Left - Logo (Mobile) / Navigation Links (Desktop) */}
+            <div className="flex items-center">
+              <img
+                src="/images/vector-logo-full.svg"
+                alt="VECTÖR"
+                className="h-5 w-auto lg:hidden cursor-pointer"
+                onClick={() => router.push("/")}
+              />
+              <div className="hidden lg:flex items-center gap-8">
+                {navigationItems.slice(0, 1).map((item) => (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    onClick={(e) => {
+                      if (item.href.startsWith('/')) {
+                        e.preventDefault()
+                        router.push(item.href)
+                      }
+                    }}
+                    className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
             </div>
 
-            {/* Center - Logo */}
+            {/* Center - Logo (Desktop only) */}
             <motion.button
               onClick={() => router.push("/")}
-              className="hover:opacity-80 transition-opacity absolute left-1/2 -translate-x-1/2 lg:relative lg:left-auto lg:translate-x-0"
+              className="hidden lg:block hover:opacity-80 transition-opacity"
               whileHover={{ scale: 1.05 }}
             >
               <img
                 src="/images/vector-logo.svg"
                 alt="VECTÖR"
-                className="h-5 lg:h-8 w-auto"
+                className="h-8 w-auto"
               />
             </motion.button>
 
             {/* Right - Navigation Links (Desktop) / Menu Button (Mobile) */}
             <div className="flex items-center gap-8">
               <div className="hidden lg:flex items-center gap-8">
-                {navigationItems.slice(3).map((item) => (
+                {navigationItems.slice(1).map((item) => (
                   <a
                     key={item.label}
                     href={item.href}
@@ -130,7 +138,7 @@ export function SimpleHeader() {
               }}
             >
               <img
-                src="/images/vector-logo.svg"
+                src="/images/vector-logo-full.svg"
                 alt="VECTÖR"
                 className="h-5 w-auto"
               />
@@ -161,13 +169,8 @@ export function SimpleHeader() {
               style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}
             >
               <ul className="space-y-1">
-                {navigationItems.map((item, index) => (
-                  <motion.li
-                    key={item.label}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                  >
+                {navigationItems.map((item) => (
+                  <li key={item.label}>
                     <a
                       href={item.href}
                       onClick={(e) => {
@@ -182,7 +185,7 @@ export function SimpleHeader() {
                     >
                       {item.label}
                     </a>
-                  </motion.li>
+                  </li>
                 ))}
               </ul>
             </nav>
