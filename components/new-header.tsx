@@ -265,11 +265,22 @@ export function NewHeader() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 1.2, ease: "easeOut" }}
               className="mb-12 flex justify-center"
+              style={{
+                WebkitBackfaceVisibility: 'hidden',
+                backfaceVisibility: 'hidden',
+                WebkitTransform: 'translateZ(0)',
+                transform: 'translateZ(0)',
+                willChange: 'transform, opacity',
+              }}
             >
               <img
                 src="/images/vector-logo-full.svg"
                 alt="VECTÖR"
                 className="w-full max-w-3xl h-auto"
+                style={{
+                  WebkitBackfaceVisibility: 'hidden',
+                  backfaceVisibility: 'hidden',
+                }}
               />
             </motion.div>
 
