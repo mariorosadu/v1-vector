@@ -9,7 +9,7 @@ export function AboutSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
   return (
-    <section ref={ref} className="relative py-32 bg-[#0f0f0f]" style={{ scrollMarginTop: '64px' }}>
+    <section ref={ref} className="relative py-16 md:py-32 bg-[#0f0f0f]" style={{ scrollMarginTop: '64px' }}>
       <div className="container mx-auto px-6 md:px-12">
         <div className="grid lg:grid-cols-2 gap-16 items-start">
           <div>
