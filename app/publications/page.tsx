@@ -40,19 +40,19 @@ const publications = [
   {
     id: 2,
     title: "Research Software Sustainability: Artefact Longevity via Intrinsic Quality + Extrinsic Ecosystem",
-    description: "The study shows that research software engineers define sustainability as the long-term usability and reuse of the software artefact itself, not the project that funded it, and empirically split it into intrinsic qualities (documentation, tests, readability, modularity, standards, usefulness) and extrinsic conditions (openness, community, resourcing, active maintenance, support, infra-independence). It distills these findings into concrete guidance: treat software as enduring research infrastructure by prioritizing quality, active maintenance, discoverability, and community-backed resourcing.",
+    description: "Examines how research software engineers define sustainability through intrinsic qualities and extrinsic conditions, providing guidance for treating software as enduring research infrastructure.",
     downloadUrl: "/papers/paper2.pdf",
   },
   {
     id: 3,
     title: "Cognitive Sight Theory",
-    description: "Cognitive Sight Theory reframes cognition as resolution over a field (not a single \"IQ-like\" scalar): each person has a σ-center with a tight sight band (≈±1σ) where they can directly operate on structure, a wider sound band (≈±2σ) where they can only reconstruct via scaffolding, and beyond that a hard noise horizon where communication becomes non-decodable regardless of explanation quality—predicting persistent miscoordination and \"isolation at distance\" as an information-theoretic channel-capacity failure, and prescribing resolution cascades (e.g., 2σ relays) to preserve signal across institutions.",
+    description: "Reframes cognition as resolution over a field, introducing sight bands, sound bands, and noise horizons to explain communication limitations and coordination failures across cognitive distances.",
     downloadUrl: "/papers/cognitive-sight-theory.pdf",
   },
   {
     id: 1,
     title: "Research Paper on Software Sustainability",
-    description: "Interviewing 9 research software engineers, the paper finds developers define \"software sustainability\" primarily as the long-term reusability and maintainability of the software artifact (not the funding project), and it decomposes this into intrinsic factors (documentation, tests, readability, modularity, reuse of libraries/standards) and extrinsic factors (open availability, shared ownership, resourcing, active maintenance, support, infra-independence).",
+    description: "Explores developer perspectives on software sustainability, decomposing it into intrinsic factors like documentation and modularity, and extrinsic factors like maintenance and resourcing.",
     downloadUrl: "/papers/paper1.pdf",
   },
 ]
@@ -79,39 +79,47 @@ export default function PublicationsPage() {
           </div>
 
           {/* Publications List */}
-          <div className="max-w-3xl mx-auto space-y-6">
+          <div className="max-w-4xl mx-auto space-y-6">
             {publications.map((pub) => (
-              <div 
+              <article 
                 key={pub.id}
-                className="bg-white/5 border border-white/10 rounded-lg p-6 hover:bg-white/[0.07] transition-colors"
+                className="bg-white/5 border border-white/10 rounded-lg p-6 md:p-8 hover:bg-white/[0.07] hover:border-white/20 transition-all group"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-4">
+                  {/* Header with icon and title */}
                   <div className="flex items-start gap-4">
-                    <div className="p-3 bg-white/5 rounded-lg border border-blue-500/20">
+                    <div className="p-3 bg-white/5 rounded-lg border border-blue-500/20 shrink-0">
                       <DocumentIcon />
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <h3 
-                        className="text-white text-xl font-medium mb-2"
+                        className="text-white text-lg md:text-xl font-medium mb-2 leading-snug"
                         style={{ fontFamily: "var(--font-heading)" }}
                       >
                         {pub.title}
                       </h3>
-                      <p className="text-white/50 text-sm">
+                      <p className="text-white/60 text-sm md:text-base leading-relaxed">
                         {pub.description}
                       </p>
                     </div>
                   </div>
-                  <a
-                    href={pub.downloadUrl}
-                    download
-                    className="flex items-center gap-2 px-4 py-2 bg-white text-[#0f0f0f] text-sm font-medium rounded hover:bg-white/90 transition-colors shrink-0"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download
-                  </a>
+                  
+                  {/* Download button */}
+                  <div className="flex justify-start pt-2">
+                    <a
+                      href={pub.downloadUrl}
+                      download
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#0f0f0f] text-sm font-medium rounded hover:bg-white/90 transition-colors group-hover:scale-105 transition-transform touch-manipulation"
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Download PDF</span>
+                    </a>
+                  </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         </div>
