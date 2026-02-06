@@ -125,10 +125,14 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let transcript = ""
-      for (let i = 0; i < event.results.length; i++) {
+      // Only process new results starting from resultIndex
+      for (let i = event.resultIndex; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript
       }
-      setInputValue(transcript)
+      // Only update if we have a final result
+      if (event.results[event.results.length - 1].isFinal) {
+        setInputValue(transcript.trim())
+      }
     }
 
     recognition.onend = () => {
