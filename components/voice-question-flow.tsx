@@ -40,6 +40,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   const [currentTranscript, setCurrentTranscript] = useState("")
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const transcriptRef = useRef("")
 
   const getSpeechRecognition = useCallback((): SpeechRecognitionInstance | null => {
     if (typeof window === "undefined") return null
@@ -60,22 +61,30 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   }, [])
 
   const handleAnswerComplete = useCallback((answer: string) => {
+    console.log("[v0] Answer complete:", answer)
     const trimmedAnswer = answer.trim()
     if (!trimmedAnswer) return
 
     const newAnswers = [...answers, trimmedAnswer]
     setAnswers(newAnswers)
     setCurrentTranscript("")
+    transcriptRef.current = ""
     stopListening()
+
+    console.log("[v0] Current question index:", currentQuestionIndex, "Total questions:", questions.length)
 
     if (currentQuestionIndex < questions.length - 1) {
       // Move to next question after a brief pause
+      console.log("[v0] Moving to next question")
       setTimeout(() => {
         setCurrentQuestionIndex(currentQuestionIndex + 1)
-        startListening()
+        setTimeout(() => {
+          startListening()
+        }, 500)
       }, 1000)
     } else {
       // All questions answered, analyze responses
+      console.log("[v0] All questions answered, analyzing")
       setTimeout(() => {
         setCurrentStep("analyzing")
         analyzeAnswers(newAnswers)
@@ -113,20 +122,25 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
 
       // Update current transcript with interim results
       if (interimTranscript) {
-        setCurrentTranscript(interimTranscript)
+        const displayTranscript = transcriptRef.current + " " + interimTranscript
+        setCurrentTranscript(displayTranscript.trim())
       }
 
       // When we get final results, add to transcript and reset silence timer
       if (finalTranscript) {
-        const newTranscript = currentTranscript + " " + finalTranscript
-        setCurrentTranscript(newTranscript.trim())
+        const newTranscript = (transcriptRef.current + " " + finalTranscript).trim()
+        transcriptRef.current = newTranscript
+        setCurrentTranscript(newTranscript)
+
+        console.log("[v0] Final transcript updated:", newTranscript)
 
         // Reset silence timer - if user stops speaking for 2 seconds, complete answer
         if (silenceTimerRef.current) {
           clearTimeout(silenceTimerRef.current)
         }
         silenceTimerRef.current = setTimeout(() => {
-          handleAnswerComplete(newTranscript.trim())
+          console.log("[v0] Silence detected, completing answer with:", transcriptRef.current)
+          handleAnswerComplete(transcriptRef.current)
         }, 2000)
       }
     }
