@@ -106,6 +106,7 @@ export function NetworkGraph({
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const hasProcessedInitialData = useRef(false)
 
   // Initialize SpeechRecognition
   const getSpeechRecognition = useCallback((): SpeechRecognitionInstance | null => {
@@ -549,9 +550,13 @@ export function NetworkGraph({
     }
   }, [inputValue, processWord, isProcessing])
 
-  // Replace map with new nodes when provided
+  // Replace map with new nodes when provided (only run once)
   useEffect(() => {
+    if (hasProcessedInitialData.current) return
+    
     if (initialNodes.length > 0) {
+      hasProcessedInitialData.current = true
+      
       // Clear existing map and replace with new nodes
       const newKeywords = initialNodes.map(node => node.keyword)
       const descriptions: Record<string, string> = {}
@@ -564,7 +569,9 @@ export function NetworkGraph({
       setNodeDescriptions(descriptions)
       setSelectedNode(null)
       setInputValue("")
-    } else if (initialKeywords.length > 0) {
+    } else if (initialKeywords.length > 0 && !hasProcessedInitialData.current) {
+      hasProcessedInitialData.current = true
+      
       // Legacy support for initialKeywords
       const addKeywords = async () => {
         for (const keyword of initialKeywords) {
