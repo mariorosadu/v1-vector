@@ -10,9 +10,9 @@ export async function POST(request: Request) {
   try {
     const { text } = await generateText({
       model: "openai/gpt-4o-mini",
-      prompt: `You are an expert in problem analysis and knowledge mapping. 
+      prompt: `You are an expert in problem surface mapping and contextual analysis. Your task is to identify the most relevant and impactful concepts from user responses.
 
-A user has answered three questions about their problem:
+A user has provided the following context:
 
 1. What problem are you trying to solve?
    "${answers[0]}"
@@ -23,43 +23,59 @@ A user has answered three questions about their problem:
 3. What are the main challenges or obstacles?
    "${answers[2]}"
 
-Extract exactly 6 keywords that represent the core concepts, challenges, stakeholders, or aspects of this problem. These keywords will be displayed as floating nodes in a problem surface map.
+TASK: Extract exactly 6 keywords that capture the core themes, concepts, and critical elements from this specific context.
 
-Requirements:
-- Extract 6 distinct, meaningful keywords or short phrases (1-3 words each)
-- Keywords should be substantive concepts, not articles or conjunctions
-- Focus on actionable concepts, stakeholders, challenges, or key themes
-- Use title case for keywords
-- Make them specific enough to be meaningful but general enough to be relatable
+KEYWORD SELECTION CRITERIA:
+- Choose words/phrases that appear directly in or are strongly implied by the user's actual responses
+- Prioritize specificity over generality - reflect what the user actually said, not generic problem-solving terms
+- Select keywords that represent: main problem elements, key stakeholders, critical challenges, desired outcomes, constraints, or resources
+- Each keyword should be 1-3 words, using Title Case
+- Ensure diversity - don't pick 6 variations of the same concept
 
-For each keyword, provide a brief description (max 2 lines, ~80 characters) that explains its role in the problem.
+DESCRIPTION REQUIREMENTS:
+- Each description must be context-specific, reflecting HOW this keyword relates to THIS particular problem
+- Avoid generic phrases like "key aspect of the problem" or "important factor"
+- Descriptions should reference or paraphrase the user's actual context
+- Maximum 80 characters per description
+- Capture the essence of why this keyword matters in THIS specific situation
+
+EXAMPLE OF GOOD vs BAD:
+User says: "Students struggle to afford textbooks, causing them to fall behind in coursework"
+
+❌ BAD:
+- Keyword: "Challenge"
+- Description: "Main obstacle in the problem"
+
+✅ GOOD:
+- Keyword: "Textbook Costs"
+- Description: "Financial barrier preventing students from accessing course materials"
 
 Respond ONLY with a JSON object in this exact format:
 {
   "nodes": [
     {
       "keyword": "Keyword1",
-      "description": "Brief description explaining its role in the problem"
+      "description": "Context-specific description from user's actual problem"
     },
     {
       "keyword": "Keyword2",
-      "description": "Brief description explaining its role in the problem"
+      "description": "Context-specific description from user's actual problem"
     },
     {
       "keyword": "Keyword3",
-      "description": "Brief description explaining its role in the problem"
+      "description": "Context-specific description from user's actual problem"
     },
     {
       "keyword": "Keyword4",
-      "description": "Brief description explaining its role in the problem"
+      "description": "Context-specific description from user's actual problem"
     },
     {
       "keyword": "Keyword5",
-      "description": "Brief description explaining its role in the problem"
+      "description": "Context-specific description from user's actual problem"
     },
     {
       "keyword": "Keyword6",
-      "description": "Brief description explaining its role in the problem"
+      "description": "Context-specific description from user's actual problem"
     }
   ]
 }`,
