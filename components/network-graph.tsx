@@ -90,6 +90,7 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Initialize SpeechRecognition
   const getSpeechRecognition = useCallback((): SpeechRecognitionInstance | null => {
@@ -399,10 +400,7 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
     }
   }
 
-  const handleInputSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const keyword = inputValue.trim()
-    
+  const processWord = useCallback(async (keyword: string) => {
     if (!keyword || isProcessing) return
 
     const existsOnMap = activeKeywords.some(
@@ -466,7 +464,40 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
         setIsProcessing(false)
       }
     }
+  }, [activeKeywords, connections, selectedNode, isProcessing])
+
+  const handleInputSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const keyword = inputValue.trim()
+    if (keyword) {
+      // Clear debounce timer if form is submitted manually
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+        debounceTimerRef.current = null
+      }
+      await processWord(keyword)
+    }
   }
+
+  // Auto-submit after user stops typing
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+    }
+
+    const trimmedValue = inputValue.trim()
+    if (trimmedValue && !isProcessing) {
+      debounceTimerRef.current = setTimeout(() => {
+        processWord(trimmedValue)
+      }, 800) // Wait 800ms after user stops typing
+    }
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+    }
+  }, [inputValue, processWord, isProcessing])
 
   return (
     <motion.div
