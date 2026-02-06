@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Mic, CheckCircle2, Loader2 } from "lucide-react"
+import { CheckCircle2 } from "lucide-react"
+import { SpinningTop } from "./spinning-top"
 
 interface SpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList
@@ -296,9 +297,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
               transition={{ duration: 0.5 }}
               className="mb-8"
             >
-              <div className="w-24 h-24 mx-auto rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                <Mic className="w-12 h-12 text-white/60" />
-              </div>
+              <SpinningTop size={160} isActive={false} />
             </motion.div>
 
             <h2 className="text-3xl md:text-4xl font-light text-white mb-4 text-balance">
@@ -357,17 +356,14 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
               </h3>
 
               {/* Listening Indicator */}
-              <div className="flex flex-col items-center justify-center min-h-[120px]">
+              <div className="flex flex-col items-center justify-center min-h-[160px]">
                 {isListening && (
                   <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="relative mb-6"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="mb-6"
                   >
-                    <div className="w-20 h-20 rounded-full bg-red-600 flex items-center justify-center">
-                      <Mic className="w-10 h-10 text-white" />
-                    </div>
-                    <span className="absolute inset-0 rounded-full bg-red-600 opacity-75 animate-ping" />
+                    <SpinningTop size={120} isActive={true} />
                   </motion.div>
                 )}
 
@@ -419,13 +415,9 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             exit={{ opacity: 0, scale: 0.9 }}
             className="text-center py-20"
           >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="w-20 h-20 mx-auto mb-8"
-            >
-              <Loader2 className="w-full h-full text-white/60" />
-            </motion.div>
+            <div className="mx-auto mb-8">
+              <SpinningTop size={140} isActive={true} />
+            </div>
             <h3 className="text-2xl md:text-3xl font-light text-white mb-4">
               Analyzing Your Responses
             </h3>
