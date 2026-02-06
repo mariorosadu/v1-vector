@@ -356,30 +356,60 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             {/* Question */}
             <motion.div
               key={currentQuestionIndex}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1,
+              }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
               className="text-center mb-12"
             >
-              <div className="text-white/40 text-sm mb-4 uppercase tracking-wider">
+              <motion.div 
+                className="text-white/40 text-sm mb-4 uppercase tracking-wider"
+                animate={isListening ? { opacity: [0.4, 0.7, 0.4] } : {}}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
                 Question {currentQuestionIndex + 1} of {questions.length}
-              </div>
-              <h3 className="text-2xl md:text-3xl font-light text-white mb-8 text-balance">
-                {questions[currentQuestionIndex]}
-              </h3>
-
-              {/* Listening Indicator */}
-              <div className="flex flex-col items-center justify-center min-h-[180px] w-full">
+              </motion.div>
+              <motion.div
+                animate={isListening ? { 
+                  boxShadow: [
+                    "0 0 0px rgba(220, 38, 38, 0)",
+                    "0 0 30px rgba(220, 38, 38, 0.3)",
+                    "0 0 0px rgba(220, 38, 38, 0)"
+                  ]
+                } : {}}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="inline-block px-8 py-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm"
+              >
+                <h3 className="text-2xl md:text-4xl font-light text-white text-balance leading-relaxed">
+                  {questions[currentQuestionIndex]}
+                </h3>
                 {isListening && (
-                  <motion.div
+                  <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="mb-6 w-full"
+                    transition={{ delay: 0.5 }}
+                    className="text-red-400/80 text-sm mt-4 font-medium"
+                  >
+                    Recording your response...
+                  </motion.p>
+                )}
+              </motion.div>
+
+              {/* Listening Indicator - Full Width Red Line */}
+              <div className="flex flex-col items-center justify-center min-h-[180px] w-full relative">
+                {isListening && (
+                  <motion.div
+                    initial={{ scaleX: 0, opacity: 0 }}
+                    animate={{ scaleX: 1, opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="absolute left-0 right-0 top-0 mb-8"
                   >
                     <motion.div
-                      className="h-0.5 bg-red-600 w-full"
-                      animate={{ opacity: [1, 0.3, 1] }}
-                      transition={{ duration: 0.8, repeat: Infinity }}
+                      className="h-0.5 bg-red-600 w-full shadow-[0_0_10px_rgba(220,38,38,0.5)]"
+                      animate={{ opacity: [1, 0.4, 1] }}
+                      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
                     />
                   </motion.div>
                 )}
