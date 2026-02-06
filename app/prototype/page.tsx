@@ -6,19 +6,31 @@ import { NetworkGraph } from "@/components/network-graph"
 import { VoiceQuestionFlow } from "@/components/voice-question-flow"
 import { Footer } from "@/components/footer"
 
+interface KeywordNode {
+  keyword: string
+  description: string
+}
+
+interface Connection {
+  source: string
+  target: string
+}
+
 export default function PrototypePage() {
   const [showQuestionFlow, setShowQuestionFlow] = useState(true)
-  const [extractedKeywords, setExtractedKeywords] = useState<string[]>([])
+  const [extractedData, setExtractedData] = useState<{
+    nodes: KeywordNode[]
+    connections: Connection[]
+  } | null>(null)
 
-  const handleQuestionsComplete = (keywords: string[]) => {
-    console.log("[v0] Questions complete, keywords:", keywords)
-    setExtractedKeywords(keywords)
+  const handleQuestionsComplete = (data: { nodes: KeywordNode[]; connections: Connection[] }) => {
+    setExtractedData(data)
     setShowQuestionFlow(false)
   }
 
   const handleReset = () => {
     setShowQuestionFlow(true)
-    setExtractedKeywords([])
+    setExtractedData(null)
   }
 
   return (
@@ -46,7 +58,11 @@ export default function PrototypePage() {
             <VoiceQuestionFlow onComplete={handleQuestionsComplete} />
           ) : (
             <>
-              <NetworkGraph showStartButton initialKeywords={extractedKeywords} />
+              <NetworkGraph 
+                showStartButton={false} 
+                initialNodes={extractedData?.nodes || []}
+                initialConnections={extractedData?.connections || []}
+              />
               
               {/* Reset Button */}
               <div className="flex justify-center mt-8">

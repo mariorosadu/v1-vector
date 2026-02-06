@@ -22,8 +22,18 @@ type SpeechRecognitionInstance = {
   onerror: ((event: Event & { error: string }) => void) | null
 }
 
+interface KeywordNode {
+  keyword: string
+  description: string
+}
+
+interface Connection {
+  source: string
+  target: string
+}
+
 interface VoiceQuestionFlowProps {
-  onComplete: (keywords: string[]) => void
+  onComplete: (data: { nodes: KeywordNode[]; connections: Connection[] }) => void
 }
 
 const questions = [
@@ -180,8 +190,6 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
 
   const analyzeAnswers = async (answers: string[]) => {
     try {
-      console.log("[v0] Analyzing answers:", answers)
-
       const response = await fetch("/api/extract-keywords", {
         method: "POST",
         headers: {
@@ -195,13 +203,12 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
       }
 
       const data = await response.json()
-      console.log("[v0] Extracted keywords:", data.keywords)
 
       setCurrentStep("complete")
 
       // Wait a moment before adding to map
       setTimeout(() => {
-        onComplete(data.keywords)
+        onComplete({ nodes: data.nodes, connections: data.connections })
       }, 1500)
     } catch (error) {
       console.error("[v0] Error analyzing answers:", error)
@@ -212,11 +219,22 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
         .replace(/[^a-z\s]/g, "")
         .split(" ")
         .filter((word) => word.length > 4)
-        .slice(0, 4)
+        .slice(0, 3)
+
+      const fallbackNodes = simpleKeywords.map(keyword => ({
+        keyword: keyword.charAt(0).toUpperCase() + keyword.slice(1),
+        description: "Key aspect of the problem"
+      }))
+
+      const fallbackConnections = [
+        { source: fallbackNodes[0].keyword, target: fallbackNodes[1].keyword },
+        { source: fallbackNodes[1].keyword, target: fallbackNodes[2].keyword },
+        { source: fallbackNodes[0].keyword, target: fallbackNodes[2].keyword }
+      ]
 
       setCurrentStep("complete")
       setTimeout(() => {
-        onComplete(simpleKeywords)
+        onComplete({ nodes: fallbackNodes, connections: fallbackConnections })
       }, 1500)
     }
   }

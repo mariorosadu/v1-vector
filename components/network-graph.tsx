@@ -28,6 +28,7 @@ type SpeechRecognitionInstance = {
 interface Node {
   id: string
   label: string
+  description?: string
   x: number
   y: number
   vx: number
@@ -73,12 +74,24 @@ const initialConnections: Edge[] = [
   { source: "Feedback Loops", target: "Network Effects" },
 ]
 
+interface KeywordNode {
+  keyword: string
+  description: string
+}
+
 interface NetworkGraphProps {
   showStartButton?: boolean
   initialKeywords?: string[]
+  initialNodes?: KeywordNode[]
+  initialConnections?: Edge[]
 }
 
-export function NetworkGraph({ showStartButton = false, initialKeywords = [] }: NetworkGraphProps) {
+export function NetworkGraph({ 
+  showStartButton = false, 
+  initialKeywords = [],
+  initialNodes = [],
+  initialConnections = []
+}: NetworkGraphProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const nodesRef = useRef<Node[]>([])
   const hoveredNodeRef = useRef<string | null>(null)
@@ -88,6 +101,7 @@ export function NetworkGraph({ showStartButton = false, initialKeywords = [] }: 
   const [inputValue, setInputValue] = useState("")
   const [activeKeywords, setActiveKeywords] = useState<string[]>(keywords)
   const [connections, setConnections] = useState<Edge[]>(initialConnections)
+  const [nodeDescriptions, setNodeDescriptions] = useState<Record<string, string>>({})
   const [isProcessing, setIsProcessing] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
@@ -175,6 +189,7 @@ export function NetworkGraph({ showStartButton = false, initialKeywords = [] }: 
       return {
         id: keyword,
         label: keyword,
+        description: nodeDescriptions[keyword],
         x,
         y,
         vx: 0,
@@ -184,7 +199,7 @@ export function NetworkGraph({ showStartButton = false, initialKeywords = [] }: 
     })
 
     nodesRef.current = initialNodes
-  }, [activeKeywords])
+  }, [activeKeywords, nodeDescriptions])
 
   // Physics simulation
   useEffect(() => {
@@ -336,6 +351,36 @@ export function NetworkGraph({ showStartButton = false, initialKeywords = [] }: 
         ctx.textBaseline = "middle"
         const labelOffset = isSelected ? -35 : -20
         ctx.fillText(node.label, node.x, node.y + labelOffset)
+
+        // Node description - show only if selected and description exists
+        if (isSelected && node.description) {
+          ctx.font = "12px Inter"
+          ctx.fillStyle = "rgba(255, 255, 255, 0.6)"
+          
+          // Word wrap description to max 40 characters per line
+          const maxWidth = 300
+          const words = node.description.split(' ')
+          const lines: string[] = []
+          let currentLine = ''
+          
+          words.forEach(word => {
+            const testLine = currentLine ? `${currentLine} ${word}` : word
+            const metrics = ctx.measureText(testLine)
+            if (metrics.width > maxWidth && currentLine) {
+              lines.push(currentLine)
+              currentLine = word
+            } else {
+              currentLine = testLine
+            }
+          })
+          if (currentLine) lines.push(currentLine)
+          
+          // Limit to 2 lines
+          const displayLines = lines.slice(0, 2)
+          displayLines.forEach((line, i) => {
+            ctx.fillText(line, node.x, node.y + labelOffset + 25 + (i * 16))
+          })
+        }
       })
 
       animationFrameRef.current = requestAnimationFrame(animate)
@@ -504,27 +549,35 @@ export function NetworkGraph({ showStartButton = false, initialKeywords = [] }: 
     }
   }, [inputValue, processWord, isProcessing])
 
-  // Process initial keywords when provided
+  // Replace map with new nodes when provided
   useEffect(() => {
-    if (initialKeywords.length === 0) return
-
-    const addKeywords = async () => {
-      console.log("[v0] Adding initial keywords to map:", initialKeywords)
+    if (initialNodes.length > 0) {
+      // Clear existing map and replace with new nodes
+      const newKeywords = initialNodes.map(node => node.keyword)
+      const descriptions: Record<string, string> = {}
+      initialNodes.forEach(node => {
+        descriptions[node.keyword] = node.description
+      })
       
-      for (const keyword of initialKeywords) {
-        // Check if keyword already exists
-        if (activeKeywords.some((k) => k.toLowerCase() === keyword.toLowerCase())) {
-          continue
+      setActiveKeywords(newKeywords)
+      setConnections(initialConnections)
+      setNodeDescriptions(descriptions)
+      setSelectedNode(null)
+      setInputValue("")
+    } else if (initialKeywords.length > 0) {
+      // Legacy support for initialKeywords
+      const addKeywords = async () => {
+        for (const keyword of initialKeywords) {
+          if (activeKeywords.some((k) => k.toLowerCase() === keyword.toLowerCase())) {
+            continue
+          }
+          await new Promise((resolve) => setTimeout(resolve, 500))
+          await processWord(keyword)
         }
-
-        // Add keyword with a delay for animation effect
-        await new Promise((resolve) => setTimeout(resolve, 500))
-        await processWord(keyword)
       }
+      addKeywords()
     }
-
-    addKeywords()
-  }, [initialKeywords])
+  }, [initialNodes, initialConnections, initialKeywords])
 
   return (
     <motion.div
