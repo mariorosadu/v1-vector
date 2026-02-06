@@ -41,6 +41,9 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null)
   const transcriptRef = useRef("")
+  const currentQuestionIndexRef = useRef(0)
+  const answersRef = useRef<string[]>([])
+  const isProcessingRef = useRef(false)
 
   const getSpeechRecognition = useCallback((): SpeechRecognitionInstance | null => {
     if (typeof window === "undefined") return null
@@ -62,23 +65,38 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
 
   const handleAnswerComplete = useCallback((answer: string) => {
     console.log("[v0] Answer complete:", answer)
+    
+    // Prevent double processing
+    if (isProcessingRef.current) {
+      console.log("[v0] Already processing, skipping")
+      return
+    }
+    
     const trimmedAnswer = answer.trim()
     if (!trimmedAnswer) return
 
-    const newAnswers = [...answers, trimmedAnswer]
+    isProcessingRef.current = true
+    const newAnswers = [...answersRef.current, trimmedAnswer]
+    answersRef.current = newAnswers
     setAnswers(newAnswers)
     setCurrentTranscript("")
     transcriptRef.current = ""
     stopListening()
 
-    console.log("[v0] Current question index:", currentQuestionIndex, "Total questions:", questions.length)
+    console.log("[v0] Current question index:", currentQuestionIndexRef.current, "Total questions:", questions.length)
+    console.log("[v0] Current answers:", newAnswers)
 
-    if (currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndexRef.current < questions.length - 1) {
       // Move to next question after a brief pause
       console.log("[v0] Moving to next question")
       setTimeout(() => {
-        setCurrentQuestionIndex(currentQuestionIndex + 1)
+        const nextIndex = currentQuestionIndexRef.current + 1
+        currentQuestionIndexRef.current = nextIndex
+        setCurrentQuestionIndex(nextIndex)
+        console.log("[v0] Set question index to:", nextIndex)
+        
         setTimeout(() => {
+          isProcessingRef.current = false
           startListening()
         }, 500)
       }, 1000)
@@ -90,7 +108,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
         analyzeAnswers(newAnswers)
       }, 1000)
     }
-  }, [answers, currentQuestionIndex, stopListening])
+  }, [stopListening])
 
   const startListening = useCallback(() => {
     const recognition = getSpeechRecognition()
@@ -158,7 +176,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
 
     recognitionRef.current = recognition
     recognition.start()
-  }, [getSpeechRecognition, handleAnswerComplete, currentTranscript])
+  }, [getSpeechRecognition, handleAnswerComplete])
 
   const analyzeAnswers = async (answers: string[]) => {
     try {
@@ -205,10 +223,22 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
 
   const handleStart = () => {
     setCurrentStep("questions")
+    currentQuestionIndexRef.current = 0
+    answersRef.current = []
+    isProcessingRef.current = false
     setTimeout(() => {
       startListening()
     }, 500)
   }
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    currentQuestionIndexRef.current = currentQuestionIndex
+  }, [currentQuestionIndex])
+
+  useEffect(() => {
+    answersRef.current = answers
+  }, [answers])
 
   useEffect(() => {
     return () => {
