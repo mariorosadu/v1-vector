@@ -401,76 +401,69 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
 
   const handleInputSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const trimmedValue = inputValue.trim()
+    const keyword = inputValue.trim()
     
-    if (!trimmedValue || isProcessing) return
+    if (!keyword || isProcessing) return
 
-    const operation = trimmedValue[0]
-    const keyword = trimmedValue.slice(1).trim()
+    const existsOnMap = activeKeywords.some(
+      (k) => k.toLowerCase() === keyword.toLowerCase()
+    )
 
-    if (operation === '+') {
-      // Add keyword if it doesn't exist
-      if (keyword && !activeKeywords.includes(keyword)) {
-        setIsProcessing(true)
-        setInputValue("")
-        
-        try {
-          // Call LLM to suggest connections
-          console.log("[v0] Requesting connections for:", keyword)
-          const response = await fetch("/api/suggest-connections", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              newKeyword: keyword,
-              existingKeywords: activeKeywords,
-            }),
-          })
-
-          if (!response.ok) {
-            throw new Error("Failed to get suggestions")
-          }
-
-          const data = await response.json()
-          console.log("[v0] Suggested connections:", data.connections)
-
-          // Add the keyword and connections
-          setActiveKeywords([...activeKeywords, keyword])
-          
-          // Add new edges to the connections array
-          const newConnections: Edge[] = data.connections
-            .filter((target: string) => activeKeywords.includes(target))
-            .map((target: string) => ({
-              source: keyword,
-              target: target,
-            }))
-
-          setConnections([...connections, ...newConnections])
-          setSelectedNode(null)
-        } catch (error) {
-          console.error("[v0] Error getting suggestions:", error)
-          // Still add the keyword even if LLM fails, but without connections
-          setActiveKeywords([...activeKeywords, keyword])
-          setSelectedNode(null)
-        } finally {
-          setIsProcessing(false)
-        }
-      }
-    } else if (operation === '-') {
-      // Remove keyword if it exists
-      if (keyword && activeKeywords.includes(keyword)) {
-        setActiveKeywords(activeKeywords.filter(k => k !== keyword))
-        // Remove all connections involving this keyword
-        setConnections(
-          connections.filter(
-            (edge) => edge.source !== keyword && edge.target !== keyword
-          )
+    if (existsOnMap) {
+      // Word exists -- remove it from the map
+      const matchedKeyword = activeKeywords.find(
+        (k) => k.toLowerCase() === keyword.toLowerCase()
+      )!
+      setActiveKeywords(activeKeywords.filter((k) => k !== matchedKeyword))
+      setConnections(
+        connections.filter(
+          (edge) => edge.source !== matchedKeyword && edge.target !== matchedKeyword
         )
-        if (selectedNode === keyword) {
-          setSelectedNode(null)
+      )
+      if (selectedNode === matchedKeyword) {
+        setSelectedNode(null)
+      }
+      setInputValue("")
+    } else {
+      // Word does not exist -- add it to the map
+      setIsProcessing(true)
+      setInputValue("")
+
+      try {
+        const response = await fetch("/api/suggest-connections", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            newKeyword: keyword,
+            existingKeywords: activeKeywords,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to get suggestions")
         }
-        setInputValue("")
+
+        const data = await response.json()
+
+        setActiveKeywords([...activeKeywords, keyword])
+
+        const newConnections: Edge[] = data.connections
+          .filter((target: string) => activeKeywords.includes(target))
+          .map((target: string) => ({
+            source: keyword,
+            target: target,
+          }))
+
+        setConnections([...connections, ...newConnections])
+        setSelectedNode(null)
+      } catch (error) {
+        console.error("Error getting suggestions:", error)
+        setActiveKeywords([...activeKeywords, keyword])
+        setSelectedNode(null)
+      } finally {
+        setIsProcessing(false)
       }
     }
   }
@@ -508,7 +501,7 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Use - or + before a keyword to add or remove it from the map"
+                placeholder="Type a word to add or remove it from the map"
                 disabled={isProcessing}
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
