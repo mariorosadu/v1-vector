@@ -261,6 +261,18 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
     }, 500)
   }
 
+  const handleCancel = () => {
+    stopListening()
+    setCurrentStep("start")
+    setCurrentQuestionIndex(0)
+    setAnswers([])
+    setCurrentTranscript("")
+    currentQuestionIndexRef.current = 0
+    answersRef.current = []
+    transcriptRef.current = ""
+    isProcessingRef.current = false
+  }
+
   // Keep refs in sync with state
   useEffect(() => {
     currentQuestionIndexRef.current = currentQuestionIndex
@@ -357,7 +369,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
               </h3>
 
               {/* Listening Indicator */}
-              <div className="flex flex-col items-center justify-center min-h-[120px]">
+              <div className="flex flex-col items-center justify-center min-h-[180px]">
                 {isListening && (
                   <motion.div
                     initial={{ scale: 0 }}
@@ -376,14 +388,26 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="px-6 py-4 bg-white/5 border border-white/10 rounded-lg max-w-2xl"
+                    className="px-6 py-4 bg-white/5 border border-white/10 rounded-lg max-w-2xl mb-6"
                   >
                     <p className="text-white/80 text-lg text-pretty">{currentTranscript}</p>
                   </motion.div>
                 )}
 
                 {!currentTranscript && isListening && (
-                  <p className="text-white/40 text-sm">Listening... Start speaking</p>
+                  <p className="text-white/40 text-sm mb-6">Listening... Start speaking</p>
+                )}
+
+                {/* Cancel Button */}
+                {isListening && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={handleCancel}
+                    className="px-6 py-2 bg-white/10 border border-white/20 text-white/70 rounded-lg hover:bg-white/15 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/30"
+                  >
+                    Cancel
+                  </motion.button>
                 )}
               </div>
             </motion.div>
