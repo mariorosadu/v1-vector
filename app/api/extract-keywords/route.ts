@@ -95,9 +95,9 @@ Respond ONLY with a JSON object in this exact format:
   } catch (error) {
     console.error("[v0] Error extracting keywords:", error)
     
-    // Fallback: extract simple keywords from answers
-    const allWords = answers
-      .join(" ")
+    // Fallback: extract context-specific keywords from answers
+    const contextText = answers.join(" ")
+    const allWords = contextText
       .toLowerCase()
       .replace(/[^a-z\s]/g, "")
       .split(" ")
@@ -107,11 +107,32 @@ Respond ONLY with a JSON object in this exact format:
 
     const fallbackKeywords = allWords.length === 6 ? allWords : ["Challenge", "Stakeholder", "Solution", "Impact", "Resources", "Goals"]
     
-    return Response.json({ 
-      nodes: fallbackKeywords.map(keyword => ({
+    // Create context-aware descriptions by extracting surrounding text
+    const nodes = fallbackKeywords.map(keyword => {
+      const lowerKeyword = keyword.toLowerCase()
+      const contextIndex = contextText.toLowerCase().indexOf(lowerKeyword)
+      let description = "Core element mentioned in the problem context"
+      
+      if (contextIndex !== -1) {
+        // Extract surrounding words for context
+        const words = contextText.split(" ")
+        const keywordIndex = words.findIndex(w => w.toLowerCase().includes(lowerKeyword))
+        if (keywordIndex !== -1) {
+          const start = Math.max(0, keywordIndex - 3)
+          const end = Math.min(words.length, keywordIndex + 4)
+          const snippet = words.slice(start, end).join(" ")
+          description = snippet.length > 80 ? snippet.slice(0, 77) + "..." : snippet
+        }
+      }
+      
+      return {
         keyword,
-        description: `Key aspect of the problem`
-      })),
+        description
+      }
+    })
+    
+    return Response.json({ 
+      nodes,
       connections: []
     })
   }
