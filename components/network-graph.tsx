@@ -90,6 +90,7 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Initialize SpeechRecognition
   const getSpeechRecognition = useCallback((): SpeechRecognitionInstance | null => {
@@ -124,10 +125,14 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let transcript = ""
-      for (let i = 0; i < event.results.length; i++) {
+      // Only process new results starting from resultIndex
+      for (let i = event.resultIndex; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript
       }
-      setInputValue(transcript)
+      // Only update if we have a final result
+      if (event.results[event.results.length - 1].isFinal) {
+        setInputValue(transcript.trim())
+      }
     }
 
     recognition.onend = () => {
@@ -399,81 +404,104 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
     }
   }
 
-  const handleInputSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const trimmedValue = inputValue.trim()
-    
-    if (!trimmedValue || isProcessing) return
+  const processWord = useCallback(async (keyword: string) => {
+    if (!keyword || isProcessing) return
 
-    const operation = trimmedValue[0]
-    const keyword = trimmedValue.slice(1).trim()
+    const existsOnMap = activeKeywords.some(
+      (k) => k.toLowerCase() === keyword.toLowerCase()
+    )
 
-    if (operation === '+') {
-      // Add keyword if it doesn't exist
-      if (keyword && !activeKeywords.includes(keyword)) {
-        setIsProcessing(true)
-        setInputValue("")
-        
-        try {
-          // Call LLM to suggest connections
-          console.log("[v0] Requesting connections for:", keyword)
-          const response = await fetch("/api/suggest-connections", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              newKeyword: keyword,
-              existingKeywords: activeKeywords,
-            }),
-          })
-
-          if (!response.ok) {
-            throw new Error("Failed to get suggestions")
-          }
-
-          const data = await response.json()
-          console.log("[v0] Suggested connections:", data.connections)
-
-          // Add the keyword and connections
-          setActiveKeywords([...activeKeywords, keyword])
-          
-          // Add new edges to the connections array
-          const newConnections: Edge[] = data.connections
-            .filter((target: string) => activeKeywords.includes(target))
-            .map((target: string) => ({
-              source: keyword,
-              target: target,
-            }))
-
-          setConnections([...connections, ...newConnections])
-          setSelectedNode(null)
-        } catch (error) {
-          console.error("[v0] Error getting suggestions:", error)
-          // Still add the keyword even if LLM fails, but without connections
-          setActiveKeywords([...activeKeywords, keyword])
-          setSelectedNode(null)
-        } finally {
-          setIsProcessing(false)
-        }
-      }
-    } else if (operation === '-') {
-      // Remove keyword if it exists
-      if (keyword && activeKeywords.includes(keyword)) {
-        setActiveKeywords(activeKeywords.filter(k => k !== keyword))
-        // Remove all connections involving this keyword
-        setConnections(
-          connections.filter(
-            (edge) => edge.source !== keyword && edge.target !== keyword
-          )
+    if (existsOnMap) {
+      // Word exists -- remove it from the map
+      const matchedKeyword = activeKeywords.find(
+        (k) => k.toLowerCase() === keyword.toLowerCase()
+      )!
+      setActiveKeywords(activeKeywords.filter((k) => k !== matchedKeyword))
+      setConnections(
+        connections.filter(
+          (edge) => edge.source !== matchedKeyword && edge.target !== matchedKeyword
         )
-        if (selectedNode === keyword) {
-          setSelectedNode(null)
+      )
+      if (selectedNode === matchedKeyword) {
+        setSelectedNode(null)
+      }
+      setInputValue("")
+    } else {
+      // Word does not exist -- add it to the map
+      setIsProcessing(true)
+      setInputValue("")
+
+      try {
+        const response = await fetch("/api/suggest-connections", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            newKeyword: keyword,
+            existingKeywords: activeKeywords,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to get suggestions")
         }
-        setInputValue("")
+
+        const data = await response.json()
+
+        setActiveKeywords([...activeKeywords, keyword])
+
+        const newConnections: Edge[] = data.connections
+          .filter((target: string) => activeKeywords.includes(target))
+          .map((target: string) => ({
+            source: keyword,
+            target: target,
+          }))
+
+        setConnections([...connections, ...newConnections])
+        setSelectedNode(null)
+      } catch (error) {
+        console.error("Error getting suggestions:", error)
+        setActiveKeywords([...activeKeywords, keyword])
+        setSelectedNode(null)
+      } finally {
+        setIsProcessing(false)
       }
     }
+  }, [activeKeywords, connections, selectedNode, isProcessing])
+
+  const handleInputSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const keyword = inputValue.trim()
+    if (keyword) {
+      // Clear debounce timer if form is submitted manually
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+        debounceTimerRef.current = null
+      }
+      await processWord(keyword)
+    }
   }
+
+  // Auto-submit after user stops typing
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+    }
+
+    const trimmedValue = inputValue.trim()
+    if (trimmedValue && !isProcessing) {
+      debounceTimerRef.current = setTimeout(() => {
+        processWord(trimmedValue)
+      }, 800) // Wait 800ms after user stops typing
+    }
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+    }
+  }, [inputValue, processWord, isProcessing])
 
   return (
     <motion.div
@@ -508,7 +536,7 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Use - or + before a keyword to add or remove it from the map"
+                placeholder="Type a word to add or remove it from the map"
                 disabled={isProcessing}
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
