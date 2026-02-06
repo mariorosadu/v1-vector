@@ -219,22 +219,16 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
         .replace(/[^a-z\s]/g, "")
         .split(" ")
         .filter((word) => word.length > 4)
-        .slice(0, 3)
+        .slice(0, 6)
 
       const fallbackNodes = simpleKeywords.map(keyword => ({
         keyword: keyword.charAt(0).toUpperCase() + keyword.slice(1),
         description: "Key aspect of the problem"
       }))
 
-      const fallbackConnections = [
-        { source: fallbackNodes[0].keyword, target: fallbackNodes[1].keyword },
-        { source: fallbackNodes[1].keyword, target: fallbackNodes[2].keyword },
-        { source: fallbackNodes[0].keyword, target: fallbackNodes[2].keyword }
-      ]
-
       setCurrentStep("complete")
       setTimeout(() => {
-        onComplete({ nodes: fallbackNodes, connections: fallbackConnections })
+        onComplete({ nodes: fallbackNodes, connections: [] })
       }, 1500)
     }
   }
