@@ -28,6 +28,7 @@ type SpeechRecognitionInstance = {
 interface Node {
   id: string
   label: string
+  description?: string
   x: number
   y: number
   vx: number
@@ -73,11 +74,24 @@ const initialConnections: Edge[] = [
   { source: "Feedback Loops", target: "Network Effects" },
 ]
 
-interface NetworkGraphProps {
-  showStartButton?: boolean
+interface KeywordNode {
+  keyword: string
+  description: string
 }
 
-export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
+interface NetworkGraphProps {
+  showStartButton?: boolean
+  initialKeywords?: string[]
+  initialNodes?: KeywordNode[]
+  initialConnections?: Edge[]
+}
+
+export function NetworkGraph({ 
+  showStartButton = false, 
+  initialKeywords = [],
+  initialNodes = [],
+  initialConnections = []
+}: NetworkGraphProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const nodesRef = useRef<Node[]>([])
   const hoveredNodeRef = useRef<string | null>(null)
@@ -87,10 +101,12 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
   const [inputValue, setInputValue] = useState("")
   const [activeKeywords, setActiveKeywords] = useState<string[]>(keywords)
   const [connections, setConnections] = useState<Edge[]>(initialConnections)
+  const [nodeDescriptions, setNodeDescriptions] = useState<Record<string, string>>({})
   const [isProcessing, setIsProcessing] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const hasProcessedInitialData = useRef(false)
 
   // Initialize SpeechRecognition
   const getSpeechRecognition = useCallback((): SpeechRecognitionInstance | null => {
@@ -174,16 +190,17 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
       return {
         id: keyword,
         label: keyword,
+        description: nodeDescriptions[keyword],
         x,
         y,
         vx: 0,
         vy: 0,
-        radius: 8,
+        radius: 10, // Increased from 8 to 10 for better visibility
       }
     })
 
     nodesRef.current = initialNodes
-  }, [activeKeywords])
+  }, [activeKeywords, nodeDescriptions])
 
   // Physics simulation
   useEffect(() => {
@@ -227,16 +244,16 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
         }
       } else {
         // Normal physics when no node is selected
-        // Repulsion between nodes
+        // Repulsion between nodes - increased spacing to prevent overlap
         for (let i = 0; i < newNodes.length; i++) {
           for (let j = i + 1; j < newNodes.length; j++) {
             const dx = newNodes[j].x - newNodes[i].x
             const dy = newNodes[j].y - newNodes[i].y
             const distance = Math.sqrt(dx * dx + dy * dy)
-            const minDistance = 120
+            const minDistance = 180 // Increased from 120 to 180 for better spacing
 
             if (distance < minDistance && distance > 0) {
-              const force = (minDistance - distance) * 0.01
+              const force = (minDistance - distance) * 0.015 // Increased force slightly
               const angle = Math.atan2(dy, dx)
               newNodes[i].vx -= Math.cos(angle) * force
               newNodes[i].vy -= Math.sin(angle) * force
@@ -319,22 +336,101 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
         }
         ctx.fill()
 
-        // Node label - larger if selected
+        // Node label - larger fonts for better mobile readability
+        const labelText = node.label
+        let fontSize = 16 // Increased from 12px base
+        let fontWeight = "normal"
+        let labelY = node.y - 28
+        
         if (isSelected) {
-          ctx.font = "bold 20px Inter"
-          ctx.fillStyle = "#fff"
+          fontSize = 24 // Increased from 20px
+          fontWeight = "bold"
+          labelY = node.y - 40
         } else if (isHovered) {
-          ctx.font = "14px Inter"
-          ctx.fillStyle = "#fff"
-        } else {
-          ctx.font = "12px Inter"
-          ctx.fillStyle = "rgba(255, 255, 255, 0.7)"
+          fontSize = 18 // Increased from 14px
+          fontWeight = "600"
+          labelY = node.y - 30
         }
         
+        ctx.font = `${fontWeight} ${fontSize}px Inter`
         ctx.textAlign = "center"
         ctx.textBaseline = "middle"
-        const labelOffset = isSelected ? -35 : -20
-        ctx.fillText(node.label, node.x, node.y + labelOffset)
+        
+        // Add semi-transparent background to labels for better readability
+        const textMetrics = ctx.measureText(labelText)
+        const textWidth = textMetrics.width
+        const padding = 8
+        const bgHeight = fontSize + padding * 2
+        
+        ctx.fillStyle = "rgba(15, 15, 15, 0.85)"
+        ctx.beginPath()
+        ctx.roundRect(
+          node.x - textWidth / 2 - padding,
+          labelY - fontSize / 2 - padding,
+          textWidth + padding * 2,
+          bgHeight,
+          4
+        )
+        ctx.fill()
+        
+        // Draw label text
+        if (isSelected || isHovered) {
+          ctx.fillStyle = "#fff"
+        } else {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.9)"
+        }
+        ctx.fillText(labelText, node.x, labelY)
+
+        // Node description - show only if selected and description exists
+        if (isSelected && node.description) {
+          ctx.font = "14px Inter" // Increased from 12px
+          
+          // Word wrap description to max width
+          const maxWidth = 320
+          const words = node.description.split(' ')
+          const lines: string[] = []
+          let currentLine = ''
+          
+          words.forEach(word => {
+            const testLine = currentLine ? `${currentLine} ${word}` : word
+            const metrics = ctx.measureText(testLine)
+            if (metrics.width > maxWidth && currentLine) {
+              lines.push(currentLine)
+              currentLine = word
+            } else {
+              currentLine = testLine
+            }
+          })
+          if (currentLine) lines.push(currentLine)
+          
+          // Limit to 2 lines
+          const displayLines = lines.slice(0, 2)
+          const lineHeight = 18
+          const descStartY = labelY + fontSize / 2 + padding + 10
+          
+          displayLines.forEach((line, i) => {
+            const descY = descStartY + (i * lineHeight)
+            const lineMetrics = ctx.measureText(line)
+            const lineWidth = lineMetrics.width
+            const linePadding = 6
+            
+            // Background for description line
+            ctx.fillStyle = "rgba(15, 15, 15, 0.85)"
+            ctx.beginPath()
+            ctx.roundRect(
+              node.x - lineWidth / 2 - linePadding,
+              descY - 7,
+              lineWidth + linePadding * 2,
+              16,
+              3
+            )
+            ctx.fill()
+            
+            // Description text
+            ctx.fillStyle = "rgba(255, 255, 255, 0.7)"
+            ctx.fillText(line, node.x, descY)
+          })
+        }
       })
 
       animationFrameRef.current = requestAnimationFrame(animate)
@@ -502,6 +598,42 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
       }
     }
   }, [inputValue, processWord, isProcessing])
+
+  // Replace map with new nodes when provided (only run once)
+  useEffect(() => {
+    if (hasProcessedInitialData.current) return
+    
+    if (initialNodes.length > 0) {
+      hasProcessedInitialData.current = true
+      
+      // Clear existing map and replace with new nodes
+      const newKeywords = initialNodes.map(node => node.keyword)
+      const descriptions: Record<string, string> = {}
+      initialNodes.forEach(node => {
+        descriptions[node.keyword] = node.description
+      })
+      
+      setActiveKeywords(newKeywords)
+      setConnections(initialConnections)
+      setNodeDescriptions(descriptions)
+      setSelectedNode(null)
+      setInputValue("")
+    } else if (initialKeywords.length > 0 && !hasProcessedInitialData.current) {
+      hasProcessedInitialData.current = true
+      
+      // Legacy support for initialKeywords
+      const addKeywords = async () => {
+        for (const keyword of initialKeywords) {
+          if (activeKeywords.some((k) => k.toLowerCase() === keyword.toLowerCase())) {
+            continue
+          }
+          await new Promise((resolve) => setTimeout(resolve, 500))
+          await processWord(keyword)
+        }
+      }
+      addKeywords()
+    }
+  }, [initialNodes, initialConnections, initialKeywords])
 
   return (
     <motion.div

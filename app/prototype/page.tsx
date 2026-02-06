@@ -1,10 +1,38 @@
 "use client"
 
+import { useState } from "react"
 import { SimpleHeader } from "@/components/simple-header"
 import { NetworkGraph } from "@/components/network-graph"
+import { VoiceQuestionFlow } from "@/components/voice-question-flow"
 import { Footer } from "@/components/footer"
 
+interface KeywordNode {
+  keyword: string
+  description: string
+}
+
+interface Connection {
+  source: string
+  target: string
+}
+
 export default function PrototypePage() {
+  const [showQuestionFlow, setShowQuestionFlow] = useState(true)
+  const [extractedData, setExtractedData] = useState<{
+    nodes: KeywordNode[]
+    connections: Connection[]
+  } | null>(null)
+
+  const handleQuestionsComplete = (data: { nodes: KeywordNode[]; connections: Connection[] }) => {
+    setExtractedData(data)
+    setShowQuestionFlow(false)
+  }
+
+  const handleReset = () => {
+    setShowQuestionFlow(true)
+    setExtractedData(null)
+  }
+
   return (
     <main className="bg-[#0f0f0f] min-h-screen">
       <SimpleHeader />
@@ -25,8 +53,28 @@ export default function PrototypePage() {
             </p>
           </div>
 
-          {/* Network Graph */}
-          <NetworkGraph showStartButton />
+          {/* Voice Question Flow or Network Graph */}
+          {showQuestionFlow ? (
+            <VoiceQuestionFlow onComplete={handleQuestionsComplete} />
+          ) : (
+            <>
+              <NetworkGraph 
+                showStartButton={false} 
+                initialNodes={extractedData?.nodes || []}
+                initialConnections={extractedData?.connections || []}
+              />
+              
+              {/* Reset Button */}
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={handleReset}
+                  className="px-6 py-3 bg-white/5 border border-white/10 text-white/70 rounded-lg hover:bg-white/10 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/20"
+                >
+                  Start New Mapping Session
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
