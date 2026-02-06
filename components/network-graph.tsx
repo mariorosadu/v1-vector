@@ -1,5 +1,9 @@
 "use client"
 
+// INTERNAL PHASE IDENTIFIER: MP2 (Map Phase 2)
+// This component manages interactive problem surface visualization
+// Supports both manual word entry and initial keyword node rendering from CB1 phase
+
 import React from "react"
 
 import { useEffect, useRef, useState, useCallback } from "react"
@@ -178,14 +182,27 @@ export function NetworkGraph({
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const centerX = canvas.width / 2
-    const centerY = canvas.height / 2
-    const radius = Math.min(canvas.width, canvas.height) * 0.35
+    // MP2: Check if we're in initial map phase (showing keyword nodes from CB1)
+    const isInitialMapPhase = initialNodes.length > 0
 
-    const initialNodes: Node[] = activeKeywords.map((keyword, index) => {
-      const angle = (index / activeKeywords.length) * Math.PI * 2
-      const x = centerX + Math.cos(angle) * radius
-      const y = centerY + Math.sin(angle) * radius
+    const initialNodesList: Node[] = activeKeywords.map((keyword, index) => {
+      let x, y
+
+      if (isInitialMapPhase) {
+        // MP2 Phase: Align all nodes to the left, stacked vertically
+        const leftMargin = canvas.width * 0.1
+        const spacing = (canvas.height * 0.8) / (activeKeywords.length + 1)
+        x = leftMargin
+        y = spacing * (index + 1)
+      } else {
+        // Manual entry phase: Circular distribution
+        const centerX = canvas.width / 2
+        const centerY = canvas.height / 2
+        const radius = Math.min(canvas.width, canvas.height) * 0.35
+        const angle = (index / activeKeywords.length) * Math.PI * 2
+        x = centerX + Math.cos(angle) * radius
+        y = centerY + Math.sin(angle) * radius
+      }
 
       return {
         id: keyword,
@@ -195,12 +212,12 @@ export function NetworkGraph({
         y,
         vx: 0,
         vy: 0,
-        radius: 10, // Increased from 8 to 10 for better visibility
+        radius: 10,
       }
     })
 
-    nodesRef.current = initialNodes
-  }, [activeKeywords, nodeDescriptions])
+    nodesRef.current = initialNodesList
+  }, [activeKeywords, nodeDescriptions, initialNodes])
 
   // Physics simulation
   useEffect(() => {
@@ -243,22 +260,36 @@ export function NetworkGraph({
           })
         }
       } else {
-        // Normal physics when no node is selected
-        // Repulsion between nodes - increased spacing to prevent overlap
-        for (let i = 0; i < newNodes.length; i++) {
-          for (let j = i + 1; j < newNodes.length; j++) {
-            const dx = newNodes[j].x - newNodes[i].x
-            const dy = newNodes[j].y - newNodes[i].y
-            const distance = Math.sqrt(dx * dx + dy * dy)
-            const minDistance = 180 // Increased from 120 to 180 for better spacing
+        // MP2 Phase: Disable physics, keep nodes locked on left side
+        const isInitialMapPhase = initialNodes.length > 0
+        
+        if (isInitialMapPhase) {
+          // MP2: Lock nodes in left vertical stack - no physics
+          newNodes.forEach((node, index) => {
+            const spacing = (canvas.height * 0.8) / (newNodes.length + 1)
+            node.x = canvas.width * 0.1
+            node.y = spacing * (index + 1)
+            node.vx = 0
+            node.vy = 0
+          })
+        } else {
+          // Normal physics when no node is selected and not in initial map phase
+          // Repulsion between nodes - increased spacing to prevent overlap
+          for (let i = 0; i < newNodes.length; i++) {
+            for (let j = i + 1; j < newNodes.length; j++) {
+              const dx = newNodes[j].x - newNodes[i].x
+              const dy = newNodes[j].y - newNodes[i].y
+              const distance = Math.sqrt(dx * dx + dy * dy)
+              const minDistance = 180
 
-            if (distance < minDistance && distance > 0) {
-              const force = (minDistance - distance) * 0.015 // Increased force slightly
-              const angle = Math.atan2(dy, dx)
-              newNodes[i].vx -= Math.cos(angle) * force
-              newNodes[i].vy -= Math.sin(angle) * force
-              newNodes[j].vx += Math.cos(angle) * force
-              newNodes[j].vy += Math.sin(angle) * force
+              if (distance < minDistance && distance > 0) {
+                const force = (minDistance - distance) * 0.015
+                const angle = Math.atan2(dy, dx)
+                newNodes[i].vx -= Math.cos(angle) * force
+                newNodes[i].vy -= Math.sin(angle) * force
+                newNodes[j].vx += Math.cos(angle) * force
+                newNodes[j].vy += Math.sin(angle) * force
+              }
             }
           }
         }

@@ -1,5 +1,8 @@
 "use client"
 
+// INTERNAL PHASE IDENTIFIER: CB1 (Context Building Phase 1)
+// This component handles the collection of user context through voice-based Q&A
+
 import { useCallback, useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Mic, CheckCircle2, Loader2 } from "lucide-react"
@@ -36,6 +39,7 @@ interface VoiceQuestionFlowProps {
   onComplete: (data: { nodes: KeywordNode[]; connections: Connection[] }) => void
 }
 
+// CB1: Discovery Questions - Core context collection prompts
 const questions = [
   "What problem are you trying to solve?",
   "Who is affected by this problem?",
@@ -43,6 +47,7 @@ const questions = [
 ]
 
 export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
+  // CB1: Context Building Phase - User voice input for problem discovery
   const [currentStep, setCurrentStep] = useState<"start" | "questions" | "analyzing" | "complete">("start")
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<string[]>([])
@@ -189,6 +194,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   }, [getSpeechRecognition, handleAnswerComplete])
 
   const analyzeAnswers = async (answers: string[]) => {
+    // CB1 → Analysis: Extract keywords from user responses to build initial node set
     try {
       const response = await fetch("/api/extract-keywords", {
         method: "POST",
@@ -261,6 +267,18 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
     }, 500)
   }
 
+  const handleCancel = () => {
+    stopListening()
+    setCurrentStep("start")
+    setCurrentQuestionIndex(0)
+    setAnswers([])
+    setCurrentTranscript("")
+    currentQuestionIndexRef.current = 0
+    answersRef.current = []
+    transcriptRef.current = ""
+    isProcessingRef.current = false
+  }
+
   // Keep refs in sync with state
   useEffect(() => {
     currentQuestionIndexRef.current = currentQuestionIndex
@@ -293,7 +311,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.375 }}
               className="mb-8"
             >
               <div className="w-24 h-24 mx-auto rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
@@ -330,7 +348,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
               {questions.map((_, index) => (
                 <div
                   key={index}
-                  className={`h-1 rounded-full transition-all duration-500 ${
+                  className={`h-1 rounded-full transition-all duration-[375ms] ${
                     index < currentQuestionIndex
                       ? "w-12 bg-white"
                       : index === currentQuestionIndex
@@ -344,30 +362,61 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             {/* Question */}
             <motion.div
               key={currentQuestionIndex}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1,
+              }}
+              transition={{ duration: 0.45, ease: "easeOut" }}
               className="text-center mb-12"
             >
-              <div className="text-white/40 text-sm mb-4 uppercase tracking-wider">
+              <motion.div 
+                className="text-white/40 text-sm mb-4 uppercase tracking-wider"
+                animate={isListening ? { opacity: [0.4, 0.7, 0.4] } : {}}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
                 Question {currentQuestionIndex + 1} of {questions.length}
-              </div>
-              <h3 className="text-2xl md:text-3xl font-light text-white mb-8 text-balance">
-                {questions[currentQuestionIndex]}
-              </h3>
+              </motion.div>
+              <motion.div
+                animate={isListening ? { 
+                  boxShadow: [
+                    "0 0 0px rgba(220, 38, 38, 0)",
+                    "0 0 30px rgba(220, 38, 38, 0.3)",
+                    "0 0 0px rgba(220, 38, 38, 0)"
+                  ]
+                } : {}}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="inline-block px-8 py-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm"
+              >
+                <h3 className="text-2xl md:text-4xl font-light text-white text-balance leading-relaxed">
+                  {questions[currentQuestionIndex]}
+                </h3>
+                {isListening && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.375 }}
+                    className="text-red-400/80 text-sm mt-4 font-medium"
+                  >
+                    Recording your response...
+                  </motion.p>
+                )}
+              </motion.div>
 
-              {/* Listening Indicator */}
-              <div className="flex flex-col items-center justify-center min-h-[120px]">
+              {/* Listening Indicator - Full Width Red Line */}
+              <div className="flex flex-col items-center justify-center min-h-[180px] w-full relative">
                 {isListening && (
                   <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="relative mb-6"
+                    initial={{ scaleX: 0, opacity: 0 }}
+                    animate={{ scaleX: 1, opacity: 1 }}
+                    transition={{ duration: 0.375 }}
+                    className="absolute left-0 right-0 top-0 mb-8"
                   >
-                    <div className="w-20 h-20 rounded-full bg-red-600 flex items-center justify-center">
-                      <Mic className="w-10 h-10 text-white" />
-                    </div>
-                    <span className="absolute inset-0 rounded-full bg-red-600 opacity-75 animate-ping" />
+                    <motion.div
+                      className="h-0.5 bg-red-600 w-full shadow-[0_0_10px_rgba(220,38,38,0.5)]"
+                      animate={{ opacity: [1, 0.4, 1] }}
+                      transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut" }}
+                    />
                   </motion.div>
                 )}
 
@@ -376,14 +425,26 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="px-6 py-4 bg-white/5 border border-white/10 rounded-lg max-w-2xl"
+                    className="px-6 py-4 bg-white/5 border border-white/10 rounded-lg max-w-2xl mb-6"
                   >
                     <p className="text-white/80 text-lg text-pretty">{currentTranscript}</p>
                   </motion.div>
                 )}
 
                 {!currentTranscript && isListening && (
-                  <p className="text-white/40 text-sm">Listening... Start speaking</p>
+                  <p className="text-white/40 text-sm mb-6">Listening... Start speaking</p>
+                )}
+
+                {/* Cancel Button */}
+                {isListening && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={handleCancel}
+                    className="px-6 py-2 bg-white/10 border border-white/20 text-white/70 rounded-lg hover:bg-white/15 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/30"
+                  >
+                    Cancel
+                  </motion.button>
                 )}
               </div>
             </motion.div>
@@ -396,7 +457,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                     key={index}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
+                    transition={{ delay: index * 0.075 }}
                     className="flex items-start gap-3 px-4 py-3 bg-white/5 border border-white/10 rounded-lg"
                   >
                     <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
@@ -421,7 +482,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
           >
             <motion.div
               animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
               className="w-20 h-20 mx-auto mb-8"
             >
               <Loader2 className="w-full h-full text-white/60" />
@@ -445,7 +506,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: "spring", duration: 0.6 }}
+              transition={{ type: "spring", duration: 0.45 }}
               className="w-20 h-20 mx-auto mb-8 rounded-full bg-green-600/20 flex items-center justify-center"
             >
               <CheckCircle2 className="w-12 h-12 text-green-400" />
