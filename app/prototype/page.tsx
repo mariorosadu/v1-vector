@@ -26,7 +26,7 @@ export default function PrototypePage() {
           </div>
 
           {/* Network Graph */}
-          <NetworkGraph />
+          <NetworkGraph showStartButton />
         </div>
       </div>
 

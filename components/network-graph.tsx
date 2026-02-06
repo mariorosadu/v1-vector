@@ -53,7 +53,11 @@ const initialConnections: Edge[] = [
   { source: "Feedback Loops", target: "Network Effects" },
 ]
 
-export function NetworkGraph() {
+interface NetworkGraphProps {
+  showStartButton?: boolean
+}
+
+export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const nodesRef = useRef<Node[]>([])
   const hoveredNodeRef = useRef<string | null>(null)
@@ -431,6 +435,14 @@ export function NetworkGraph() {
                 </div>
               )}
             </div>
+            {showStartButton && (
+              <button
+                type="button"
+                className="mt-4 w-full px-4 py-3 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+              >
+                Start now
+              </button>
+            )}
           </form>
         </div>
       </div>
