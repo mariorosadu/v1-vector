@@ -372,14 +372,28 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
               <div className="flex flex-col items-center justify-center min-h-[180px]">
                 {isListening && (
                   <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="relative mb-6"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mb-6"
                   >
-                    <div className="w-20 h-20 rounded-full bg-red-600 flex items-center justify-center">
-                      <Mic className="w-10 h-10 text-white" />
-                    </div>
-                    <span className="absolute inset-0 rounded-full bg-red-600 opacity-75 animate-ping" />
+                    <svg
+                      width="80"
+                      height="80"
+                      viewBox="0 0 80 80"
+                      className="mx-auto"
+                    >
+                      <motion.line
+                        x1="40"
+                        y1="10"
+                        x2="40"
+                        y2="70"
+                        stroke="rgb(220, 38, 38)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        animate={{ opacity: [1, 0.3, 1] }}
+                        transition={{ duration: 0.8, repeat: Infinity }}
+                      />
+                    </svg>
                   </motion.div>
                 )}
 
