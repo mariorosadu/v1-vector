@@ -1,5 +1,9 @@
 "use client"
 
+// INTERNAL PHASE IDENTIFIER: MP2 (Map Phase 2)
+// This component manages interactive problem surface visualization
+// Supports both manual word entry and initial keyword node rendering from CB1 phase
+
 import React from "react"
 
 import { useEffect, useRef, useState, useCallback } from "react"

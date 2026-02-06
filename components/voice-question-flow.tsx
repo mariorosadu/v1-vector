@@ -1,5 +1,8 @@
 "use client"
 
+// INTERNAL PHASE IDENTIFIER: CB1 (Context Building Phase 1)
+// This component handles the collection of user context through voice-based Q&A
+
 import { useCallback, useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Mic, CheckCircle2, Loader2 } from "lucide-react"
@@ -36,6 +39,7 @@ interface VoiceQuestionFlowProps {
   onComplete: (data: { nodes: KeywordNode[]; connections: Connection[] }) => void
 }
 
+// CB1: Discovery Questions - Core context collection prompts
 const questions = [
   "What problem are you trying to solve?",
   "Who is affected by this problem?",
@@ -43,6 +47,7 @@ const questions = [
 ]
 
 export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
+  // CB1: Context Building Phase - User voice input for problem discovery
   const [currentStep, setCurrentStep] = useState<"start" | "questions" | "analyzing" | "complete">("start")
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<string[]>([])
@@ -189,6 +194,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   }, [getSpeechRecognition, handleAnswerComplete])
 
   const analyzeAnswers = async (answers: string[]) => {
+    // CB1 → Analysis: Extract keywords from user responses to build initial node set
     try {
       const response = await fetch("/api/extract-keywords", {
         method: "POST",

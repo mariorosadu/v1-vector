@@ -1,5 +1,9 @@
 import { generateText } from "ai"
 
+// CB1 → MP2 TRANSITION: Keyword Extraction Service
+// Processes CB1 voice answers to extract 6 core keywords and descriptions
+// Output feeds initial node set for MP2 problem surface visualization
+
 export async function POST(request: Request) {
   const { answers } = await request.json()
 

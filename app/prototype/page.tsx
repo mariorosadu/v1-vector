@@ -1,5 +1,9 @@
 "use client"
 
+// INTERNAL PHASE ARCHITECTURE
+// CB1: Context Building Phase 1 - VoiceQuestionFlow component
+// MP2: Map Phase 2 - NetworkGraph component (after initial keyword extraction)
+
 import { useState } from "react"
 import { SimpleHeader } from "@/components/simple-header"
 import { NetworkGraph } from "@/components/network-graph"
@@ -17,12 +21,14 @@ interface Connection {
 }
 
 export default function PrototypePage() {
+  // CB1: Context Building Phase State
   const [showQuestionFlow, setShowQuestionFlow] = useState(true)
   const [extractedData, setExtractedData] = useState<{
     nodes: KeywordNode[]
     connections: Connection[]
   } | null>(null)
 
+  // CB1 → MP2: Transition handler - Move from context building to map phase
   const handleQuestionsComplete = (data: { nodes: KeywordNode[]; connections: Connection[] }) => {
     setExtractedData(data)
     setShowQuestionFlow(false)
@@ -40,10 +46,11 @@ export default function PrototypePage() {
       {/* Main Content */}
       <div className="pt-40 md:pt-52 pb-20 px-6 md:px-12">
         <div className="container mx-auto">
-          {/* Voice Question Flow or Network Graph */}
+          {/* CB1: Context Building Phase - Voice Q&A Flow */}
           {showQuestionFlow ? (
             <VoiceQuestionFlow onComplete={handleQuestionsComplete} />
           ) : (
+            {/* MP2: Map Phase - Interactive problem surface visualization */}
             <>
               <NetworkGraph 
                 showStartButton={false} 
