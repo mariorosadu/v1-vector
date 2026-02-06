@@ -50,8 +50,8 @@ export default function PrototypePage() {
           {showQuestionFlow ? (
             <VoiceQuestionFlow onComplete={handleQuestionsComplete} />
           ) : (
-            {/* MP2: Map Phase - Interactive problem surface visualization */}
             <>
+              {/* MP2: Map Phase - Interactive problem surface visualization */}
               <NetworkGraph 
                 showStartButton={false} 
                 initialNodes={extractedData?.nodes || []}
