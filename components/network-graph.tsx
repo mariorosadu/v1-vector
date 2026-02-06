@@ -2,8 +2,28 @@
 
 import React from "react"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { motion } from "framer-motion"
+import { Mic } from "lucide-react"
+
+// Extend Window for webkit prefix support
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList
+  resultIndex: number
+}
+
+type SpeechRecognitionInstance = {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  start: () => void
+  stop: () => void
+  abort: () => void
+  onstart: (() => void) | null
+  onresult: ((event: SpeechRecognitionEvent) => void) | null
+  onend: (() => void) | null
+  onerror: ((event: Event & { error: string }) => void) | null
+}
 
 interface Node {
   id: string
@@ -68,6 +88,69 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
   const [activeKeywords, setActiveKeywords] = useState<string[]>(keywords)
   const [connections, setConnections] = useState<Edge[]>(initialConnections)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+
+  // Initialize SpeechRecognition
+  const getSpeechRecognition = useCallback((): SpeechRecognitionInstance | null => {
+    if (typeof window === "undefined") return null
+    const SpeechRecognition =
+      (window as unknown as Record<string, unknown>).SpeechRecognition ??
+      (window as unknown as Record<string, unknown>).webkitSpeechRecognition
+    if (!SpeechRecognition) return null
+    return new (SpeechRecognition as new () => SpeechRecognitionInstance)()
+  }, [])
+
+  const toggleListening = useCallback(() => {
+    if (isListening) {
+      // Stop recognition
+      recognitionRef.current?.stop()
+      return
+    }
+
+    const recognition = getSpeechRecognition()
+    if (!recognition) {
+      alert("Speech recognition is not supported in this browser. Please try Chrome or Edge.")
+      return
+    }
+
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.lang = "en-US"
+
+    recognition.onstart = () => {
+      setIsListening(true)
+    }
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = ""
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript
+      }
+      setInputValue(transcript)
+    }
+
+    recognition.onend = () => {
+      setIsListening(false)
+      recognitionRef.current = null
+    }
+
+    recognition.onerror = (event: Event & { error: string }) => {
+      console.error("[v0] Speech recognition error:", event.error)
+      setIsListening(false)
+      recognitionRef.current = null
+    }
+
+    recognitionRef.current = recognition
+    recognition.start()
+  }, [isListening, getSpeechRecognition])
+
+  // Clean up recognition on unmount
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort()
+    }
+  }, [])
 
   // Initialize nodes with random positions
   useEffect(() => {
@@ -438,9 +521,22 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
             {showStartButton && (
               <button
                 type="button"
-                className="mt-4 w-full px-4 py-3 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+                onClick={toggleListening}
+                className={`mt-4 w-full flex items-center justify-center gap-3 px-4 py-3 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 ${
+                  isListening
+                    ? "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500/50"
+                    : "bg-white text-black hover:bg-white/90 focus:ring-white/50"
+                }`}
               >
-                Start now
+                <span className="relative flex items-center justify-center">
+                  <Mic
+                    className={`w-5 h-5 ${isListening ? "text-white" : "text-black"}`}
+                  />
+                  {isListening && (
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping" />
+                  )}
+                </span>
+                {isListening ? "Listening..." : "Start now"}
               </button>
             )}
           </form>
