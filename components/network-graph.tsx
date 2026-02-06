@@ -75,9 +75,10 @@ const initialConnections: Edge[] = [
 
 interface NetworkGraphProps {
   showStartButton?: boolean
+  initialKeywords?: string[]
 }
 
-export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
+export function NetworkGraph({ showStartButton = false, initialKeywords = [] }: NetworkGraphProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const nodesRef = useRef<Node[]>([])
   const hoveredNodeRef = useRef<string | null>(null)
@@ -502,6 +503,28 @@ export function NetworkGraph({ showStartButton = false }: NetworkGraphProps) {
       }
     }
   }, [inputValue, processWord, isProcessing])
+
+  // Process initial keywords when provided
+  useEffect(() => {
+    if (initialKeywords.length === 0) return
+
+    const addKeywords = async () => {
+      console.log("[v0] Adding initial keywords to map:", initialKeywords)
+      
+      for (const keyword of initialKeywords) {
+        // Check if keyword already exists
+        if (activeKeywords.some((k) => k.toLowerCase() === keyword.toLowerCase())) {
+          continue
+        }
+
+        // Add keyword with a delay for animation effect
+        await new Promise((resolve) => setTimeout(resolve, 500))
+        await processWord(keyword)
+      }
+    }
+
+    addKeywords()
+  }, [initialKeywords])
 
   return (
     <motion.div
