@@ -305,7 +305,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.375 }}
               className="mb-8"
             >
               <div className="w-24 h-24 mx-auto rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
@@ -342,7 +342,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
               {questions.map((_, index) => (
                 <div
                   key={index}
-                  className={`h-1 rounded-full transition-all duration-500 ${
+                  className={`h-1 rounded-full transition-all duration-[375ms] ${
                     index < currentQuestionIndex
                       ? "w-12 bg-white"
                       : index === currentQuestionIndex
@@ -361,13 +361,13 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                 opacity: 1, 
                 scale: 1,
               }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.45, ease: "easeOut" }}
               className="text-center mb-12"
             >
               <motion.div 
                 className="text-white/40 text-sm mb-4 uppercase tracking-wider"
                 animate={isListening ? { opacity: [0.4, 0.7, 0.4] } : {}}
-                transition={{ duration: 2, repeat: Infinity }}
+                transition={{ duration: 1.5, repeat: Infinity }}
               >
                 Question {currentQuestionIndex + 1} of {questions.length}
               </motion.div>
@@ -379,7 +379,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                     "0 0 0px rgba(220, 38, 38, 0)"
                   ]
                 } : {}}
-                transition={{ duration: 2, repeat: Infinity }}
+                transition={{ duration: 1.5, repeat: Infinity }}
                 className="inline-block px-8 py-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm"
               >
                 <h3 className="text-2xl md:text-4xl font-light text-white text-balance leading-relaxed">
@@ -389,7 +389,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
+                    transition={{ delay: 0.375 }}
                     className="text-red-400/80 text-sm mt-4 font-medium"
                   >
                     Recording your response...
@@ -403,13 +403,13 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                   <motion.div
                     initial={{ scaleX: 0, opacity: 0 }}
                     animate={{ scaleX: 1, opacity: 1 }}
-                    transition={{ duration: 0.5 }}
+                    transition={{ duration: 0.375 }}
                     className="absolute left-0 right-0 top-0 mb-8"
                   >
                     <motion.div
                       className="h-0.5 bg-red-600 w-full shadow-[0_0_10px_rgba(220,38,38,0.5)]"
                       animate={{ opacity: [1, 0.4, 1] }}
-                      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                      transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut" }}
                     />
                   </motion.div>
                 )}
@@ -451,7 +451,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                     key={index}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
+                    transition={{ delay: index * 0.075 }}
                     className="flex items-start gap-3 px-4 py-3 bg-white/5 border border-white/10 rounded-lg"
                   >
                     <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
@@ -476,7 +476,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
           >
             <motion.div
               animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
               className="w-20 h-20 mx-auto mb-8"
             >
               <Loader2 className="w-full h-full text-white/60" />
@@ -500,7 +500,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: "spring", duration: 0.6 }}
+              transition={{ type: "spring", duration: 0.45 }}
               className="w-20 h-20 mx-auto mb-8 rounded-full bg-green-600/20 flex items-center justify-center"
             >
               <CheckCircle2 className="w-12 h-12 text-green-400" />
