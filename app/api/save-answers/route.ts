@@ -10,19 +10,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid answers data" }, { status: 400 })
     }
 
-    // Create backend folder if it doesn't exist
-    const backendDir = path.join(process.cwd(), "backend")
+    // Create answers folder if it doesn't exist
+    const answersDir = path.join(process.cwd(), "answers")
     
     try {
-      await fs.access(backendDir)
+      await fs.access(answersDir)
     } catch {
-      await fs.mkdir(backendDir, { recursive: true })
+      await fs.mkdir(answersDir, { recursive: true })
     }
 
     // Generate timestamp for unique filename
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
     const filename = `problem-surface-${timestamp}.txt`
-    const filePath = path.join(backendDir, filename)
+    const filePath = path.join(answersDir, filename)
 
     // Format the content
     let content = "=".repeat(60) + "\n"
