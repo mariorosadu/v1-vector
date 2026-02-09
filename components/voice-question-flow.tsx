@@ -196,6 +196,22 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   const analyzeAnswers = async (answers: string[]) => {
     // CB1 → Analysis: Extract keywords from user responses to build initial node set
     try {
+      // Save answers to backend folder as .txt file
+      const saveResponse = await fetch("/api/save-answers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ answers, questions }),
+      })
+
+      if (saveResponse.ok) {
+        const saveData = await saveResponse.json()
+        console.log("[v0] Answers saved to:", saveData.filename)
+      } else {
+        console.error("[v0] Failed to save answers to file")
+      }
+
       const response = await fetch("/api/extract-keywords", {
         method: "POST",
         headers: {
