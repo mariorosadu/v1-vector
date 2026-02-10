@@ -3,14 +3,16 @@
 import { useEffect, useState } from "react"
 import { Download } from "lucide-react"
 
-interface AnswerFile {
-  filename: string
-  content: string
-  createdAt: string
+interface AnswerRecord {
+  id: string
+  questions: string[]
+  answers: string[]
+  formatted_text: string
+  created_at: string
 }
 
 export default function AnswersAdminPage() {
-  const [answers, setAnswers] = useState<AnswerFile[]>([])
+  const [answers, setAnswers] = useState<AnswerRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -36,12 +38,13 @@ export default function AnswersAdminPage() {
     }
   }
 
-  const downloadAnswer = (answer: AnswerFile) => {
-    const blob = new Blob([answer.content], { type: "text/plain" })
+  const downloadAnswer = (answer: AnswerRecord) => {
+    const blob = new Blob([answer.formatted_text], { type: "text/plain" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = answer.filename
+    const timestamp = new Date(answer.created_at).toISOString().replace(/[:.]/g, "-")
+    a.download = `problem-surface-${timestamp}.txt`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -81,16 +84,18 @@ export default function AnswersAdminPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {answers.map((answer, index) => (
+            {answers.map((answer) => (
               <div
-                key={index}
+                key={answer.id}
                 className="p-6 bg-white/5 border border-white/10 rounded-lg hover:bg-white/[0.07] transition-colors"
               >
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div>
-                    <h3 className="text-lg font-medium mb-1">{answer.filename}</h3>
+                    <h3 className="text-lg font-medium mb-1">
+                      Session {answer.id.substring(0, 8)}
+                    </h3>
                     <p className="text-white/40 text-sm">
-                      {new Date(answer.createdAt).toLocaleString()}
+                      {new Date(answer.created_at).toLocaleString()}
                     </p>
                   </div>
                   <button
@@ -102,7 +107,7 @@ export default function AnswersAdminPage() {
                   </button>
                 </div>
                 <pre className="text-white/70 text-sm whitespace-pre-wrap font-mono bg-black/30 p-4 rounded border border-white/5 overflow-x-auto">
-                  {answer.content}
+                  {answer.formatted_text}
                 </pre>
               </div>
             ))}
@@ -111,9 +116,8 @@ export default function AnswersAdminPage() {
 
         <div className="mt-8 p-4 bg-white/5 border border-white/10 rounded-lg">
           <p className="text-white/40 text-sm">
-            <strong className="text-white/60">Note:</strong> In the Vercel preview environment, files are stored temporarily. 
-            Once deployed to production, files will persist in your server's file system or you can integrate with a database 
-            or cloud storage solution for permanent storage.
+            <strong className="text-white/60">Database Storage:</strong> All answers are now stored in Supabase 
+            and will persist across deployments. You can download any session as a text file.
           </p>
         </div>
       </div>
