@@ -12,6 +12,16 @@ interface Message {
   timestamp: number
 }
 
+type Stage = 'objective' | 'qualitative' | 'quantitative' | 'complete'
+
+interface ProgressState {
+  objectiveProgress: number
+  qualitativeProgress: number
+  quantitativeProgress: number
+  currentStage: Stage
+  objectiveClarity: number
+}
+
 export default function MetacognitionPage() {
   const [question, setQuestion] = useState("Which objective do you want to achieve?")
   const [input, setInput] = useState("")
@@ -19,6 +29,13 @@ export default function MetacognitionPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isBouncing, setIsBouncing] = useState(false)
   const [viewportTop, setViewportTop] = useState(0)
+  const [progress, setProgress] = useState<ProgressState>({
+    objectiveProgress: 0,
+    qualitativeProgress: 0,
+    quantitativeProgress: 0,
+    currentStage: 'objective',
+    objectiveClarity: 0
+  })
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const inputBarRef = useRef<HTMLDivElement>(null)
 
@@ -71,26 +88,21 @@ export default function MetacognitionPage() {
           messages: [
             ...messages.map(m => ({ role: m.role, content: m.content })),
             { role: 'user', content: userMessage.content }
-          ]
+          ],
+          progress: progress
         })
       })
 
       if (!response.ok) throw new Error('Failed to get response')
 
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
-      let newQuestion = ""
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          newQuestion += decoder.decode(value, { stream: true })
-        }
+      const data = await response.json()
+      
+      if (data.question) {
+        setQuestion(data.question)
       }
-
-      if (newQuestion.trim()) {
-        setQuestion(newQuestion.trim())
+      
+      if (data.progress) {
+        setProgress(data.progress)
       }
     } catch (error) {
       console.error('Error sending message:', error)
@@ -109,6 +121,69 @@ export default function MetacognitionPage() {
   return (
     <div className="bg-[#0f0f0f] h-dvh w-full overflow-hidden">
       <SimpleHeader />
+
+      {/* Dual Progress Bars - Fixed at top below header */}
+      <div className="fixed left-0 right-0 z-30 bg-[#0f0f0f] border-b border-white/10" style={{ top: '96px' }}>
+        <div className="max-w-4xl mx-auto px-4 py-4 md:px-8 md:py-5">
+          <div className="space-y-4">
+            {/* Objective Progress Bar */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-white/60 text-xs font-medium tracking-wider uppercase">
+                  Objective Definition
+                </span>
+                <span className="text-white/40 text-xs">
+                  {Math.round(progress.objectiveProgress)}%
+                </span>
+              </div>
+              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress.objectiveProgress}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                />
+              </div>
+            </div>
+
+            {/* Qualitative & Quantitative Progress Bar */}
+            <div className={progress.currentStage === 'objective' ? 'opacity-50' : ''}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-white/60 text-xs font-medium tracking-wider uppercase">
+                  Qualitative & Quantitative Analysis
+                </span>
+                <span className="text-white/40 text-xs">
+                  {Math.round((progress.qualitativeProgress + progress.quantitativeProgress) / 2)}%
+                </span>
+              </div>
+              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="flex h-full">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress.qualitativeProgress / 2}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                  />
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-pink-500 to-orange-500"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress.quantitativeProgress / 2}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-between mt-1.5">
+                <span className="text-white/30 text-[10px]">
+                  Qualitative: {Math.round(progress.qualitativeProgress)}%
+                </span>
+                <span className="text-white/30 text-[10px]">
+                  Quantitative: {Math.round(progress.quantitativeProgress)}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Question bar - vertically centered in available space */}
       <div className="fixed inset-0 flex items-center justify-center z-10 px-4 md:px-8 pointer-events-none">
