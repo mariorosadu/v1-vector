@@ -48,7 +48,7 @@ export function NewHeader() {
               {scrolled && (
                 <motion.button
                   onClick={() => router.push("/")}
-                  className="absolute left-1/2 -translate-x-1/2 hover:opacity-80 transition-opacity logo"
+                  className="absolute left-1/2 -translate-x-1/2 hover:opacity-80 transition-opacity cursor-pointer logo"
                   initial={{ 
                     opacity: 0,
                     y: 40,

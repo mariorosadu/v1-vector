@@ -41,7 +41,7 @@ export function SimpleHeader() {
             {/* Center - Logo (Desktop only) */}
             <motion.button
               onClick={() => router.push("/")}
-              className="hidden lg:block hover:opacity-80 transition-opacity"
+              className="hidden lg:block hover:opacity-80 transition-opacity cursor-pointer"
               whileHover={{ scale: 1.05 }}
             >
               <img
