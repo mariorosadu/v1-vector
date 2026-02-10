@@ -64,6 +64,8 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
 
   // Track whether we should auto-restart recognition on end
   const shouldRestartRef = useRef(false)
+  // Session generation counter to ignore stale onend callbacks from old sessions
+  const sessionGenRef = useRef(0)
   // Count rapid restarts to detect loops
   const restartCountRef = useRef(0)
   const restartResetTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -79,6 +81,8 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
 
   const stopListening = useCallback(() => {
     shouldRestartRef.current = false
+    // Bump generation so any pending onend from the old session is ignored
+    sessionGenRef.current++
     try { recognitionRef.current?.stop() } catch {}
     setIsListening(false)
     if (silenceTimerRef.current) {
@@ -88,18 +92,15 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   }, [])
 
   const handleAnswerComplete = useCallback((answer: string) => {
-    console.log("[v0] Answer complete:", answer)
     // Prevent double processing
-    if (isProcessingRef.current) {
-      console.log("[v0] Already processing, skipping")
-      return
-    }
+    if (isProcessingRef.current) return
     
     const trimmedAnswer = answer.trim()
     if (!trimmedAnswer) return
 
     isProcessingRef.current = true
     shouldRestartRef.current = false
+    sessionGenRef.current++
     const newAnswers = [...answersRef.current, trimmedAnswer]
     answersRef.current = newAnswers
     setAnswers(newAnswers)
@@ -107,16 +108,11 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
     transcriptRef.current = ""
     stopListening()
 
-    console.log("[v0] Current question index:", currentQuestionIndexRef.current, "Total questions:", questions.length)
-    console.log("[v0] Current answers:", newAnswers)
-
     if (currentQuestionIndexRef.current < questions.length - 1) {
-      console.log("[v0] Moving to next question")
       setTimeout(() => {
         const nextIndex = currentQuestionIndexRef.current + 1
         currentQuestionIndexRef.current = nextIndex
         setCurrentQuestionIndex(nextIndex)
-        console.log("[v0] Set question index to:", nextIndex)
         
         setTimeout(() => {
           isProcessingRef.current = false
@@ -124,7 +120,6 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
         }, 600)
       }, 1000)
     } else {
-      console.log("[v0] All questions answered, analyzing")
       setTimeout(() => {
         setCurrentStep("review")
         setEditingAnswers([...newAnswers])
@@ -132,22 +127,38 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
     }
   }, [stopListening])
 
-  const createRecognitionSession = useCallback((): SpeechRecognitionInstance | null => {
-    const recognition = getSpeechRecognition()
-    if (!recognition) return null
+  const startListening = useCallback(() => {
+    // Abort any existing instance first
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort() } catch {}
+      recognitionRef.current = null
+    }
 
-    // Use continuous:true on all platforms for seamless auto-flow.
-    // On mobile, the browser may auto-terminate sessions -- we handle
-    // that in onend by restarting with accumulated transcript intact.
+    const recognition = getSpeechRecognition()
+    if (!recognition) {
+      alert("Speech recognition is not supported in this browser. Please try Chrome or Edge.")
+      return
+    }
+
+    // Bump generation so any late onend from previous sessions is ignored
+    const myGen = ++sessionGenRef.current
+    shouldRestartRef.current = true
+    restartCountRef.current = 0
+
     recognition.continuous = true
     recognition.interimResults = true
     recognition.lang = "en-US"
 
     recognition.onstart = () => {
+      // Only update state if this session is still current
+      if (sessionGenRef.current !== myGen) return
       setIsListening(true)
     }
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
+      // Ignore results from stale sessions
+      if (sessionGenRef.current !== myGen) return
+
       let interimTranscript = ""
       let finalTranscript = ""
 
@@ -160,59 +171,62 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
         }
       }
 
-      // Show interim results for live feedback
       if (interimTranscript) {
         const displayTranscript = transcriptRef.current + " " + interimTranscript
         setCurrentTranscript(displayTranscript.trim())
       }
 
-      // When we get final results, accumulate and set silence timer
       if (finalTranscript) {
         const newTranscript = (transcriptRef.current + " " + finalTranscript).trim()
         transcriptRef.current = newTranscript
         setCurrentTranscript(newTranscript)
-        console.log("[v0] Final transcript updated:", newTranscript)
 
         // Reset silence timer -- auto-complete after 2.5s of silence
         if (silenceTimerRef.current) {
           clearTimeout(silenceTimerRef.current)
         }
         silenceTimerRef.current = setTimeout(() => {
-          console.log("[v0] Silence detected, completing answer with:", transcriptRef.current)
+          // Double-check we're still the active session
+          if (sessionGenRef.current !== myGen) return
           handleAnswerComplete(transcriptRef.current)
         }, 2500)
       }
     }
 
     recognition.onend = () => {
-      // If we should still be listening (haven't completed the answer yet),
-      // restart a new session. This handles mobile browsers that auto-terminate
-      // continuous sessions, keeping the transcript accumulated across sessions.
+      // Ignore if this onend is from a stale session that was replaced
+      if (sessionGenRef.current !== myGen) return
+
+      // If we should still be listening, restart (handles mobile auto-terminate)
       if (shouldRestartRef.current && !isProcessingRef.current) {
         restartCountRef.current++
-        // Guard against rapid restart loops (more than 5 restarts in quick succession)
         if (restartCountRef.current > 5) {
-          console.log("[v0] Too many rapid restarts, stopping")
           setIsListening(false)
           recognitionRef.current = null
-          // If we have a partial transcript, auto-complete it
           if (transcriptRef.current.trim()) {
             handleAnswerComplete(transcriptRef.current)
           }
           return
         }
-        // Reset the counter after 3 seconds of stable operation
         if (restartResetTimerRef.current) clearTimeout(restartResetTimerRef.current)
         restartResetTimerRef.current = setTimeout(() => {
           restartCountRef.current = 0
         }, 3000)
 
-        const newRecognition = createRecognitionSession()
-        if (newRecognition) {
-          recognitionRef.current = newRecognition
+        // Restart within the same generation
+        const restartRecognition = getSpeechRecognition()
+        if (restartRecognition) {
+          restartRecognition.continuous = true
+          restartRecognition.interimResults = true
+          restartRecognition.lang = "en-US"
+          restartRecognition.onstart = recognition.onstart
+          restartRecognition.onresult = recognition.onresult
+          restartRecognition.onend = recognition.onend
+          restartRecognition.onerror = recognition.onerror
+          recognitionRef.current = restartRecognition
           setTimeout(() => {
-            if (shouldRestartRef.current && !isProcessingRef.current) {
-              try { newRecognition.start() } catch {}
+            if (sessionGenRef.current === myGen && shouldRestartRef.current && !isProcessingRef.current) {
+              try { restartRecognition.start() } catch {}
             }
           }, 200)
           return
@@ -223,46 +237,25 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
     }
 
     recognition.onerror = (event: Event & { error: string }) => {
-      // "no-speech" and "aborted" are expected, not real errors
-      if (event.error === "no-speech" || event.error === "aborted") {
-        return
-      }
+      if (event.error === "no-speech" || event.error === "aborted") return
+      if (sessionGenRef.current !== myGen) return
       console.error("[v0] Speech recognition error:", event.error)
       shouldRestartRef.current = false
       setIsListening(false)
       recognitionRef.current = null
     }
 
-    return recognition
-  }, [getSpeechRecognition, handleAnswerComplete])
-
-  const startListening = useCallback(() => {
-    // Abort any existing instance first
-    if (recognitionRef.current) {
-      try { recognitionRef.current.abort() } catch {}
-      recognitionRef.current = null
-    }
-
-    const recognition = createRecognitionSession()
-    if (!recognition) {
-      alert("Speech recognition is not supported in this browser. Please try Chrome or Edge.")
-      return
-    }
-
-    shouldRestartRef.current = true
-    restartCountRef.current = 0
     recognitionRef.current = recognition
-
     try {
       recognition.start()
     } catch {
       setTimeout(() => {
-        if (shouldRestartRef.current) {
+        if (sessionGenRef.current === myGen && shouldRestartRef.current) {
           try { recognition.start() } catch {}
         }
       }, 300)
     }
-  }, [createRecognitionSession])
+  }, [getSpeechRecognition, handleAnswerComplete])
 
   const handleConfirm = async () => {
     setCurrentStep("saving")
