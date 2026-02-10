@@ -37,6 +37,8 @@ export default function AnswersAdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [deletingMetacognition, setDeletingMetacognition] = useState<string | null>(null)
+  const [confirmDeleteMetacognition, setConfirmDeleteMetacognition] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'problem-surface' | 'metacognition'>('problem-surface')
 
   useEffect(() => {
@@ -132,6 +134,31 @@ export default function AnswersAdminPage() {
       console.error("Error deleting answer:", err)
     } finally {
       setDeleting(null)
+    }
+  }
+
+  const deleteMetacognitionSession = async (sessionId: string) => {
+    setDeletingMetacognition(sessionId)
+    try {
+      const response = await fetch("/api/delete-metacognition", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ sessionId }),
+      })
+
+      if (response.ok) {
+        setMetacognitionDialogues(metacognitionDialogues.filter((dialogue) => dialogue.session_id !== sessionId))
+        setConfirmDeleteMetacognition(null)
+      } else {
+        setError("Failed to delete metacognition session")
+      }
+    } catch (err) {
+      setError("Failed to delete metacognition session")
+      console.error("Error deleting metacognition session:", err)
+    } finally {
+      setDeletingMetacognition(null)
     }
   }
 
@@ -309,6 +336,34 @@ export default function AnswersAdminPage() {
                               Quantitative: {Math.round(sessionDialogues[sessionDialogues.length - 1].quantitative_progress)}%
                             </span>
                           </div>
+                          {/* Delete button */}
+                          {confirmDeleteMetacognition === sessionId ? (
+                            <div className="flex items-center gap-2 bg-red-600/20 border border-red-600/50 rounded-lg px-3 py-2">
+                              <span className="text-sm text-red-400">Delete?</span>
+                              <button
+                                onClick={() => deleteMetacognitionSession(sessionId)}
+                                disabled={deletingMetacognition === sessionId}
+                                className="px-3 py-1 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white text-xs rounded transition-colors"
+                              >
+                                {deletingMetacognition === sessionId ? "..." : "Yes"}
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteMetacognition(null)}
+                                disabled={deletingMetacognition === sessionId}
+                                className="px-3 py-1 bg-white/10 hover:bg-white/15 disabled:bg-white/5 text-white text-xs rounded transition-colors"
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmDeleteMetacognition(sessionId)}
+                              className="flex items-center gap-2 px-4 py-2 bg-red-600/10 hover:bg-red-600/20 border border-red-600/30 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-600/30"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-400" />
+                              <span className="text-sm text-red-400">Delete</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
