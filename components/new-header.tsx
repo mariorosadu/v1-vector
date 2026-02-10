@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 
 const navigationItems = [
-  { label: "Publications", href: "/publications" },
   { label: "Prototype", href: "/prototype" },
+  { label: "Publications", href: "/publications" },
   { 
-    label: "Box", 
+    label: "Toy Box", 
     href: "/box",
     submenu: [
       { label: "Profile Analysis", href: "/box/profile-analysis" },
@@ -412,15 +412,6 @@ export function NewHeader() {
                 Try Prototype
               </a>
               <a 
-                href="/box" 
-                className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors touch-manipulation"
-                style={{
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                Explore Box
-              </a>
-              <a 
                 href="/publications" 
                 className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors touch-manipulation"
                 style={{
@@ -428,6 +419,15 @@ export function NewHeader() {
                 }}
               >
                 Publications
+              </a>
+              <a 
+                href="/box" 
+                className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors touch-manipulation"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                Explore Toy Box
               </a>
             </motion.div>
           </div>

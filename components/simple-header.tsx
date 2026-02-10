@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 
 const navigationItems = [
-  { label: "Publications", href: "/publications" },
   { label: "Prototype", href: "/prototype" },
+  { label: "Publications", href: "/publications" },
   { 
-    label: "Box", 
+    label: "Toy Box", 
     href: "/box",
     submenu: [
       { label: "Profile Analysis", href: "/box/profile-analysis" },
