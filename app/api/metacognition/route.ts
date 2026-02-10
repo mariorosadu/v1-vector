@@ -1,5 +1,6 @@
 import { generateText } from 'ai'
 import { createClient } from '@supabase/supabase-js'
+import { openai } from '@ai-sdk/openai'
 
 export const maxDuration = 30
 
@@ -102,12 +103,18 @@ Return a JSON object with:
     }
 
     const result = await generateText({
-      model: 'openai/gpt-4o',
+      model: openai('gpt-5', {
+        apiKey: process.env.OPENAI_API_KEY,
+      }),
       system: systemPrompt,
       messages,
       temperature: 0.7,
       maxOutputTokens: 300,
     })
+
+    console.log("[v0] Model called: gpt-5")
+    console.log("[v0] API Key loaded:", process.env.OPENAI_API_KEY ? "✓ Yes" : "✗ Missing")
+    console.log("[v0] Response generated successfully")
 
     // Parse the AI response
     let parsedResponse
