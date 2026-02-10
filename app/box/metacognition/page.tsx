@@ -108,7 +108,27 @@ export default function MetacognitionPage() {
       const data = await response.json()
       
       if (data.question) {
-        setQuestion(data.question)
+        // Additional safeguard: clean any remaining JSON artifacts from question text
+        let cleanQuestion = data.question.trim()
+        
+        // Remove any remaining markdown code blocks
+        cleanQuestion = cleanQuestion.replace(/```json|```/g, '').trim()
+        
+        // If question somehow contains JSON structure, extract just the question field
+        if (cleanQuestion.startsWith('{') && cleanQuestion.includes('"question"')) {
+          try {
+            const parsed = JSON.parse(cleanQuestion)
+            cleanQuestion = parsed.question || cleanQuestion
+          } catch {
+            // If parsing fails, try to extract question value with regex
+            const questionMatch = cleanQuestion.match(/"question":\s*"([^"]+)"/)
+            if (questionMatch) {
+              cleanQuestion = questionMatch[1]
+            }
+          }
+        }
+        
+        setQuestion(cleanQuestion)
       }
       
       if (data.progress) {
