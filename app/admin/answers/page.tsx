@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
-import { Download } from "lucide-react"
-import { SimpleHeader } from "@/components/simple-header"
-import { Footer } from "@/components/footer"
+import { useEffect, useState } from 'react'
+import { Download } from 'lucide-react'
+import { SimpleHeader } from '@/components/simple-header'
+import { Footer } from '@/components/footer'
 
 interface AnswerRecord {
   id: string
@@ -24,17 +24,21 @@ export default function AnswersAdminPage() {
 
   const fetchAnswers = async () => {
     try {
-      const response = await fetch("/api/get-answers")
+      console.log('[v0] Fetching answers from API...')
+      const response = await fetch('/api/get-answers')
+      console.log('[v0] Response status:', response.status)
       const data = await response.json()
+      console.log('[v0] Response data:', data)
       
       if (response.ok) {
         setAnswers(data.answers || [])
+        console.log('[v0] Loaded answers:', data.answers?.length || 0)
       } else {
-        setError(data.error || "Failed to load answers")
+        setError(data.error || 'Failed to load answers')
       }
     } catch (err) {
-      setError("Failed to load answers")
-      console.error("[v0] Error fetching answers:", err)
+      setError('Failed to load answers')
+      console.error('[v0] Error fetching answers:', err)
     } finally {
       setLoading(false)
     }
