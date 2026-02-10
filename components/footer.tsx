@@ -78,7 +78,8 @@ export function Footer() {
               {[
                 { label: "Cognitive Map", href: "/box/map" },
                 { label: "Prototype", href: "/prototype" },
-                { label: "Profile Analysis", href: "/box/profile-analysis" }
+                { label: "Profile Analysis", href: "/box/profile-analysis" },
+                { label: "Metacognition", href: "/box/metacognition" }
               ].map((item) => (
                 <li key={item.label}>
                   <button
