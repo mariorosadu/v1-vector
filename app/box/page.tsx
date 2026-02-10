@@ -21,6 +21,12 @@ export default function BoxPage() {
       href: "/box/map",
       gradient: "from-purple-600/20 to-pink-600/20",
     },
+    {
+      title: "Metacognition",
+      description: "Asking the right questions will take you to Rome.",
+      href: "/box/metacognition",
+      gradient: "from-amber-600/20 to-orange-600/20",
+    },
   ]
 
   return (
@@ -50,7 +56,7 @@ export default function BoxPage() {
           </div>
 
           {/* Tool Cards */}
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {tools.map((tool, index) => (
               <motion.button
                 key={tool.href}
