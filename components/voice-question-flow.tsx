@@ -196,7 +196,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   const analyzeAnswers = async (answers: string[]) => {
     // CB1 → Analysis: Extract keywords from user responses to build initial node set
     try {
-      // Save answers to backend folder as .txt file
+      // Save answers to Supabase database
       const saveResponse = await fetch("/api/save-answers", {
         method: "POST",
         headers: {
@@ -205,11 +205,8 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
         body: JSON.stringify({ answers, questions }),
       })
 
-      if (saveResponse.ok) {
-        const saveData = await saveResponse.json()
-        console.log("[v0] Answers saved to:", saveData.filename)
-      } else {
-        console.error("[v0] Failed to save answers to file")
+      if (!saveResponse.ok) {
+        console.error("Failed to save answers to database")
       }
 
       const response = await fetch("/api/extract-keywords", {
