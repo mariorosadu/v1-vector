@@ -36,6 +36,7 @@ export default function MetacognitionPage() {
     currentStage: 'objective',
     objectiveClarity: 0
   })
+  const [queuedInput, setQueuedInput] = useState<string>("")
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const inputBarRef = useRef<HTMLDivElement>(null)
 
@@ -61,6 +62,13 @@ export default function MetacognitionPage() {
       vv.removeEventListener("scroll", update)
     }
   }, [])
+
+  // Auto-focus input on mount and maintain focus
+  useEffect(() => {
+    if (inputRef.current && !isLoading) {
+      inputRef.current.focus()
+    }
+  }, [isLoading])
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
@@ -108,13 +116,37 @@ export default function MetacognitionPage() {
       console.error('Error sending message:', error)
     } finally {
       setIsLoading(false)
+      // Refocus input after completing the update
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 50)
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  // Process queued input when loading completes
+  useEffect(() => {
+    if (!isLoading && queuedInput.trim()) {
+      console.log("[v0] Processing queued input:", queuedInput)
+      setInput(queuedInput)
+      setQueuedInput("")
+      // Focus the input to show cursor
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 50)
+    }
+  }, [isLoading, queuedInput])
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
       e.preventDefault()
-      handleSend()
+      if (isLoading) {
+        // Queue the input if interface is still updating
+        console.log("[v0] Queueing input during update:", input)
+        setQueuedInput(input)
+        setInput("")
+      } else {
+        handleSend()
+      }
     }
   }
 
@@ -266,14 +298,9 @@ export default function MetacognitionPage() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      handleSend()
-                    }
-                  }}
-                  placeholder="Type your response..."
-                  disabled={isLoading}
+                  onKeyDown={handleKeyDown}
+                  placeholder={isLoading ? "Processing... (your next input will be queued)" : "Type your response..."}
+                  disabled={false}
                   enterKeyHint="send"
                   className="w-full bg-transparent text-white placeholder:text-white/30 text-sm md:text-base outline-none h-[44px]"
                 />
