@@ -362,37 +362,37 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="text-center py-20"
+            className="text-center py-10"
           >
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.375 }}
-              className="mb-8"
+              className="mb-4"
             >
-              <div className="w-24 h-24 mx-auto rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                <Mic className="w-12 h-12 text-white/60" />
+              <div className="w-20 h-20 mx-auto rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                <Mic className="w-10 h-10 text-white/60" />
               </div>
               
               {/* Chrome Browser Notice */}
-              <div className="flex items-center justify-center gap-2 mt-6 px-4 py-3 bg-white/5 border border-white/10 rounded-lg max-w-md mx-auto">
-                <Chrome className="w-5 h-5 text-white/60 flex-shrink-0" />
-                <p className="text-white/60 text-sm">
+              <div className="flex items-center justify-center gap-2 mt-3 px-4 py-2 bg-white/5 border border-white/10 rounded-lg max-w-md mx-auto">
+                <img src="/chrome-icon.svg" alt="Chrome" className="w-4 h-4 flex-shrink-0" />
+                <p className="text-white/60 text-xs">
                   Works best on Google Chrome
                 </p>
               </div>
             </motion.div>
 
-            <h2 className="text-3xl md:text-4xl font-light text-white mb-4 text-balance">
+            <h2 className="text-2xl md:text-3xl font-light text-white mb-2 text-balance">
               Map Your Problem Surface
             </h2>
-            <p className="text-white/60 text-lg mb-8 max-w-xl mx-auto text-pretty">
+            <p className="text-white/60 text-base mb-6 max-w-xl mx-auto text-pretty">
               Answer three questions using your voice to help us understand your problem and generate a personalized map.
             </p>
 
             <button
               onClick={handleStart}
-              className="px-8 py-4 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="px-8 py-3 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/50"
             >
               Begin Mapping
             </button>
@@ -405,19 +405,19 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="py-12"
+            className="py-6"
           >
             {/* Progress Indicator */}
-            <div className="flex justify-center gap-2 mb-12">
+            <div className="flex justify-center gap-2 mb-8">
               {questions.map((_, index) => (
                 <div
                   key={index}
                   className={`h-1 rounded-full transition-all duration-[375ms] ${
                     index < currentQuestionIndex
-                      ? "w-12 bg-white"
+                      ? "w-10 bg-white"
                       : index === currentQuestionIndex
-                      ? "w-16 bg-white"
-                      : "w-12 bg-white/20"
+                      ? "w-12 bg-white"
+                      : "w-10 bg-white/20"
                   }`}
                 />
               ))}
@@ -432,10 +432,10 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                 scale: 1,
               }}
               transition={{ duration: 0.45, ease: "easeOut" }}
-              className="text-center mb-12"
+              className="text-center mb-8"
             >
               <motion.div 
-                className="text-white/40 text-sm mb-4 uppercase tracking-wider"
+                className="text-white/40 text-xs mb-2 uppercase tracking-wider"
                 animate={isListening ? { opacity: [0.4, 0.7, 0.4] } : {}}
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
@@ -450,9 +450,9 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                   ]
                 } : {}}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                className="inline-block px-8 py-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm"
+                className="inline-block px-6 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm"
               >
-                <h3 className="text-2xl md:text-4xl font-light text-white text-balance leading-relaxed">
+                <h3 className="text-xl md:text-2xl font-light text-white text-balance leading-relaxed">
                   {questions[currentQuestionIndex]}
                 </h3>
                 {isListening && (
@@ -467,69 +467,89 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                 )}
               </motion.div>
 
-              {/* Listening Indicator - Full Width Red Line */}
-              <div className="flex flex-col items-center justify-center min-h-[180px] w-full relative">
-                {isListening && (
+            {/* Listening Indicator - Full Width Red Line */}
+            <div className="flex flex-col items-center justify-center min-h-[120px] w-full relative">
+              {isListening && (
+                <motion.div
+                  initial={{ scaleX: 0, opacity: 0 }}
+                  animate={{ scaleX: 1, opacity: 1 }}
+                  transition={{ duration: 0.375 }}
+                  className="absolute left-0 right-0 top-0 mb-4"
+                >
                   <motion.div
-                    initial={{ scaleX: 0, opacity: 0 }}
-                    animate={{ scaleX: 1, opacity: 1 }}
-                    transition={{ duration: 0.375 }}
-                    className="absolute left-0 right-0 top-0 mb-8"
-                  >
-                    <motion.div
-                      className="h-0.5 bg-red-600 w-full shadow-[0_0_10px_rgba(220,38,38,0.5)]"
-                      animate={{ opacity: [1, 0.4, 1] }}
-                      transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                  </motion.div>
-                )}
+                    className="h-0.5 bg-red-600 w-full shadow-[0_0_10px_rgba(220,38,38,0.5)]"
+                    animate={{ opacity: [1, 0.4, 1] }}
+                    transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                </motion.div>
+              )}
 
-                {/* Transcript Display */}
-                {currentTranscript && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="px-6 py-4 bg-white/5 border border-white/10 rounded-lg max-w-2xl mb-6"
-                  >
-                    <p className="text-white/80 text-lg text-pretty">{currentTranscript}</p>
-                  </motion.div>
-                )}
+              {/* Transcript Display */}
+              {currentTranscript && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="px-4 py-3 bg-white/5 border border-white/10 rounded-lg max-w-2xl mb-4"
+                >
+                  <p className="text-white/80 text-base text-pretty">{currentTranscript}</p>
+                </motion.div>
+              )}
 
-                {!currentTranscript && isListening && (
-                  <p className="text-white/40 text-sm mb-6">Listening... Start speaking</p>
-                )}
+              {!currentTranscript && isListening && (
+                <p className="text-white/40 text-xs mb-4">Listening... Start speaking</p>
+              )}
 
-                {/* Cancel Button */}
-                {isListening && (
-                  <motion.button
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    onClick={handleCancel}
-                    className="px-6 py-2 bg-white/10 border border-white/20 text-white/70 rounded-lg hover:bg-white/15 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/30"
-                  >
-                    Cancel
-                  </motion.button>
-                )}
-              </div>
+              {isListening && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.375 }}
+                  className="text-red-400/80 text-xs mt-2 font-medium"
+                >
+                  Recording your response...
+                </motion.p>
+              )}
+
+              {/* Cancel Button */}
+              {isListening && (
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={handleCancel}
+                  className="px-4 py-1.5 text-xs bg-white/10 border border-white/20 text-white/70 rounded hover:bg-white/15 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/30 mt-2"
+                >
+                  Cancel
+                </motion.button>
+              )}
+            </div>
             </motion.div>
 
             {/* Previous Answers */}
             {answers.length > 0 && (
               <div className="mt-12 space-y-3">
                 {answers.map((answer, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.075 }}
-                    className="flex items-start gap-3 px-4 py-3 bg-white/5 border border-white/10 rounded-lg"
-                  >
-                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <div className="text-white/40 text-xs mb-1">Q{index + 1}</div>
-                      <p className="text-white/70 text-sm">{answer}</p>
-                    </div>
-                  </motion.div>
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="flex items-start gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded"
+              >
+                <span className="text-white/40 text-xs mt-0.5 flex-shrink-0">Q{index + 1}:</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white/40 text-xs mb-1">{questions[index]}</p>
+                  <p className="text-white text-sm break-words">{editingAnswers[index]}</p>
+                </div>
+                <button
+                  onClick={() => setIsEditingAnswers(prevState => ({
+                    ...prevState,
+                    [index]: !prevState[index]
+                  }))}
+                  className="px-2 py-1 text-xs bg-white/10 hover:bg-white/15 border border-white/20 text-white/70 hover:text-white rounded transition-all flex-shrink-0"
+                >
+                  Edit
+                </button>
+              </motion.div>
                 ))}
               </div>
             )}
@@ -542,27 +562,16 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="py-12 max-w-3xl mx-auto"
+            className="py-8 max-w-3xl mx-auto"
           >
-            <div className="text-center mb-12">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", duration: 0.45 }}
-                className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-600/20 flex items-center justify-center"
-              >
-                <CheckCircle2 className="w-12 h-12 text-green-400" />
-              </motion.div>
-              <h3 className="text-3xl md:text-4xl font-light text-white mb-4">
-                Review Your Answers
-              </h3>
-              <p className="text-white/60 text-lg">
-                Please review your responses below. You can edit any answer before confirming.
-              </p>
-            </div>
+            <h3 className="text-2xl font-light text-white mb-1 text-balance">
+              Review Your Answers
+            </h3>
+            <p className="text-white/40 text-sm mb-6">
+              Edit if needed or submit to generate your Vector Alignment Report.
+            </p>
 
-            {/* Answers Review */}
-            <div className="space-y-6 mb-12">
+            <div className="space-y-3 mb-8">
               {editingAnswers.map((answer, index) => (
                 <motion.div
                   key={index}
@@ -589,18 +598,18 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={handleCancel}
-                className="px-8 py-4 bg-white/5 border border-white/10 text-white/70 rounded-lg hover:bg-white/10 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/20"
-              >
-                Start Over
-              </button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={handleConfirm}
-                className="px-8 py-4 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="px-6 py-3 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
               >
-                Confirm & Submit
+                {'Confirm & Submit >'}
+              </button>
+              <button
+                onClick={handleCancel}
+                className="px-6 py-3 bg-white/5 border border-white/10 text-white/70 rounded-lg hover:bg-white/10 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/20 text-sm"
+              >
+                {'< Start Over'}
               </button>
             </div>
           </motion.div>

@@ -18,7 +18,7 @@ export default function PrototypePage() {
       <SimpleHeader />
       
       {/* Main Content */}
-      <div className="pt-40 md:pt-52 pb-20 px-6 md:px-12">
+      <div className="pt-28 md:pt-36 pb-12 px-6 md:px-12">
         <div className="container mx-auto">
           {/* CB1: Context Building Phase - Voice Q&A Flow */}
           <VoiceQuestionFlow onComplete={handleQuestionsComplete} />
