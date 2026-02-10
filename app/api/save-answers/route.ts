@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import fs from "fs/promises"
-import path from "path"
+import { supabase } from "@/lib/supabase"
 
 export async function POST(request: Request) {
   try {
@@ -10,58 +9,34 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid answers data" }, { status: 400 })
     }
 
-    // Create answers folder if it doesn't exist
-    const answersDir = path.join(process.cwd(), "answers")
-    
-    try {
-      await fs.access(answersDir)
-    } catch {
-      await fs.mkdir(answersDir, { recursive: true })
+    const sessionId = crypto.randomUUID()
+
+    const { data, error } = await supabase
+      .from("problem_surface_answers")
+      .insert({
+        session_id: sessionId,
+        question_1: questions?.[0] || "What problem are you trying to solve?",
+        answer_1: answers[0] || "",
+        question_2: questions?.[1] || "Who is affected by this problem?",
+        answer_2: answers[1] || "",
+        question_3: questions?.[2] || "What are the main challenges or obstacles?",
+        answer_3: answers[2] || "",
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Supabase insert error:", error)
+      return NextResponse.json({ error: "Failed to save answers" }, { status: 500 })
     }
 
-    // Generate timestamp for unique filename
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
-    const filename = `problem-surface-${timestamp}.txt`
-    const filePath = path.join(answersDir, filename)
-
-    // Format the content
-    let content = "=".repeat(60) + "\n"
-    content += "PROBLEM SURFACE MAPPING SESSION\n"
-    content += "=".repeat(60) + "\n"
-    content += `Date: ${new Date().toLocaleString()}\n\n`
-
-    answers.forEach((answer: string, index: number) => {
-      content += `Question ${index + 1}: ${questions?.[index] || `Question ${index + 1}`}\n`
-      content += "-".repeat(60) + "\n"
-      content += `${answer}\n\n`
-    })
-
-    content += "=".repeat(60) + "\n"
-    content += "END OF SESSION\n"
-    content += "=".repeat(60) + "\n"
-
-    // Write to file
-    await fs.writeFile(filePath, content, "utf-8")
-    
-    console.log("[v0] File written successfully to:", filePath)
-    console.log("[v0] File content length:", content.length)
-
-    // Verify the file was written
-    try {
-      await fs.access(filePath)
-      console.log("[v0] File verified to exist")
-    } catch (verifyError) {
-      console.error("[v0] File verification failed:", verifyError)
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      filename,
-      path: filePath,
-      contentPreview: content.substring(0, 200) 
+    return NextResponse.json({
+      success: true,
+      id: data.id,
+      session_id: sessionId,
     })
   } catch (error) {
-    console.error("[v0] Error saving answers:", error)
+    console.error("Error saving answers:", error)
     return NextResponse.json(
       { error: "Failed to save answers" },
       { status: 500 }
