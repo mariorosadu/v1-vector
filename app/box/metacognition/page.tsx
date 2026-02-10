@@ -85,11 +85,11 @@ export default function MetacognitionPage() {
   }
 
   return (
-    <main className="bg-[#0f0f0f] h-screen flex flex-col overflow-hidden">
+    <main className="bg-[#0f0f0f] h-dvh flex flex-col overflow-hidden touch-none">
       <SimpleHeader />
       
       {/* Main container with fixed positioning */}
-      <div className="flex-1 flex flex-col relative overflow-hidden">
+      <div className="flex-1 flex flex-col relative overflow-hidden touch-auto">
         
         {/* Top Section - Progress Area */}
         <div className="flex-1 px-4 py-6 md:px-8 md:py-8">
@@ -113,7 +113,8 @@ export default function MetacognitionPage() {
         </div>
 
         {/* Middle Section - Floating Question Bar */}
-        <div className="sticky top-1/2 -translate-y-1/2 z-10 py-4">
+        <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 z-10 py-4 pointer-events-none">
+          <div className="pointer-events-auto">
           <motion.div
             key={question}
             initial={{ scale: 0.95, opacity: 0 }}
@@ -157,13 +158,14 @@ export default function MetacognitionPage() {
               </div>
             </div>
           </motion.div>
+          </div>
         </div>
 
         {/* Bottom Section - Input Area */}
-        <div className="flex-shrink-0 px-4 py-4 md:px-8 md:py-6 safe-area-inset-bottom">
+        <div className="flex-shrink-0 px-4 pb-safe py-4 md:px-8 md:py-6">
           <div className="max-w-2xl mx-auto w-full">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-5">
-              <div className="flex items-end gap-3">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-3 md:p-5">
+              <div className="flex items-end gap-2">
                 <div className="flex-1">
                   <textarea
                     ref={inputRef}
@@ -172,7 +174,7 @@ export default function MetacognitionPage() {
                     onKeyDown={handleKeyDown}
                     placeholder="Type your response..."
                     disabled={isLoading}
-                    className="w-full bg-transparent text-white placeholder:text-white/30 text-sm md:text-base resize-none outline-none min-h-[40px] max-h-[120px]"
+                    className="w-full bg-transparent text-white placeholder:text-white/30 text-sm md:text-base resize-none outline-none min-h-[44px] max-h-[100px] leading-tight py-2"
                     rows={1}
                   />
                 </div>
