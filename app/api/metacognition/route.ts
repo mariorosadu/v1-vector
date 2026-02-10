@@ -103,7 +103,7 @@ Return a JSON object with:
     }
 
     const result = await generateText({
-      model: openai('gpt-5', {
+      model: openai('gpt-5-mini', {
         apiKey: process.env.OPENAI_API_KEY,
       }),
       system: systemPrompt,
@@ -112,7 +112,7 @@ Return a JSON object with:
       maxOutputTokens: 300,
     })
 
-    console.log("[v0] Model called: gpt-5")
+    console.log("[v0] Model called: gpt-5-mini")
     console.log("[v0] API Key loaded:", process.env.OPENAI_API_KEY ? "✓ Yes" : "✗ Missing")
     console.log("[v0] Response generated successfully")
 
