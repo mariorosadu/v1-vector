@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import fs from "fs/promises"
+import path from "path"
 
 export async function POST(request: Request) {
   try {
@@ -9,9 +10,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid answers data" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    // Create answers folder if it doesn't exist
+    const answersDir = path.join(process.cwd(), "answers")
+    
+    try {
+      await fs.access(answersDir)
+    } catch {
+      await fs.mkdir(answersDir, { recursive: true })
+    }
 
-    // Format the content for text format
+    // Generate timestamp for unique filename
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
+    const filename = `problem-surface-${timestamp}.txt`
+    const filePath = path.join(answersDir, filename)
+
+    // Format the content
     let content = "=".repeat(60) + "\n"
     content += "PROBLEM SURFACE MAPPING SESSION\n"
     content += "=".repeat(60) + "\n"
@@ -27,27 +40,24 @@ export async function POST(request: Request) {
     content += "END OF SESSION\n"
     content += "=".repeat(60) + "\n"
 
-    // Insert into Supabase
-    const { data, error } = await supabase
-      .from("problem_surface_answers")
-      .insert({
-        questions: questions || [],
-        answers,
-        formatted_text: content,
-      })
-      .select()
-      .single()
+    // Write to file
+    await fs.writeFile(filePath, content, "utf-8")
+    
+    console.log("[v0] File written successfully to:", filePath)
+    console.log("[v0] File content length:", content.length)
 
-    if (error) {
-      console.error("[v0] Supabase error:", error)
-      throw error
+    // Verify the file was written
+    try {
+      await fs.access(filePath)
+      console.log("[v0] File verified to exist")
+    } catch (verifyError) {
+      console.error("[v0] File verification failed:", verifyError)
     }
-
-    console.log("[v0] Answer saved to Supabase successfully:", data.id)
 
     return NextResponse.json({ 
       success: true, 
-      id: data.id,
+      filename,
+      path: filePath,
       contentPreview: content.substring(0, 200) 
     })
   } catch (error) {
