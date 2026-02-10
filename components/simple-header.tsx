@@ -6,14 +6,21 @@ import { motion, AnimatePresence } from "framer-motion"
 
 const navigationItems = [
   { label: "Publications", href: "/publications" },
-  { label: "Map", href: "/map" },
   { label: "Prototype", href: "/prototype" },
-  { label: "Profile Analysis", href: "/profile-analysis" },
+  { 
+    label: "Box", 
+    href: "/box",
+    submenu: [
+      { label: "Profile Analysis", href: "/box/profile-analysis" },
+      { label: "Cognitive Map", href: "/box/map" },
+    ]
+  },
 ]
 
 export function SimpleHeader() {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   return (
     <>
@@ -65,19 +72,67 @@ export function SimpleHeader() {
             <div className="flex items-center gap-8">
               <div className="hidden lg:flex items-center gap-8">
                 {navigationItems.slice(1).map((item) => (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    onClick={(e) => {
-                      if (item.href.startsWith('/')) {
-                        e.preventDefault()
-                        router.push(item.href)
-                      }
-                    }}
-                    className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
-                  >
-                    {item.label}
-                  </a>
+                  item.submenu ? (
+                    <div 
+                      key={item.label}
+                      className="relative"
+                      onMouseEnter={() => setDropdownOpen(true)}
+                      onMouseLeave={() => setDropdownOpen(false)}
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault()
+                          router.push(item.href)
+                        }}
+                        className="text-white/60 text-sm tracking-wide hover:text-white transition-colors flex items-center gap-1"
+                      >
+                        {item.label}
+                        <svg className={`w-3 h-3 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      <AnimatePresence>
+                        {dropdownOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute top-full right-0 mt-2 w-48 bg-[#0f0f0f] border border-white/10 rounded-lg shadow-xl overflow-hidden"
+                          >
+                            {item.submenu.map((subItem) => (
+                              <a
+                                key={subItem.label}
+                                href={subItem.href}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  router.push(subItem.href)
+                                  setDropdownOpen(false)
+                                }}
+                                className="block px-4 py-3 text-white/60 text-sm hover:bg-white/5 hover:text-white transition-colors"
+                              >
+                                {subItem.label}
+                              </a>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    <a
+                      key={item.label}
+                      href={item.href}
+                      onClick={(e) => {
+                        if (item.href.startsWith('/')) {
+                          e.preventDefault()
+                          router.push(item.href)
+                        }
+                      }}
+                      className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
+                    >
+                      {item.label}
+                    </a>
+                  )
                 ))}
               </div>
 
@@ -167,20 +222,58 @@ export function SimpleHeader() {
               <ul className="space-y-1">
                 {navigationItems.map((item) => (
                   <li key={item.label}>
-                    <a
-                      href={item.href}
-                      onClick={(e) => {
-                        setMenuOpen(false)
-                        if (item.href.startsWith('/')) {
-                          e.preventDefault()
-                          router.push(item.href)
-                        }
-                      }}
-                      className="block text-white text-lg font-light tracking-wide hover:text-white/60 transition-colors py-4 border-b border-white/5"
-                      style={{ fontFamily: "var(--font-heading)" }}
-                    >
-                      {item.label}
-                    </a>
+                    {item.submenu ? (
+                      <div>
+                        <a
+                          href={item.href}
+                          onClick={(e) => {
+                            setMenuOpen(false)
+                            if (item.href.startsWith('/')) {
+                              e.preventDefault()
+                              router.push(item.href)
+                            }
+                          }}
+                          className="block text-white text-lg font-light tracking-wide hover:text-white/60 transition-colors py-4 border-b border-white/5"
+                          style={{ fontFamily: "var(--font-heading)" }}
+                        >
+                          {item.label}
+                        </a>
+                        <ul className="pl-4 space-y-1">
+                          {item.submenu.map((subItem) => (
+                            <li key={subItem.label}>
+                              <a
+                                href={subItem.href}
+                                onClick={(e) => {
+                                  setMenuOpen(false)
+                                  if (subItem.href.startsWith('/')) {
+                                    e.preventDefault()
+                                    router.push(subItem.href)
+                                  }
+                                }}
+                                className="block text-white/60 text-base font-light tracking-wide hover:text-white transition-colors py-3 border-b border-white/5"
+                              >
+                                {subItem.label}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <a
+                        href={item.href}
+                        onClick={(e) => {
+                          setMenuOpen(false)
+                          if (item.href.startsWith('/')) {
+                            e.preventDefault()
+                            router.push(item.href)
+                          }
+                        }}
+                        className="block text-white text-lg font-light tracking-wide hover:text-white/60 transition-colors py-4 border-b border-white/5"
+                        style={{ fontFamily: "var(--font-heading)" }}
+                      >
+                        {item.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
