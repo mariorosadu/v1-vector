@@ -613,28 +613,49 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             key="thankyou"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-20"
+            className="relative py-20 overflow-hidden"
           >
+            {/* Blurred report background image */}
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", duration: 0.45 }}
-              className="w-24 h-24 mx-auto mb-8 rounded-full bg-green-600/20 flex items-center justify-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1.5, delay: 0.5 }}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
             >
-              <CheckCircle2 className="w-16 h-16 text-green-400" />
+              <img
+                src="/images/report-preview.png"
+                alt=""
+                className="w-full max-w-3xl opacity-15 blur-sm scale-95"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-[#0f0f0f]/70 to-[#0f0f0f]" />
             </motion.div>
-            <h3 className="text-3xl md:text-4xl font-light text-white mb-4">
-              Thank You!
-            </h3>
-            <p className="text-white/60 text-lg mb-8 max-w-xl mx-auto">
-              Your responses have been saved successfully. We appreciate you taking the time to map your problem surface.
-            </p>
-            <button
-              onClick={handleCancel}
-              className="px-8 py-4 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/50"
-            >
-              Start New Session
-            </button>
+
+            {/* Content */}
+            <div className="relative z-10 text-center">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", duration: 0.45 }}
+                className="w-24 h-24 mx-auto mb-8 rounded-full bg-green-600/20 flex items-center justify-center"
+              >
+                <CheckCircle2 className="w-16 h-16 text-green-400" />
+              </motion.div>
+              <h3 className="text-3xl md:text-4xl font-light text-white mb-4">
+                Thank You!
+              </h3>
+              <p className="text-white/60 text-lg mb-4 max-w-xl mx-auto leading-relaxed">
+                Your responses have been saved successfully. We appreciate you taking the time to map your problem surface.
+              </p>
+              <p className="text-white/40 text-base mb-10 max-w-lg mx-auto leading-relaxed">
+                Your personalised Vector Alignment Report will appear here once the prototype is fully operational. Stay tuned.
+              </p>
+              <button
+                onClick={handleCancel}
+                className="px-8 py-4 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/50"
+              >
+                Start New Session
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
