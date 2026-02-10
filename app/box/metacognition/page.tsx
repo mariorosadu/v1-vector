@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import { SimpleHeader } from "@/components/simple-header"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sparkles, Send, Loader2 } from "lucide-react"
+import { Send, Loader2 } from "lucide-react"
+import Image from "next/image"
 
 interface Message {
   role: 'user' | 'assistant'
@@ -16,7 +17,7 @@ export default function MetacognitionPage() {
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [absorbingText, setAbsorbingText] = useState("")
+  const [isBouncing, setIsBouncing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -29,13 +30,13 @@ export default function MetacognitionPage() {
       timestamp: Date.now()
     }
 
-    // Show absorbing animation
-    setAbsorbingText(input.trim())
+    // Trigger bounce animation
+    setIsBouncing(true)
     setMessages(prev => [...prev, userMessage])
     setInput("")
     
-    // Clear absorbing text after animation
-    setTimeout(() => setAbsorbingText(""), 800)
+    // Reset bounce after animation
+    setTimeout(() => setIsBouncing(false), 600)
     
     setIsLoading(true)
 
@@ -116,15 +117,29 @@ export default function MetacognitionPage() {
           <motion.div
             key={question}
             initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+            animate={{ 
+              scale: 1, 
+              opacity: 1,
+              y: isBouncing ? [0, -10, 0] : 0
+            }}
+            transition={{ 
+              scale: { type: "spring", stiffness: 200, damping: 20 },
+              opacity: { duration: 0.3 },
+              y: { duration: 0.6, ease: "easeInOut" }
+            }}
             className="max-w-2xl mx-auto"
           >
             <div className="bg-black rounded-3xl px-6 py-5 md:px-8 md:py-6 border border-white/10 relative overflow-hidden">
               <div className="flex items-center gap-4">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 flex items-center justify-center p-2">
+                    <Image 
+                      src="/v-logo-white.svg" 
+                      alt="V Logo" 
+                      width={24} 
+                      height={24}
+                      className="w-full h-full object-contain"
+                    />
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -141,23 +156,6 @@ export default function MetacognitionPage() {
                   </AnimatePresence>
                 </div>
               </div>
-              
-              {/* Absorbing text animation */}
-              <AnimatePresence>
-                {absorbingText && (
-                  <motion.div
-                    initial={{ opacity: 1, y: 20, scale: 1 }}
-                    animate={{ opacity: 0, y: -30, scale: 0.8 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.8, ease: "easeInOut" }}
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                  >
-                    <div className="text-white/50 text-sm md:text-base px-6">
-                      {absorbingText}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </motion.div>
         </div>
