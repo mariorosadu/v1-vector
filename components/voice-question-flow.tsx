@@ -48,9 +48,11 @@ const questions = [
 
 export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   // CB1: Context Building Phase - User voice input for problem discovery
-  const [currentStep, setCurrentStep] = useState<"start" | "questions" | "analyzing" | "complete">("start")
+  const [currentStep, setCurrentStep] = useState<"start" | "questions" | "review" | "editing" | "saving" | "thankyou">("start")
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<string[]>([])
+  const [editingAnswers, setEditingAnswers] = useState<string[]>([])
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [isListening, setIsListening] = useState(false)
   const [currentTranscript, setCurrentTranscript] = useState("")
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
@@ -116,11 +118,11 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
         }, 500)
       }, 1000)
     } else {
-      // All questions answered, analyze responses
-      console.log("[v0] All questions answered, analyzing")
+      // All questions answered, show review screen
+      console.log("[v0] All questions answered, showing review")
       setTimeout(() => {
-        setCurrentStep("analyzing")
-        analyzeAnswers(newAnswers)
+        setCurrentStep("review")
+        setEditingAnswers([...newAnswers])
       }, 1000)
     }
   }, [stopListening])
@@ -193,8 +195,9 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
     recognition.start()
   }, [getSpeechRecognition, handleAnswerComplete])
 
-  const analyzeAnswers = async (answers: string[]) => {
-    // CB1 → Analysis: Extract keywords from user responses to build initial node set
+  const handleConfirm = async () => {
+    setCurrentStep("saving")
+    
     try {
       // Save answers to Supabase database
       const saveResponse = await fetch("/api/save-answers", {
@@ -202,35 +205,50 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ answers, questions }),
+        body: JSON.stringify({ answers: editingAnswers, questions }),
       })
 
       if (!saveResponse.ok) {
         console.error("Failed to save answers to database")
       }
 
-      const response = await fetch("/api/extract-keywords", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ answers }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to extract keywords")
-      }
-
-      const data = await response.json()
-
-      setCurrentStep("complete")
-
-      // Wait a moment before adding to map
+      // Show thank you message
       setTimeout(() => {
-        onComplete({ nodes: data.nodes, connections: data.connections })
+        setCurrentStep("thankyou")
       }, 1500)
     } catch (error) {
-      console.error("[v0] Error analyzing answers:", error)
+      console.error("[v0] Error saving answers:", error)
+      setTimeout(() => {
+        setCurrentStep("thankyou")
+      }, 1500)
+    }
+  }
+
+  const handleEditAnswer = (index: number) => {
+    setEditingIndex(index)
+    setCurrentStep("editing")
+  }
+
+  const handleSaveEdit = (newAnswer: string) => {
+    if (editingIndex !== null && newAnswer.trim()) {
+      const updated = [...editingAnswers]
+      updated[editingIndex] = newAnswer.trim()
+      setEditingAnswers(updated)
+      setAnswers(updated)
+      answersRef.current = updated
+    }
+    setEditingIndex(null)
+    setCurrentStep("review")
+  }
+
+  const handleCancelEdit = () => {
+    setEditingIndex(null)
+    setCurrentStep("review")
+  }
+
+  const analyzeAnswers = async (answers: string[]) => {
+    // Deprecated - keeping for backwards compatibility but not used
+    try {
       // Fallback: extract context-specific keywords from answers
       const contextText = answers.join(" ")
       const simpleKeywords = contextText
@@ -493,9 +511,124 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
           </motion.div>
         )}
 
-        {currentStep === "analyzing" && (
+        {currentStep === "review" && (
           <motion.div
-            key="analyzing"
+            key="review"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="py-12 max-w-3xl mx-auto"
+          >
+            <div className="text-center mb-12">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", duration: 0.45 }}
+                className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-600/20 flex items-center justify-center"
+              >
+                <CheckCircle2 className="w-12 h-12 text-green-400" />
+              </motion.div>
+              <h3 className="text-3xl md:text-4xl font-light text-white mb-4">
+                Review Your Answers
+              </h3>
+              <p className="text-white/60 text-lg">
+                Please review your responses below. You can edit any answer before confirming.
+              </p>
+            </div>
+
+            {/* Answers Review */}
+            <div className="space-y-6 mb-12">
+              {editingAnswers.map((answer, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="p-6 bg-white/5 border border-white/10 rounded-lg"
+                >
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div className="text-white/40 text-sm font-medium">
+                      Question {index + 1}
+                    </div>
+                    <button
+                      onClick={() => handleEditAnswer(index)}
+                      className="px-3 py-1 text-xs bg-white/10 hover:bg-white/15 border border-white/20 text-white/70 hover:text-white rounded transition-all"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                  <p className="text-white/60 text-sm mb-3">{questions[index]}</p>
+                  <p className="text-white text-base">{answer}</p>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={handleCancel}
+                className="px-8 py-4 bg-white/5 border border-white/10 text-white/70 rounded-lg hover:bg-white/10 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/20"
+              >
+                Start Over
+              </button>
+              <button
+                onClick={handleConfirm}
+                className="px-8 py-4 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/50"
+              >
+                Confirm & Submit
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {currentStep === "editing" && editingIndex !== null && (
+          <motion.div
+            key="editing"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="py-12 max-w-3xl mx-auto"
+          >
+            <div className="text-center mb-8">
+              <h3 className="text-2xl md:text-3xl font-light text-white mb-2">
+                Edit Your Answer
+              </h3>
+              <p className="text-white/60">Question {editingIndex + 1}</p>
+            </div>
+
+            <div className="mb-8">
+              <p className="text-white/70 text-lg mb-6 text-center">{questions[editingIndex]}</p>
+              <textarea
+                defaultValue={editingAnswers[editingIndex]}
+                className="w-full h-40 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 resize-none"
+                placeholder="Type your answer here..."
+                id="edit-textarea"
+              />
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={handleCancelEdit}
+                className="px-8 py-3 bg-white/5 border border-white/10 text-white/70 rounded-lg hover:bg-white/10 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/20"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const textarea = document.getElementById("edit-textarea") as HTMLTextAreaElement
+                  if (textarea) handleSaveEdit(textarea.value)
+                }}
+                className="px-8 py-3 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/50"
+              >
+                Save Changes
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {currentStep === "saving" && (
+          <motion.div
+            key="saving"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
@@ -509,17 +642,17 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
               <Loader2 className="w-full h-full text-white/60" />
             </motion.div>
             <h3 className="text-2xl md:text-3xl font-light text-white mb-4">
-              Analyzing Your Responses
+              Saving Your Answers
             </h3>
             <p className="text-white/60 text-lg">
-              Extracting key concepts and generating your problem map...
+              Please wait while we save your responses...
             </p>
           </motion.div>
         )}
 
-        {currentStep === "complete" && (
+        {currentStep === "thankyou" && (
           <motion.div
-            key="complete"
+            key="thankyou"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-20"
@@ -528,16 +661,22 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", duration: 0.45 }}
-              className="w-20 h-20 mx-auto mb-8 rounded-full bg-green-600/20 flex items-center justify-center"
+              className="w-24 h-24 mx-auto mb-8 rounded-full bg-green-600/20 flex items-center justify-center"
             >
-              <CheckCircle2 className="w-12 h-12 text-green-400" />
+              <CheckCircle2 className="w-16 h-16 text-green-400" />
             </motion.div>
-            <h3 className="text-2xl md:text-3xl font-light text-white mb-4">
-              Map Generated
+            <h3 className="text-3xl md:text-4xl font-light text-white mb-4">
+              Thank You!
             </h3>
-            <p className="text-white/60 text-lg">
-              Adding keywords to your problem surface map...
+            <p className="text-white/60 text-lg mb-8 max-w-xl mx-auto">
+              Your responses have been saved successfully. We appreciate you taking the time to map your problem surface.
             </p>
+            <button
+              onClick={handleCancel}
+              className="px-8 py-4 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/50"
+            >
+              Start New Session
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
