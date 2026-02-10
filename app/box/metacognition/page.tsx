@@ -103,25 +103,31 @@ export default function MetacognitionPage() {
         })
       })
 
-      if (!response.ok) throw new Error('Failed to get response')
-
       const data = await response.json()
       
-      console.log("[v0] Frontend received response:", data)
+      console.log("[v0] Response status:", response.status)
+      console.log("[v0] Frontend received data:", JSON.stringify(data))
+      
+      if (!response.ok) {
+        console.error("[v0] API error:", data.error, data.details)
+        setQuestion(`Error: ${data.error || 'Unknown error'} - ${data.details || ''}`)
+        return
+      }
       
       if (data.question) {
         console.log("[v0] Updating question to:", data.question)
         setQuestion(data.question)
       } else {
-        console.log("[v0] ✗ No question in response!")
+        console.log("[v0] No question in response, full data:", JSON.stringify(data))
+        setQuestion("Error: No question returned from AI")
       }
       
       if (data.progress) {
-        console.log("[v0] Updating progress:", data.progress)
         setProgress(data.progress)
       }
-    } catch (error) {
-      console.error('Error sending message:', error)
+    } catch (error: any) {
+      console.error("[v0] Fetch error:", error?.message || error)
+      setQuestion(`Connection error: ${error?.message || 'Unknown'}`)
     } finally {
       setIsLoading(false)
       // Refocus input after completing the update

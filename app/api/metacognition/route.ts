@@ -102,22 +102,49 @@ Return a JSON object with:
       systemPrompt = `The analysis is complete. Provide a brief summary question asking if they'd like to explore any aspect further.`
     }
 
-    const openai = createOpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-
+    const apiKey = process.env.OPENAI_API_KEY
     console.log("[v0] ===== API Request =====")
     console.log("[v0] Current stage:", currentProgress.currentStage)
     console.log("[v0] Messages count:", messages.length)
-    console.log("[v0] API Key loaded:", process.env.OPENAI_API_KEY ? "Yes" : "MISSING")
+    console.log("[v0] API Key loaded:", apiKey ? `Yes (starts with ${apiKey.substring(0, 8)}...)` : "MISSING")
+
+    let result
     
-    const result = await generateText({
-      model: openai('gpt-5-mini'),
-      system: systemPrompt,
-      messages,
-      temperature: 0.7,
-      maxOutputTokens: 300,
-    })
+    if (apiKey) {
+      try {
+        const openai = createOpenAI({ apiKey })
+        result = await generateText({
+          model: openai('gpt-5-mini'),
+          system: systemPrompt,
+          messages,
+          temperature: 0.7,
+          maxOutputTokens: 300,
+        })
+        console.log("[v0] gpt-5-mini call succeeded")
+      } catch (openaiError: any) {
+        console.error("[v0] gpt-5-mini call FAILED:", openaiError?.message || openaiError)
+        console.error("[v0] Full error:", JSON.stringify(openaiError, null, 2))
+        // Fallback to AI Gateway
+        console.log("[v0] Falling back to AI Gateway with openai/gpt-4o")
+        result = await generateText({
+          model: 'openai/gpt-4o',
+          system: systemPrompt,
+          messages,
+          temperature: 0.7,
+          maxOutputTokens: 300,
+        })
+        console.log("[v0] AI Gateway fallback succeeded")
+      }
+    } else {
+      console.log("[v0] No API key, using AI Gateway")
+      result = await generateText({
+        model: 'openai/gpt-4o',
+        system: systemPrompt,
+        messages,
+        temperature: 0.7,
+        maxOutputTokens: 300,
+      })
+    }
 
     console.log("[v0] ===== API Response =====")
     console.log("[v0] Raw response:", result.text)
@@ -192,8 +219,12 @@ Return a JSON object with:
       progress: newProgress,
       reasoning: parsedResponse.reasoning
     })
-  } catch (error) {
-    console.error('Error in metacognition API:', error)
-    return Response.json({ error: 'Error processing request' }, { status: 500 })
+  } catch (error: any) {
+    console.error('[v0] Top-level error in metacognition API:', error?.message || error)
+    console.error('[v0] Error stack:', error?.stack)
+    return Response.json({ 
+      error: 'Error processing request', 
+      details: error?.message || 'Unknown error'
+    }, { status: 500 })
   }
 }
