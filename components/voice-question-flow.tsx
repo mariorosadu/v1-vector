@@ -622,11 +622,14 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
               transition={{ duration: 1.5, delay: 0.5 }}
               className="absolute inset-0 flex items-center justify-center pointer-events-none"
             >
-              <img
-                src="/images/report-preview.png"
-                alt=""
-                className="w-full max-w-3xl opacity-30 blur scale-95"
-              />
+              <div className="relative w-full max-w-3xl scale-95">
+                <img
+                  src="/images/report-preview.png"
+                  alt=""
+                  className="w-full opacity-30 rounded-lg border border-white/20"
+                  style={{ filter: 'blur(2px)' }}
+                />
+              </div>
               <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-[#0f0f0f]/50 to-[#0f0f0f]" />
             </motion.div>
 
