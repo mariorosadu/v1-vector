@@ -246,48 +246,6 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
     setCurrentStep("review")
   }
 
-  const analyzeAnswers = async (answers: string[]) => {
-    // Deprecated - keeping for backwards compatibility but not used
-    try {
-      // Fallback: extract context-specific keywords from answers
-      const contextText = answers.join(" ")
-      const simpleKeywords = contextText
-        .toLowerCase()
-        .replace(/[^a-z\s]/g, "")
-        .split(" ")
-        .filter((word) => word.length > 4)
-        .slice(0, 6)
-
-      const fallbackNodes = simpleKeywords.map(keyword => {
-        const capitalizedKeyword = keyword.charAt(0).toUpperCase() + keyword.slice(1)
-        const lowerKeyword = keyword.toLowerCase()
-        const contextIndex = contextText.toLowerCase().indexOf(lowerKeyword)
-        let description = "Element mentioned in your problem context"
-        
-        if (contextIndex !== -1) {
-          const words = contextText.split(" ")
-          const keywordIndex = words.findIndex(w => w.toLowerCase().includes(lowerKeyword))
-          if (keywordIndex !== -1) {
-            const start = Math.max(0, keywordIndex - 3)
-            const end = Math.min(words.length, keywordIndex + 4)
-            const snippet = words.slice(start, end).join(" ")
-            description = snippet.length > 80 ? snippet.slice(0, 77) + "..." : snippet
-          }
-        }
-        
-        return {
-          keyword: capitalizedKeyword,
-          description
-        }
-      })
-
-      setCurrentStep("complete")
-      setTimeout(() => {
-        onComplete({ nodes: fallbackNodes, connections: [] })
-      }, 1500)
-    }
-  }
-
   const handleStart = () => {
     setCurrentStep("questions")
     currentQuestionIndexRef.current = 0
