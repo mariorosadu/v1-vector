@@ -85,36 +85,33 @@ export default function MetacognitionPage() {
   }
 
   return (
-    <main className="bg-[#0f0f0f] h-dvh flex flex-col overflow-hidden touch-none">
+    <main className="bg-[#0f0f0f] fixed inset-0 flex flex-col">
       <SimpleHeader />
       
-      {/* Main container with fixed positioning */}
-      <div className="flex-1 flex flex-col relative overflow-hidden touch-auto">
+      {/* Main container */}
+      <div className="flex-1 flex flex-col min-h-0">
         
         {/* Top Section - Progress Area */}
-        <div className="flex-1 px-4 py-6 md:px-8 md:py-8">
-          <div className="max-w-2xl mx-auto h-full flex items-center justify-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center"
-            >
-              {messages.length === 0 ? (
-                <div className="text-white/30 text-sm">
-                  Start by answering the question below to begin exploring your objectives
-                </div>
-              ) : (
-                <div className="text-white/20 text-xs">
-                  {messages.length} {messages.length === 1 ? 'response' : 'responses'} processed
-                </div>
-              )}
-            </motion.div>
-          </div>
+        <div className="flex-1 min-h-0 px-4 py-6 md:px-8 md:py-8 flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
+          >
+            {messages.length === 0 ? (
+              <div className="text-white/30 text-sm">
+                Start by answering the question below to begin exploring your objectives
+              </div>
+            ) : (
+              <div className="text-white/20 text-xs">
+                {messages.length} {messages.length === 1 ? 'response' : 'responses'} processed
+              </div>
+            )}
+          </motion.div>
         </div>
 
         {/* Middle Section - Floating Question Bar */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 z-10 py-4 pointer-events-none">
-          <div className="pointer-events-auto">
+        <div className="flex-shrink-0 px-4 md:px-8">
           <motion.div
             key={question}
             initial={{ scale: 0.95, opacity: 0 }}
@@ -128,8 +125,9 @@ export default function MetacognitionPage() {
               opacity: { duration: 0.3 },
               y: { duration: 0.6, ease: "easeInOut" }
             }}
+            className="max-w-2xl mx-auto"
           >
-            <div className="bg-black md:rounded-3xl px-6 py-5 md:px-8 md:py-6 border-y md:border border-white/10 relative overflow-hidden">
+            <div className="bg-black rounded-3xl px-6 py-5 md:px-8 md:py-6 border border-white/10 relative">
               <div className="flex items-center gap-4">
                 <div className="flex-shrink-0">
                   <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 flex items-center justify-center p-2">
@@ -158,15 +156,14 @@ export default function MetacognitionPage() {
               </div>
             </div>
           </motion.div>
-          </div>
         </div>
 
         {/* Bottom Section - Input Area */}
-        <div className="flex-shrink-0 px-4 pb-safe py-4 md:px-8 md:py-6">
+        <div className="flex-1 min-h-0 px-4 py-4 md:px-8 md:py-6 flex items-center">
           <div className="max-w-2xl mx-auto w-full">
             <div className="bg-white/5 border border-white/10 rounded-2xl p-3 md:p-5">
               <div className="flex items-end gap-2">
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <textarea
                     ref={inputRef}
                     value={input}
@@ -174,24 +171,24 @@ export default function MetacognitionPage() {
                     onKeyDown={handleKeyDown}
                     placeholder="Type your response..."
                     disabled={isLoading}
-                    className="w-full bg-transparent text-white placeholder:text-white/30 text-sm md:text-base resize-none outline-none min-h-[44px] max-h-[100px] leading-tight py-2"
+                    className="w-full bg-transparent text-white placeholder:text-white/30 text-sm md:text-base resize-none outline-none h-[44px] leading-tight py-2"
                     rows={1}
                   />
                 </div>
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
-                  className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:cursor-not-allowed transition-colors flex items-center justify-center border border-white/10"
+                  className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:cursor-not-allowed transition-colors flex items-center justify-center border border-white/10"
                 >
                   {isLoading ? (
-                    <Loader2 className="w-5 h-5 text-white/60 animate-spin" />
+                    <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-white/60 animate-spin" />
                   ) : (
-                    <Send className="w-5 h-5 text-white/60" />
+                    <Send className="w-4 h-4 md:w-5 md:h-5 text-white/60" />
                   )}
                 </button>
               </div>
               
-              <div className="mt-3 pt-3 border-t border-white/5">
+              <div className="mt-2 pt-2 border-t border-white/5 hidden md:block">
                 <p className="text-white/30 text-xs">
                   Press Enter to send • Shift + Enter for new line
                 </p>
