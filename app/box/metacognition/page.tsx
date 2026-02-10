@@ -122,70 +122,7 @@ export default function MetacognitionPage() {
     <div className="bg-[#0f0f0f] h-dvh w-full overflow-hidden">
       <SimpleHeader />
 
-      {/* Dual Progress Bars - Fixed at top below header */}
-      <div className="fixed left-0 right-0 z-30 bg-[#0f0f0f] border-b border-white/10" style={{ top: '96px' }}>
-        <div className="max-w-4xl mx-auto px-4 py-4 md:px-8 md:py-5">
-          <div className="space-y-4">
-            {/* Objective Progress Bar */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-white/60 text-xs font-medium tracking-wider uppercase">
-                  Objective Definition
-                </span>
-                <span className="text-white/40 text-xs">
-                  {Math.round(progress.objectiveProgress)}%
-                </span>
-              </div>
-              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress.objectiveProgress}%` }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                />
-              </div>
-            </div>
-
-            {/* Qualitative & Quantitative Progress Bar */}
-            <div className={progress.currentStage === 'objective' ? 'opacity-50' : ''}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-white/60 text-xs font-medium tracking-wider uppercase">
-                  Qualitative & Quantitative Analysis
-                </span>
-                <span className="text-white/40 text-xs">
-                  {Math.round((progress.qualitativeProgress + progress.quantitativeProgress) / 2)}%
-                </span>
-              </div>
-              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className="flex h-full">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress.qualitativeProgress / 2}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                  />
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-pink-500 to-orange-500"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress.quantitativeProgress / 2}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-between mt-1.5">
-                <span className="text-white/30 text-[10px]">
-                  Qualitative: {Math.round(progress.qualitativeProgress)}%
-                </span>
-                <span className="text-white/30 text-[10px]">
-                  Quantitative: {Math.round(progress.quantitativeProgress)}%
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Question bar - vertically centered in available space */}
+      {/* Question bar with integrated status bar - vertically centered in available space */}
       <div className="fixed inset-0 flex items-center justify-center z-10 px-4 md:px-8 pointer-events-none">
         <motion.div
           key={question}
@@ -203,7 +140,8 @@ export default function MetacognitionPage() {
           className="max-w-2xl w-full pointer-events-auto"
         >
           <div className="bg-black rounded-3xl px-6 py-5 md:px-8 md:py-6 border border-white/10">
-            <div className="flex items-center gap-4">
+            {/* Question Content */}
+            <div className="flex items-center gap-4 mb-6">
               <div className="flex-shrink-0">
                 <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 flex items-center justify-center p-2">
                   <Image
@@ -229,6 +167,82 @@ export default function MetacognitionPage() {
                 </AnimatePresence>
               </div>
             </div>
+
+            {/* Divider */}
+            <div className="h-px bg-white/10 mb-5" />
+
+            {/* Dynamic Status Bar - Transitions based on progress */}
+            <AnimatePresence mode="wait">
+              {progress.objectiveProgress < 100 ? (
+                // Objective Definition Status Bar
+                <motion.div
+                  key="objective"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white/50 text-[11px] font-medium tracking-wider uppercase">
+                      Objective Definition
+                    </span>
+                    <span className="text-white/30 text-[11px] font-mono">
+                      {Math.round(progress.objectiveProgress)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress.objectiveProgress}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                    />
+                  </div>
+                </motion.div>
+              ) : (
+                // Combined Qualitative & Quantitative Analysis Status Bar
+                <motion.div
+                  key="analysis"
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white/50 text-[11px] font-medium tracking-wider uppercase">
+                      Qualitative & Quantitative Analysis
+                    </span>
+                    <span className="text-white/30 text-[11px] font-mono">
+                      {Math.round((progress.qualitativeProgress + progress.quantitativeProgress) / 2)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
+                    <div className="flex h-full">
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress.qualitativeProgress / 2}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                      />
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-pink-500 to-orange-500"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress.quantitativeProgress / 2}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/20 text-[10px] font-mono">
+                      Qualitative: {Math.round(progress.qualitativeProgress)}%
+                    </span>
+                    <span className="text-white/20 text-[10px] font-mono">
+                      Quantitative: {Math.round(progress.quantitativeProgress)}%
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </motion.div>
       </div>
