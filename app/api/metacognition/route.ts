@@ -1,6 +1,6 @@
 import { generateText } from 'ai'
 import { createClient } from '@supabase/supabase-js'
-import { openai } from '@ai-sdk/openai'
+import { createOpenAI } from '@ai-sdk/openai'
 
 export const maxDuration = 30
 
@@ -102,15 +102,17 @@ Return a JSON object with:
       systemPrompt = `The analysis is complete. Provide a brief summary question asking if they'd like to explore any aspect further.`
     }
 
+    const openai = createOpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+
     console.log("[v0] ===== API Request =====")
     console.log("[v0] Current stage:", currentProgress.currentStage)
     console.log("[v0] Messages count:", messages.length)
-    console.log("[v0] API Key status:", process.env.OPENAI_API_KEY ? "✓ Loaded" : "✗ Missing")
+    console.log("[v0] API Key loaded:", process.env.OPENAI_API_KEY ? "Yes" : "MISSING")
     
     const result = await generateText({
-      model: openai('gpt-5-mini', {
-        apiKey: process.env.OPENAI_API_KEY,
-      }),
+      model: openai('gpt-5-mini'),
       system: systemPrompt,
       messages,
       temperature: 0.7,
@@ -118,7 +120,6 @@ Return a JSON object with:
     })
 
     console.log("[v0] ===== API Response =====")
-    console.log("[v0] Model used: gpt-5-mini")
     console.log("[v0] Raw response:", result.text)
     console.log("[v0] Response length:", result.text.length, "chars")
 
