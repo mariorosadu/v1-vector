@@ -17,15 +17,31 @@ interface AnswerRecord {
   created_at: string
 }
 
+interface MetacognitionDialogue {
+  id: string
+  session_id: string
+  question: string
+  answer: string
+  stage: string
+  question_index: number
+  objective_progress: number
+  qualitative_progress: number
+  quantitative_progress: number
+  created_at: string
+}
+
 export default function AnswersAdminPage() {
   const [answers, setAnswers] = useState<AnswerRecord[]>([])
+  const [metacognitionDialogues, setMetacognitionDialogues] = useState<MetacognitionDialogue[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'problem-surface' | 'metacognition'>('problem-surface')
 
   useEffect(() => {
     fetchAnswers()
+    fetchMetacognition()
   }, [])
 
   const fetchAnswers = async () => {
@@ -42,6 +58,21 @@ export default function AnswersAdminPage() {
       setError("Failed to load answers")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchMetacognition = async () => {
+    try {
+      const response = await fetch("/api/get-metacognition")
+      const data = await response.json()
+
+      if (response.ok) {
+        setMetacognitionDialogues(data.dialogues || [])
+      } else {
+        console.error("Failed to load metacognition dialogues")
+      }
+    } catch (err) {
+      console.error("Failed to load metacognition dialogues:", err)
     }
   }
 
@@ -111,11 +142,35 @@ export default function AnswersAdminPage() {
       <div className="pt-40 md:pt-52 pb-20 px-6 md:px-12">
         <div className="container mx-auto max-w-5xl">
           <h1 className="text-4xl md:text-5xl font-light text-white mb-3 text-balance">
-            Problem Surface Answers
+            Collected Answers
           </h1>
-          <p className="text-white/60 text-lg mb-12">
-            All collected answers from the mapping sessions.
+          <p className="text-white/60 text-lg mb-8">
+            All collected answers from both mapping sessions.
           </p>
+
+          {/* Tabs */}
+          <div className="flex gap-2 mb-12 border-b border-white/10">
+            <button
+              onClick={() => setActiveTab('problem-surface')}
+              className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+                activeTab === 'problem-surface'
+                  ? 'text-white border-white'
+                  : 'text-white/50 border-transparent hover:text-white/70'
+              }`}
+            >
+              Problem Surface ({answers.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('metacognition')}
+              className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+                activeTab === 'metacognition'
+                  ? 'text-white border-white'
+                  : 'text-white/50 border-transparent hover:text-white/70'
+              }`}
+            >
+              Metacognition ({[...new Set(metacognitionDialogues.map(d => d.session_id))].length} sessions)
+            </button>
+          </div>
 
           {loading && (
             <div className="text-center py-20">
@@ -129,7 +184,7 @@ export default function AnswersAdminPage() {
             </div>
           )}
 
-          {!loading && !error && answers.length === 0 && (
+          {!loading && !error && activeTab === 'problem-surface' && answers.length === 0 && (
             <div className="text-center py-20">
               <p className="text-white/40 text-lg">No answers saved yet</p>
               <p className="text-white/30 text-sm mt-2">
@@ -138,7 +193,16 @@ export default function AnswersAdminPage() {
             </div>
           )}
 
-          {!loading && answers.length > 0 && (
+          {!loading && !error && activeTab === 'metacognition' && metacognitionDialogues.length === 0 && (
+            <div className="text-center py-20">
+              <p className="text-white/40 text-lg">No metacognition dialogues saved yet</p>
+              <p className="text-white/30 text-sm mt-2">
+                Complete a metacognition flow session to see dialogues here.
+              </p>
+            </div>
+          )}
+
+          {!loading && activeTab === 'problem-surface' && answers.length > 0 && (
             <div className="space-y-6">
               {answers.map((record) => (
                 <div
@@ -205,6 +269,68 @@ export default function AnswersAdminPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {!loading && activeTab === 'metacognition' && metacognitionDialogues.length > 0 && (
+            <div className="space-y-8">
+              {/* Group dialogues by session_id */}
+              {[...new Set(metacognitionDialogues.map(d => d.session_id))].map(sessionId => {
+                const sessionDialogues = metacognitionDialogues
+                  .filter(d => d.session_id === sessionId)
+                  .sort((a, b) => a.question_index - b.question_index)
+                const firstDialogue = sessionDialogues[0]
+
+                return (
+                  <div
+                    key={sessionId}
+                    className="p-6 bg-white/5 border border-white/10 rounded-lg"
+                  >
+                    <div className="mb-6">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-white/40 text-sm mb-1">
+                            {new Date(firstDialogue.created_at).toLocaleString()}
+                          </p>
+                          <p className="text-white/30 text-xs">
+                            Session: {sessionId}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          {/* Progress indicators */}
+                          <div className="flex flex-col gap-1 text-xs">
+                            <span className="text-white/50">
+                              Objective: {Math.round(sessionDialogues[sessionDialogues.length - 1].objective_progress)}%
+                            </span>
+                            <span className="text-white/50">
+                              Qualitative: {Math.round(sessionDialogues[sessionDialogues.length - 1].qualitative_progress)}%
+                            </span>
+                            <span className="text-white/50">
+                              Quantitative: {Math.round(sessionDialogues[sessionDialogues.length - 1].quantitative_progress)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Display each Q&A */}
+                    <div className="space-y-4">
+                      {sessionDialogues.map((dialogue, idx) => (
+                        <div key={dialogue.id} className="border-l-2 border-white/10 pl-4">
+                          <div className="flex items-start gap-2 mb-1">
+                            <span className="text-white/30 text-xs font-mono">Q{idx + 1}</span>
+                            <span className="text-white/40 text-xs px-2 py-0.5 bg-white/5 rounded">
+                              {dialogue.stage}
+                            </span>
+                          </div>
+                          <p className="text-white/50 text-sm mb-2">{dialogue.question}</p>
+                          <p className="text-white/90 text-sm">{dialogue.answer}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>

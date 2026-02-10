@@ -37,6 +37,7 @@ export default function MetacognitionPage() {
     objectiveClarity: 0
   })
   const [queuedInput, setQueuedInput] = useState<string>("")
+  const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const inputBarRef = useRef<HTMLDivElement>(null)
 
@@ -97,7 +98,8 @@ export default function MetacognitionPage() {
             ...messages.map(m => ({ role: m.role, content: m.content })),
             { role: 'user', content: userMessage.content }
           ],
-          progress: progress
+          progress: progress,
+          sessionId: sessionId
         })
       })
 
