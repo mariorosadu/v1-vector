@@ -13,6 +13,7 @@ const navigationItems = [
     submenu: [
       { label: "Profile Analysis", href: "/box/profile-analysis" },
       { label: "Cognitive Map", href: "/box/map" },
+      { label: "Metacognition", href: "/box/metacognition" },
     ]
   },
 ]
