@@ -85,11 +85,11 @@ export default function MetacognitionPage() {
   }
 
   return (
-    <main className="bg-[#0f0f0f] min-h-screen flex flex-col">
+    <main className="bg-[#0f0f0f] h-screen flex flex-col overflow-hidden">
       <SimpleHeader />
       
       {/* Main container with fixed positioning */}
-      <div className="flex-1 flex flex-col relative pt-20 md:pt-24">
+      <div className="flex-1 flex flex-col relative overflow-hidden">
         
         {/* Top Section - Progress Area */}
         <div className="flex-1 px-4 py-6 md:px-8 md:py-8">
@@ -113,7 +113,7 @@ export default function MetacognitionPage() {
         </div>
 
         {/* Middle Section - Floating Question Bar */}
-        <div className="sticky top-1/2 -translate-y-1/2 z-10 px-4 md:px-8 py-4">
+        <div className="sticky top-1/2 -translate-y-1/2 z-10 py-4">
           <motion.div
             key={question}
             initial={{ scale: 0.95, opacity: 0 }}
@@ -127,9 +127,8 @@ export default function MetacognitionPage() {
               opacity: { duration: 0.3 },
               y: { duration: 0.6, ease: "easeInOut" }
             }}
-            className="max-w-2xl mx-auto"
           >
-            <div className="bg-black rounded-3xl px-6 py-5 md:px-8 md:py-6 border border-white/10 relative overflow-hidden">
+            <div className="bg-black md:rounded-3xl px-6 py-5 md:px-8 md:py-6 border-y md:border border-white/10 relative overflow-hidden">
               <div className="flex items-center gap-4">
                 <div className="flex-shrink-0">
                   <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 flex items-center justify-center p-2">
@@ -161,7 +160,7 @@ export default function MetacognitionPage() {
         </div>
 
         {/* Bottom Section - Input Area */}
-        <div className="flex-1 px-4 py-6 md:px-8 md:py-8 flex flex-col justify-end">
+        <div className="flex-shrink-0 px-4 py-4 md:px-8 md:py-6 safe-area-inset-bottom">
           <div className="max-w-2xl mx-auto w-full">
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-5">
               <div className="flex items-end gap-3">
@@ -173,8 +172,8 @@ export default function MetacognitionPage() {
                     onKeyDown={handleKeyDown}
                     placeholder="Type your response..."
                     disabled={isLoading}
-                    className="w-full bg-transparent text-white placeholder:text-white/30 text-sm md:text-base resize-none outline-none min-h-[60px] max-h-[200px]"
-                    rows={2}
+                    className="w-full bg-transparent text-white placeholder:text-white/30 text-sm md:text-base resize-none outline-none min-h-[40px] max-h-[120px]"
+                    rows={1}
                   />
                 </div>
                 <button
