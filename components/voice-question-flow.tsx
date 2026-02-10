@@ -591,16 +591,16 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={handleCancel}
-                className="px-8 py-4 bg-white/5 border border-white/10 text-white/70 rounded-lg hover:bg-white/10 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/20"
-              >
-                Start Over
-              </button>
-              <button
                 onClick={handleConfirm}
                 className="px-8 py-4 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/50"
               >
-                Confirm & Submit
+                {'Confirm & Submit >'}
+              </button>
+              <button
+                onClick={handleCancel}
+                className="px-8 py-4 bg-white/5 border border-white/10 text-white/70 rounded-lg hover:bg-white/10 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/20"
+              >
+                {'< Start Over'}
               </button>
             </div>
           </motion.div>
