@@ -5,6 +5,7 @@ import { SimpleHeader } from "@/components/simple-header"
 import { motion, AnimatePresence } from "framer-motion"
 import { Send, Loader2 } from "lucide-react"
 import Image from "next/image"
+import { getOrCreateSessionId } from "@/lib/session"
 
 interface Message {
   role: 'user' | 'assistant'
@@ -37,6 +38,8 @@ export default function MetacognitionPage() {
     objectiveClarity: 0
   })
   const [queuedInput, setQueuedInput] = useState<string>("")
+  const [sessionId, setSessionId] = useState<string>("")
+  const [questionIndex, setQuestionIndex] = useState<number>(0)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const inputBarRef = useRef<HTMLDivElement>(null)
 
@@ -63,6 +66,12 @@ export default function MetacognitionPage() {
     }
   }, [])
 
+  // Initialize session on mount
+  useEffect(() => {
+    const id = getOrCreateSessionId()
+    setSessionId(id)
+  }, [])
+
   // Auto-focus input on mount and maintain focus
   useEffect(() => {
     if (inputRef.current && !isLoading) {
@@ -78,6 +87,10 @@ export default function MetacognitionPage() {
       content: input.trim(),
       timestamp: Date.now()
     }
+
+    const currentQuestion = question
+    const currentAnswer = input.trim()
+    const currentQuestionIndex = questionIndex
 
     setIsBouncing(true)
     setMessages(prev => [...prev, userMessage])
@@ -107,10 +120,29 @@ export default function MetacognitionPage() {
       
       if (data.question) {
         setQuestion(data.question)
+        setQuestionIndex(prev => prev + 1)
       }
       
       if (data.progress) {
         setProgress(data.progress)
+      }
+
+      // Save dialogue to database (non-blocking)
+      if (sessionId) {
+        fetch('/api/save-metacognition', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sessionId,
+            question: currentQuestion,
+            answer: currentAnswer,
+            stage: progress.currentStage,
+            question_index: currentQuestionIndex,
+            objective_progress: progress.objectiveProgress,
+            qualitative_progress: progress.qualitativeProgress,
+            quantitative_progress: progress.quantitativeProgress
+          })
+        }).catch(err => console.error('[v0] Error saving dialogue:', err))
       }
     } catch (error) {
       console.error('Error sending message:', error)
