@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
-
-export const dynamic = 'force-dynamic'
-export const runtime = 'edge'
+import { supabase } from '@/lib/supabase'
 
 export async function GET() {
   try {
-    const supabase = createClient()
-
     // Get all metacognition dialogues grouped by session
     const { data, error } = await supabase
       .from('metacognition_dialogues')
