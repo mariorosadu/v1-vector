@@ -62,6 +62,17 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   const answersRef = useRef<string[]>([])
   const isProcessingRef = useRef(false)
 
+  // Detect if user is on a mobile device
+  const isMobileRef = useRef(false)
+  // Track whether we should auto-restart recognition on end
+  const shouldRestartRef = useRef(false)
+
+  useEffect(() => {
+    isMobileRef.current = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    )
+  }, [])
+
   const getSpeechRecognition = useCallback((): SpeechRecognitionInstance | null => {
     if (typeof window === "undefined") return null
     const SpeechRecognition =
@@ -72,6 +83,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   }, [])
 
   const stopListening = useCallback(() => {
+    shouldRestartRef.current = false
     recognitionRef.current?.stop()
     setIsListening(false)
     if (silenceTimerRef.current) {
@@ -81,18 +93,14 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   }, [])
 
   const handleAnswerComplete = useCallback((answer: string) => {
-    console.log("[v0] Answer complete:", answer)
-    
     // Prevent double processing
-    if (isProcessingRef.current) {
-      console.log("[v0] Already processing, skipping")
-      return
-    }
+    if (isProcessingRef.current) return
     
     const trimmedAnswer = answer.trim()
     if (!trimmedAnswer) return
 
     isProcessingRef.current = true
+    shouldRestartRef.current = false
     const newAnswers = [...answersRef.current, trimmedAnswer]
     answersRef.current = newAnswers
     setAnswers(newAnswers)
@@ -100,26 +108,18 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
     transcriptRef.current = ""
     stopListening()
 
-    console.log("[v0] Current question index:", currentQuestionIndexRef.current, "Total questions:", questions.length)
-    console.log("[v0] Current answers:", newAnswers)
-
     if (currentQuestionIndexRef.current < questions.length - 1) {
-      // Move to next question after a brief pause
-      console.log("[v0] Moving to next question")
       setTimeout(() => {
         const nextIndex = currentQuestionIndexRef.current + 1
         currentQuestionIndexRef.current = nextIndex
         setCurrentQuestionIndex(nextIndex)
-        console.log("[v0] Set question index to:", nextIndex)
         
         setTimeout(() => {
           isProcessingRef.current = false
           startListening()
-        }, 500)
+        }, 600)
       }, 1000)
     } else {
-      // All questions answered, show review screen
-      console.log("[v0] All questions answered, showing review")
       setTimeout(() => {
         setCurrentStep("review")
         setEditingAnswers([...newAnswers])
@@ -128,15 +128,25 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   }, [stopListening])
 
   const startListening = useCallback(() => {
+    // Abort any existing instance first
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort() } catch {}
+      recognitionRef.current = null
+    }
+
     const recognition = getSpeechRecognition()
     if (!recognition) {
       alert("Speech recognition is not supported in this browser. Please try Chrome or Edge.")
       return
     }
 
-    recognition.continuous = true
+    // On mobile, use non-continuous mode to avoid stuttering.
+    // We auto-restart on end to simulate continuous listening.
+    const isMobile = isMobileRef.current
+    recognition.continuous = !isMobile
     recognition.interimResults = true
     recognition.lang = "en-US"
+    shouldRestartRef.current = true
 
     recognition.onstart = () => {
       setIsListening(true)
@@ -155,44 +165,80 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
         }
       }
 
-      // Update current transcript with interim results
+      // Show interim results for live feedback
       if (interimTranscript) {
         const displayTranscript = transcriptRef.current + " " + interimTranscript
         setCurrentTranscript(displayTranscript.trim())
       }
 
-      // When we get final results, add to transcript and reset silence timer
+      // When we get final results, accumulate and reset silence timer
       if (finalTranscript) {
         const newTranscript = (transcriptRef.current + " " + finalTranscript).trim()
         transcriptRef.current = newTranscript
         setCurrentTranscript(newTranscript)
 
-        console.log("[v0] Final transcript updated:", newTranscript)
-
-        // Reset silence timer - if user stops speaking for 2 seconds, complete answer
+        // Reset silence timer - longer timeout on mobile (3s) vs desktop (2s) for slower speech
         if (silenceTimerRef.current) {
           clearTimeout(silenceTimerRef.current)
         }
+        const silenceTimeout = isMobile ? 3000 : 2000
         silenceTimerRef.current = setTimeout(() => {
-          console.log("[v0] Silence detected, completing answer with:", transcriptRef.current)
           handleAnswerComplete(transcriptRef.current)
-        }, 2000)
+        }, silenceTimeout)
       }
     }
 
     recognition.onend = () => {
+      // On mobile, the browser frequently auto-stops recognition sessions.
+      // If we should still be listening (user hasn't finished), restart it.
+      if (shouldRestartRef.current && !isProcessingRef.current) {
+        try {
+          const newRecognition = getSpeechRecognition()
+          if (newRecognition) {
+            newRecognition.continuous = !isMobile
+            newRecognition.interimResults = true
+            newRecognition.lang = "en-US"
+            newRecognition.onstart = recognition.onstart
+            newRecognition.onresult = recognition.onresult
+            newRecognition.onend = recognition.onend
+            newRecognition.onerror = recognition.onerror
+            recognitionRef.current = newRecognition
+            // Small delay before restarting to avoid rapid restart loops
+            setTimeout(() => {
+              if (shouldRestartRef.current && !isProcessingRef.current) {
+                try { newRecognition.start() } catch {}
+              }
+            }, 150)
+            return
+          }
+        } catch {}
+      }
       setIsListening(false)
       recognitionRef.current = null
     }
 
     recognition.onerror = (event: Event & { error: string }) => {
-      console.error("[v0] Speech recognition error:", event.error)
+      // "no-speech" and "aborted" are normal on mobile, not real errors
+      if (event.error === "no-speech" || event.error === "aborted") {
+        return
+      }
+      console.error("Speech recognition error:", event.error)
+      shouldRestartRef.current = false
       setIsListening(false)
       recognitionRef.current = null
     }
 
     recognitionRef.current = recognition
-    recognition.start()
+    try {
+      recognition.start()
+    } catch {
+      // If start fails (e.g. mic busy), retry after a short delay
+      setTimeout(() => {
+        if (shouldRestartRef.current) {
+          try { recognition.start() } catch {}
+        }
+      }, 300)
+    }
   }, [getSpeechRecognition, handleAnswerComplete])
 
   const handleConfirm = async () => {
@@ -257,6 +303,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   }
 
   const handleCancel = () => {
+    shouldRestartRef.current = false
     stopListening()
     setCurrentStep("start")
     setCurrentQuestionIndex(0)
@@ -279,6 +326,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
 
   useEffect(() => {
     return () => {
+      shouldRestartRef.current = false
       recognitionRef.current?.abort()
       if (silenceTimerRef.current) {
         clearTimeout(silenceTimerRef.current)
