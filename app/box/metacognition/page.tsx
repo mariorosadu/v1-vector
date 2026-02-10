@@ -108,7 +108,27 @@ export default function MetacognitionPage() {
       const data = await response.json()
       
       if (data.question) {
-        setQuestion(data.question)
+        // Additional safeguard: clean any remaining JSON artifacts from question text
+        let cleanQuestion = data.question.trim()
+        
+        // Remove any remaining markdown code blocks
+        cleanQuestion = cleanQuestion.replace(/```json|```/g, '').trim()
+        
+        // If question somehow contains JSON structure, extract just the question field
+        if (cleanQuestion.startsWith('{') && cleanQuestion.includes('"question"')) {
+          try {
+            const parsed = JSON.parse(cleanQuestion)
+            cleanQuestion = parsed.question || cleanQuestion
+          } catch {
+            // If parsing fails, try to extract question value with regex
+            const questionMatch = cleanQuestion.match(/"question":\s*"([^"]+)"/)
+            if (questionMatch) {
+              cleanQuestion = questionMatch[1]
+            }
+          }
+        }
+        
+        setQuestion(cleanQuestion)
       }
       
       if (data.progress) {
@@ -174,160 +194,200 @@ export default function MetacognitionPage() {
           className="max-w-2xl w-full pointer-events-auto"
         >
           <div className="bg-black rounded-3xl px-6 py-5 md:px-8 md:py-6 border border-white/10">
-            {/* Question Content */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 flex items-center justify-center p-2">
-                  <Image
-                    src="/v-logo-white.svg"
-                    alt="V Logo"
-                    width={24}
-                    height={24}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <AnimatePresence mode="wait">
-                  <motion.p
-                    key={question}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="text-white text-base md:text-lg font-light leading-relaxed"
+            {/* Show completion message when both stages are at 100% */}
+            {progress.objectiveProgress === 100 && 
+             progress.qualitativeProgress === 100 && 
+             progress.quantitativeProgress === 100 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="text-center py-8"
+              >
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 flex items-center justify-center mx-auto mb-6">
+                  <svg
+                    className="w-8 h-8 md:w-10 md:h-10 text-green-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    {question}
-                  </motion.p>
-                </AnimatePresence>
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="h-px bg-white/10 mb-5" />
-
-            {/* Dynamic Status Bar - Transitions based on progress */}
-            <AnimatePresence mode="wait">
-              {progress.objectiveProgress < 100 ? (
-                // Objective Definition Status Bar
-                <motion.div
-                  key="objective"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-white/50 text-[11px] font-medium tracking-wider uppercase">
-                      Objective Definition
-                    </span>
-                    <span className="text-white/30 text-[11px] font-mono">
-                      {Math.round(progress.objectiveProgress)}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress.objectiveProgress}%` }}
-                      transition={{ duration: 0.8, ease: "easeOut" }}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
                     />
-                  </div>
-                </motion.div>
-              ) : (
-                // Combined Qualitative & Quantitative Analysis Status Bar
-                <motion.div
-                  key="analysis"
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-white/50 text-[11px] font-medium tracking-wider uppercase">
-                      Qualitative & Quantitative Analysis
-                    </span>
-                    <span className="text-white/30 text-[11px] font-mono">
-                      {Math.round((progress.qualitativeProgress + progress.quantitativeProgress) / 2)}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
-                    <div className="flex h-full">
-                      <motion.div
-                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progress.qualitativeProgress / 2}%` }}
-                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-                      />
-                      <motion.div
-                        className="h-full bg-gradient-to-r from-pink-500 to-orange-500"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progress.quantitativeProgress / 2}%` }}
-                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
+                  </svg>
+                </div>
+                <h2 className="text-2xl md:text-3xl font-light text-white mb-3 text-balance">
+                  Analysis Complete
+                </h2>
+                <p className="text-white/60 text-sm md:text-base max-w-md mx-auto text-pretty">
+                  Thank you for completing the metacognitive journey. Your insights have been captured and will guide your next steps.
+                </p>
+              </motion.div>
+            ) : (
+              <>
+                {/* Question Content */}
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 flex items-center justify-center p-2">
+                      <Image
+                        src="/v-logo-white.svg"
+                        alt="V Logo"
+                        width={24}
+                        height={24}
+                        className="w-full h-full object-contain"
                       />
                     </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/20 text-[10px] font-mono">
-                      Qualitative: {Math.round(progress.qualitativeProgress)}%
-                    </span>
-                    <span className="text-white/20 text-[10px] font-mono">
-                      Quantitative: {Math.round(progress.quantitativeProgress)}%
-                    </span>
+                  <div className="flex-1 min-w-0">
+                    <AnimatePresence mode="wait">
+                      <motion.p
+                        key={question}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="text-white text-base md:text-lg font-light leading-relaxed"
+                      >
+                        {question}
+                      </motion.p>
+                    </AnimatePresence>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+
+                {/* Divider */}
+                <div className="h-px bg-white/10 mb-5" />
+
+                {/* Dynamic Status Bar - Transitions based on progress */}
+                <AnimatePresence mode="wait">
+                  {progress.objectiveProgress < 100 ? (
+                    // Objective Definition Status Bar
+                    <motion.div
+                      key="objective"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-white/50 text-[11px] font-medium tracking-wider uppercase">
+                          Objective Definition
+                        </span>
+                        <span className="text-white/30 text-[11px] font-mono">
+                          {Math.round(progress.objectiveProgress)}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${progress.objectiveProgress}%` }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                        />
+                      </div>
+                    </motion.div>
+                  ) : (
+                    // Combined Qualitative & Quantitative Analysis Status Bar
+                    <motion.div
+                      key="analysis"
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-white/50 text-[11px] font-medium tracking-wider uppercase">
+                          Qualitative & Quantitative Analysis
+                        </span>
+                        <span className="text-white/30 text-[11px] font-mono">
+                          {Math.round((progress.qualitativeProgress + progress.quantitativeProgress) / 2)}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
+                        <div className="flex h-full">
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progress.qualitativeProgress / 2}%` }}
+                            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                          />
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-pink-500 to-orange-500"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progress.quantitativeProgress / 2}%` }}
+                            transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/20 text-[10px] font-mono">
+                          Qualitative: {Math.round(progress.qualitativeProgress)}%
+                        </span>
+                        <span className="text-white/20 text-[10px] font-mono">
+                          Quantitative: {Math.round(progress.quantitativeProgress)}%
+                        </span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
           </div>
         </motion.div>
       </div>
 
       {/* Input area - pinned to visual viewport bottom using top + translateY(-100%)
           This is the proven iOS Safari keyboard fix */}
-      <div
-        ref={inputBarRef}
-        className="fixed left-0 right-0 z-20 px-4 py-3 md:px-8 md:py-4 bg-[#0f0f0f]"
-        style={{
-          top: `${viewportTop}px`,
-          transform: 'translateY(-100%)',
-        }}
-      >
-        <div className="max-w-2xl mx-auto w-full">
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-3 md:p-5">
-            <div className="flex items-center gap-2">
-              <div className="flex-1 min-w-0">
-                <input
-                  ref={inputRef as unknown as React.RefObject<HTMLInputElement>}
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={isLoading ? "Processing... (your next input will be queued)" : "Type your response..."}
-                  disabled={false}
-                  enterKeyHint="send"
-                  className="w-full bg-transparent text-white placeholder:text-white/30 text-sm md:text-base outline-none h-[44px]"
-                />
+      {!(progress.objectiveProgress === 100 && 
+         progress.qualitativeProgress === 100 && 
+         progress.quantitativeProgress === 100) && (
+        <div
+          ref={inputBarRef}
+          className="fixed left-0 right-0 z-20 px-4 py-3 md:px-8 md:py-4 bg-[#0f0f0f]"
+          style={{
+            top: `${viewportTop}px`,
+            transform: 'translateY(-100%)',
+          }}
+        >
+          <div className="max-w-2xl mx-auto w-full">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-3 md:p-5">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <input
+                    ref={inputRef as unknown as React.RefObject<HTMLInputElement>}
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={isLoading ? "Processing... (your next input will be queued)" : "Type your response..."}
+                    disabled={false}
+                    enterKeyHint="send"
+                    className="w-full bg-transparent text-white placeholder:text-white/30 text-sm md:text-base outline-none h-[44px]"
+                  />
+                </div>
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim() || isLoading}
+                  className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:cursor-not-allowed transition-colors flex items-center justify-center border border-white/10"
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-white/60 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 md:w-5 md:h-5 text-white/60" />
+                  )}
+                </button>
               </div>
-              <button
-                onClick={handleSend}
-                disabled={!input.trim() || isLoading}
-                className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:cursor-not-allowed transition-colors flex items-center justify-center border border-white/10"
-              >
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 md:w-5 md:h-5 text-white/60 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4 md:w-5 md:h-5 text-white/60" />
-                )}
-              </button>
-            </div>
 
-            <div className="mt-2 pt-2 border-t border-white/5 hidden md:block">
-              <p className="text-white/30 text-xs">
-                Press Enter to send
-              </p>
+              <div className="mt-2 pt-2 border-t border-white/5 hidden md:block">
+                <p className="text-white/30 text-xs">
+                  Press Enter to send
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

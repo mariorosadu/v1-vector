@@ -109,14 +109,31 @@ Return a JSON object with:
       maxOutputTokens: 300,
     })
 
-    // Parse the AI response
+    // Parse the AI response with robust handling for markdown-wrapped JSON
     let parsedResponse
     try {
-      parsedResponse = JSON.parse(result.text)
-    } catch {
-      // Fallback if AI doesn't return JSON
+      let textToParse = result.text.trim()
+      
+      // Remove markdown code block wrappers if present (```json ... ``` or ``` ... ```)
+      if (textToParse.startsWith('```')) {
+        // Extract content between ``` markers
+        const codeBlockMatch = textToParse.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
+        if (codeBlockMatch) {
+          textToParse = codeBlockMatch[1].trim()
+        }
+      }
+      
+      parsedResponse = JSON.parse(textToParse)
+      
+      // Ensure question field is clean text without any JSON artifacts
+      if (parsedResponse.question) {
+        parsedResponse.question = parsedResponse.question.trim()
+      }
+    } catch (error) {
+      console.error('[v0] Failed to parse AI response:', result.text)
+      // Fallback if AI doesn't return valid JSON
       parsedResponse = {
-        question: result.text,
+        question: result.text.replace(/```json|```/g, '').trim(),
         clarityGain: 10,
         progressGain: 20,
         reasoning: 'Continuing analysis'
