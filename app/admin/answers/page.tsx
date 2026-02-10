@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Download } from "lucide-react"
+import { Download, Trash2 } from "lucide-react"
 import { SimpleHeader } from "@/components/simple-header"
 import { Footer } from "@/components/footer"
 
@@ -21,6 +21,8 @@ export default function AnswersAdminPage() {
   const [answers, setAnswers] = useState<AnswerRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
   useEffect(() => {
     fetchAnswers()
@@ -77,6 +79,31 @@ export default function AnswersAdminPage() {
     URL.revokeObjectURL(url)
   }
 
+  const deleteAnswer = async (id: string) => {
+    setDeleting(id)
+    try {
+      const response = await fetch("/api/delete-answer", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      })
+
+      if (response.ok) {
+        setAnswers(answers.filter((record) => record.id !== id))
+        setConfirmDelete(null)
+      } else {
+        setError("Failed to delete answer")
+      }
+    } catch (err) {
+      setError("Failed to delete answer")
+      console.error("Error deleting answer:", err)
+    } finally {
+      setDeleting(null)
+    }
+  }
+
   return (
     <main className="bg-[#0f0f0f] min-h-screen">
       <SimpleHeader />
@@ -124,13 +151,42 @@ export default function AnswersAdminPage() {
                         {new Date(record.created_at).toLocaleString()}
                       </p>
                     </div>
-                    <button
-                      onClick={() => downloadAnswer(record)}
-                      className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/30 flex-shrink-0"
-                    >
-                      <Download className="w-4 h-4 text-white" />
-                      <span className="text-sm text-white">Download .txt</span>
-                    </button>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => downloadAnswer(record)}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/30"
+                      >
+                        <Download className="w-4 h-4 text-white" />
+                        <span className="text-sm text-white">Download .txt</span>
+                      </button>
+                      {confirmDelete === record.id ? (
+                        <div className="flex items-center gap-2 bg-red-600/20 border border-red-600/50 rounded-lg px-3 py-2">
+                          <span className="text-sm text-red-400">Delete?</span>
+                          <button
+                            onClick={() => deleteAnswer(record.id)}
+                            disabled={deleting === record.id}
+                            className="px-3 py-1 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white text-xs rounded transition-colors"
+                          >
+                            {deleting === record.id ? "..." : "Yes"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDelete(null)}
+                            disabled={deleting === record.id}
+                            className="px-3 py-1 bg-white/10 hover:bg-white/15 disabled:bg-white/5 text-white text-xs rounded transition-colors"
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDelete(record.id)}
+                          className="flex items-center gap-2 px-4 py-2 bg-red-600/10 hover:bg-red-600/20 border border-red-600/30 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-600/30"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400" />
+                          <span className="text-sm text-red-400">Delete</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-5">
