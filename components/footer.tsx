@@ -22,7 +22,7 @@ export function Footer() {
   }
 
   return (
-    <footer ref={ref} className="relative py-24 bg-[#0f0f0f] border-t border-white/5">
+    <footer ref={ref} className="relative py-12 md:py-24 bg-[#0f0f0f] border-t border-white/5">
       <div className="container mx-auto px-6 md:px-12">
         <div className="grid md:grid-cols-4 gap-12 mb-16">
           <motion.div
@@ -76,9 +76,9 @@ export function Footer() {
             </h4>
             <ul className="space-y-3">
               {[
-                { label: "Cognitive Map", href: "/map" },
+                { label: "Cognitive Map", href: "/box/map" },
                 { label: "Prototype", href: "/prototype" },
-                { label: "Profile Analysis", href: "/profile-analysis" }
+                { label: "Profile Analysis", href: "/box/profile-analysis" }
               ].map((item) => (
                 <li key={item.label}>
                   <button
@@ -103,18 +103,18 @@ export function Footer() {
             {new Date().getFullYear()} VECTÖR. All rights reserved.
           </p>
           <div className="flex items-center gap-6 mt-4 md:mt-0">
-            <a
-              href="#"
+            <button
+              onClick={() => handleNavigation("/privacy")}
               className="text-white/30 text-xs hover:text-white/60 transition-colors"
             >
               Privacy
-            </a>
-            <a
-              href="#"
+            </button>
+            <button
+              onClick={() => handleNavigation("/terms")}
               className="text-white/30 text-xs hover:text-white/60 transition-colors"
             >
               Terms
-            </a>
+            </button>
           </div>
         </motion.div>
       </div>
