@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Mic, CheckCircle2, Loader2 } from "lucide-react"
+import { Mic, CheckCircle2, Loader2, Chrome } from "lucide-react"
 
 interface SpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList
@@ -332,6 +332,14 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
             >
               <div className="w-24 h-24 mx-auto rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
                 <Mic className="w-12 h-12 text-white/60" />
+              </div>
+              
+              {/* Chrome Browser Notice */}
+              <div className="flex items-center justify-center gap-2 mt-6 px-4 py-3 bg-white/5 border border-white/10 rounded-lg max-w-md mx-auto">
+                <Chrome className="w-5 h-5 text-white/60 flex-shrink-0" />
+                <p className="text-white/60 text-sm">
+                  Works best on Google Chrome
+                </p>
               </div>
             </motion.div>
 
