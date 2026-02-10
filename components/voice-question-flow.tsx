@@ -62,20 +62,11 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   const answersRef = useRef<string[]>([])
   const isProcessingRef = useRef(false)
 
-  // Detect if user is on a mobile device
-  const isMobileRef = useRef(false)
-  // Track whether we should auto-restart recognition on end (desktop only)
+  // Track whether we should auto-restart recognition on end
   const shouldRestartRef = useRef(false)
-  // Track if mic is active on mobile for tap-to-record flow
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
-    )
-    isMobileRef.current = mobile
-    setIsMobile(mobile)
-  }, [])
+  // Count rapid restarts to detect loops
+  const restartCountRef = useRef(0)
+  const restartResetTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const getSpeechRecognition = useCallback((): SpeechRecognitionInstance | null => {
     if (typeof window === "undefined") return null
@@ -97,8 +88,12 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
   }, [])
 
   const handleAnswerComplete = useCallback((answer: string) => {
+    console.log("[v0] Answer complete:", answer)
     // Prevent double processing
-    if (isProcessingRef.current) return
+    if (isProcessingRef.current) {
+      console.log("[v0] Already processing, skipping")
+      return
+    }
     
     const trimmedAnswer = answer.trim()
     if (!trimmedAnswer) return
@@ -112,21 +107,24 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
     transcriptRef.current = ""
     stopListening()
 
+    console.log("[v0] Current question index:", currentQuestionIndexRef.current, "Total questions:", questions.length)
+    console.log("[v0] Current answers:", newAnswers)
+
     if (currentQuestionIndexRef.current < questions.length - 1) {
+      console.log("[v0] Moving to next question")
       setTimeout(() => {
         const nextIndex = currentQuestionIndexRef.current + 1
         currentQuestionIndexRef.current = nextIndex
         setCurrentQuestionIndex(nextIndex)
+        console.log("[v0] Set question index to:", nextIndex)
         
         setTimeout(() => {
           isProcessingRef.current = false
-          // On desktop, auto-start next question. On mobile, wait for user tap.
-          if (!isMobileRef.current) {
-            startListening()
-          }
+          startListening()
         }, 600)
       }, 1000)
     } else {
+      console.log("[v0] All questions answered, analyzing")
       setTimeout(() => {
         setCurrentStep("review")
         setEditingAnswers([...newAnswers])
@@ -134,55 +132,16 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
     }
   }, [stopListening])
 
-  // Mobile: toggle recording on/off with a tap
-  const toggleMobileListening = useCallback(() => {
-    if (isListening) {
-      // Stop and finalize whatever we have so far
-      stopListening()
-      if (transcriptRef.current.trim()) {
-        // Small delay to let the final result come through
-        setTimeout(() => {
-          if (transcriptRef.current.trim()) {
-            handleAnswerComplete(transcriptRef.current)
-          }
-        }, 300)
-      }
-    } else {
-      startListening()
-    }
-  }, [isListening, stopListening, handleAnswerComplete])
-
-  // Mobile: submit the current answer manually
-  const submitMobileAnswer = useCallback(() => {
-    if (transcriptRef.current.trim()) {
-      stopListening()
-      setTimeout(() => {
-        handleAnswerComplete(transcriptRef.current)
-      }, 200)
-    }
-  }, [stopListening, handleAnswerComplete])
-
-  const startListening = useCallback(() => {
-    // Abort any existing instance first
-    if (recognitionRef.current) {
-      try { recognitionRef.current.abort() } catch {}
-      recognitionRef.current = null
-    }
-
+  const createRecognitionSession = useCallback((): SpeechRecognitionInstance | null => {
     const recognition = getSpeechRecognition()
-    if (!recognition) {
-      alert("Speech recognition is not supported in this browser. Please try Chrome or Edge.")
-      return
-    }
+    if (!recognition) return null
 
-    const mobile = isMobileRef.current
-
-    // Mobile: single-shot mode (no continuous). No auto-restart.
-    // Desktop: continuous mode with silence-based auto-complete.
-    recognition.continuous = !mobile
+    // Use continuous:true on all platforms for seamless auto-flow.
+    // On mobile, the browser may auto-terminate sessions -- we handle
+    // that in onend by restarting with accumulated transcript intact.
+    recognition.continuous = true
     recognition.interimResults = true
     recognition.lang = "en-US"
-    shouldRestartRef.current = !mobile
 
     recognition.onstart = () => {
       setIsListening(true)
@@ -207,74 +166,103 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
         setCurrentTranscript(displayTranscript.trim())
       }
 
-      // When we get final results, accumulate them
+      // When we get final results, accumulate and set silence timer
       if (finalTranscript) {
         const newTranscript = (transcriptRef.current + " " + finalTranscript).trim()
         transcriptRef.current = newTranscript
         setCurrentTranscript(newTranscript)
+        console.log("[v0] Final transcript updated:", newTranscript)
 
-        if (!mobile) {
-          // Desktop: auto-complete after 2s of silence
-          if (silenceTimerRef.current) {
-            clearTimeout(silenceTimerRef.current)
-          }
-          silenceTimerRef.current = setTimeout(() => {
-            handleAnswerComplete(transcriptRef.current)
-          }, 2000)
+        // Reset silence timer -- auto-complete after 2.5s of silence
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current)
         }
-        // Mobile: no auto-complete. User taps "Done" or stops recording.
+        silenceTimerRef.current = setTimeout(() => {
+          console.log("[v0] Silence detected, completing answer with:", transcriptRef.current)
+          handleAnswerComplete(transcriptRef.current)
+        }, 2500)
       }
     }
 
     recognition.onend = () => {
-      if (!mobile) {
-        // Desktop: auto-restart if user hasn't finished
-        if (shouldRestartRef.current && !isProcessingRef.current) {
-          try {
-            const newRecognition = getSpeechRecognition()
-            if (newRecognition) {
-              newRecognition.continuous = true
-              newRecognition.interimResults = true
-              newRecognition.lang = "en-US"
-              newRecognition.onstart = recognition.onstart
-              newRecognition.onresult = recognition.onresult
-              newRecognition.onend = recognition.onend
-              newRecognition.onerror = recognition.onerror
-              recognitionRef.current = newRecognition
-              setTimeout(() => {
-                if (shouldRestartRef.current && !isProcessingRef.current) {
-                  try { newRecognition.start() } catch {}
-                }
-              }, 150)
-              return
+      // If we should still be listening (haven't completed the answer yet),
+      // restart a new session. This handles mobile browsers that auto-terminate
+      // continuous sessions, keeping the transcript accumulated across sessions.
+      if (shouldRestartRef.current && !isProcessingRef.current) {
+        restartCountRef.current++
+        // Guard against rapid restart loops (more than 5 restarts in quick succession)
+        if (restartCountRef.current > 5) {
+          console.log("[v0] Too many rapid restarts, stopping")
+          setIsListening(false)
+          recognitionRef.current = null
+          // If we have a partial transcript, auto-complete it
+          if (transcriptRef.current.trim()) {
+            handleAnswerComplete(transcriptRef.current)
+          }
+          return
+        }
+        // Reset the counter after 3 seconds of stable operation
+        if (restartResetTimerRef.current) clearTimeout(restartResetTimerRef.current)
+        restartResetTimerRef.current = setTimeout(() => {
+          restartCountRef.current = 0
+        }, 3000)
+
+        const newRecognition = createRecognitionSession()
+        if (newRecognition) {
+          recognitionRef.current = newRecognition
+          setTimeout(() => {
+            if (shouldRestartRef.current && !isProcessingRef.current) {
+              try { newRecognition.start() } catch {}
             }
-          } catch {}
+          }, 200)
+          return
         }
       }
-      // Mobile: session ended naturally, update UI state
       setIsListening(false)
       recognitionRef.current = null
     }
 
     recognition.onerror = (event: Event & { error: string }) => {
+      // "no-speech" and "aborted" are expected, not real errors
       if (event.error === "no-speech" || event.error === "aborted") {
         return
       }
-      console.error("Speech recognition error:", event.error)
+      console.error("[v0] Speech recognition error:", event.error)
       shouldRestartRef.current = false
       setIsListening(false)
       recognitionRef.current = null
     }
 
+    return recognition
+  }, [getSpeechRecognition, handleAnswerComplete])
+
+  const startListening = useCallback(() => {
+    // Abort any existing instance first
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort() } catch {}
+      recognitionRef.current = null
+    }
+
+    const recognition = createRecognitionSession()
+    if (!recognition) {
+      alert("Speech recognition is not supported in this browser. Please try Chrome or Edge.")
+      return
+    }
+
+    shouldRestartRef.current = true
+    restartCountRef.current = 0
     recognitionRef.current = recognition
+
     try {
       recognition.start()
     } catch {
       setTimeout(() => {
-        try { recognition.start() } catch {}
+        if (shouldRestartRef.current) {
+          try { recognition.start() } catch {}
+        }
       }, 300)
     }
-  }, [getSpeechRecognition, handleAnswerComplete])
+  }, [createRecognitionSession])
 
   const handleConfirm = async () => {
     setCurrentStep("saving")
@@ -332,12 +320,9 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
     currentQuestionIndexRef.current = 0
     answersRef.current = []
     isProcessingRef.current = false
-    // On desktop, auto-start listening. On mobile, wait for user to tap the mic.
-    if (!isMobileRef.current) {
-      setTimeout(() => {
-        startListening()
-      }, 500)
-    }
+    setTimeout(() => {
+      startListening()
+    }, 500)
   }
 
   const handleCancel = () => {
@@ -368,6 +353,9 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
       recognitionRef.current?.abort()
       if (silenceTimerRef.current) {
         clearTimeout(silenceTimerRef.current)
+      }
+      if (restartResetTimerRef.current) {
+        clearTimeout(restartResetTimerRef.current)
       }
     }
   }, [])
@@ -474,7 +462,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                 <h3 className="text-2xl md:text-4xl font-light text-white text-balance leading-relaxed">
                   {questions[currentQuestionIndex]}
                 </h3>
-                {isListening && !isMobile && (
+                {isListening && (
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -482,15 +470,6 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                     className="text-red-400/80 text-sm mt-4 font-medium"
                   >
                     Recording your response...
-                  </motion.p>
-                )}
-                {isListening && isMobile && (
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-red-400/80 text-sm mt-4 font-medium"
-                  >
-                    Recording...
                   </motion.p>
                 )}
               </motion.div>
@@ -527,61 +506,8 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                   <p className="text-white/40 text-sm mb-6">Listening... Start speaking</p>
                 )}
 
-                {/* Mobile: tap-to-record button and submit control */}
-                {isMobile && !isListening && !currentTranscript && !isProcessingRef.current && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    onClick={toggleMobileListening}
-                    className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center hover:bg-red-500 transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-500/50 mb-4"
-                  >
-                    <Mic className="w-7 h-7 text-white" />
-                  </motion.button>
-                )}
-
-                {isMobile && !isListening && !currentTranscript && !isProcessingRef.current && (
-                  <p className="text-white/40 text-sm">Tap to start recording</p>
-                )}
-
-                {/* Mobile: controls while recording or after recording */}
-                {isMobile && (isListening || currentTranscript) && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-4 mb-4"
-                  >
-                    {isListening ? (
-                      <button
-                        onClick={toggleMobileListening}
-                        className="w-14 h-14 rounded-full bg-red-600 flex items-center justify-center animate-pulse active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-500/50"
-                      >
-                        <div className="w-5 h-5 bg-white rounded-sm" />
-                      </button>
-                    ) : (
-                      <>
-                        <button
-                          onClick={startListening}
-                          className="px-5 py-2.5 bg-white/10 border border-white/20 text-white/70 rounded-lg active:bg-white/15 active:text-white transition-all text-sm"
-                        >
-                          Record more
-                        </button>
-                        <button
-                          onClick={submitMobileAnswer}
-                          className="px-5 py-2.5 bg-white text-black font-medium rounded-lg active:bg-white/90 transition-all text-sm"
-                        >
-                          Submit answer
-                        </button>
-                      </>
-                    )}
-                  </motion.div>
-                )}
-
-                {isMobile && isListening && (
-                  <p className="text-white/40 text-xs">Tap the stop button when finished speaking</p>
-                )}
-
-                {/* Desktop: Cancel button (auto-listen flow) */}
-                {!isMobile && isListening && (
+                {/* Cancel Button */}
+                {isListening && (
                   <motion.button
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -589,18 +515,6 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                     className="px-6 py-2 bg-white/10 border border-white/20 text-white/70 rounded-lg hover:bg-white/15 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/30"
                   >
                     Cancel
-                  </motion.button>
-                )}
-
-                {/* Cancel button - always available */}
-                {isMobile && (isListening || currentTranscript) && (
-                  <motion.button
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    onClick={handleCancel}
-                    className="mt-2 text-white/30 text-xs hover:text-white/50 transition-colors"
-                  >
-                    Cancel session
                   </motion.button>
                 )}
               </div>
