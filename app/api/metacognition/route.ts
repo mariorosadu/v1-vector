@@ -1,4 +1,5 @@
 import { generateText } from 'ai'
+import { createClient } from '@supabase/supabase-js'
 
 export const maxDuration = 30
 
@@ -14,7 +15,7 @@ interface ProgressState {
 
 export async function POST(req: Request) {
   try {
-    const { messages, currentQuestion, progress } = await req.json()
+    const { messages, currentQuestion, progress, sessionId } = await req.json()
 
     const currentProgress: ProgressState = progress || {
       objectiveProgress: 0,
@@ -23,6 +24,12 @@ export async function POST(req: Request) {
       currentStage: 'objective' as Stage,
       objectiveClarity: 0
     }
+
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     // Determine system prompt based on current stage
     let systemPrompt = ''
@@ -144,6 +151,22 @@ Return a JSON object with:
         newProgress.currentStage = 'complete'
         newProgress.quantitativeProgress = 100
       }
+    }
+
+    // Save the current question-answer pair to database
+    if (sessionId && messages.length > 0) {
+      const lastUserMessage = messages[messages.length - 1]
+      
+      await supabase.from('metacognition_dialogues').insert({
+        session_id: sessionId,
+        question: currentQuestion,
+        answer: lastUserMessage.content,
+        stage: currentProgress.currentStage,
+        question_index: messages.filter((m: any) => m.role === 'user').length,
+        objective_progress: newProgress.objectiveProgress,
+        qualitative_progress: newProgress.qualitativeProgress,
+        quantitative_progress: newProgress.quantitativeProgress
+      })
     }
 
     return Response.json({
