@@ -21,6 +21,12 @@ export default function BoxPage() {
       href: "/box/map",
       gradient: "from-purple-600/20 to-pink-600/20",
     },
+    {
+      title: "Metacognition",
+      description: "Analytical framework for exploring and understanding objective functions in cognitive systems and artificial intelligence.",
+      href: "/box/metacognition",
+      gradient: "from-pink-600/20 to-orange-600/20",
+    },
   ]
 
   return (
