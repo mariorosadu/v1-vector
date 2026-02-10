@@ -13,6 +13,7 @@ const navigationItems = [
     submenu: [
       { label: "Profile Analysis", href: "/box/profile-analysis" },
       { label: "Cognitive Map", href: "/box/map" },
+      { label: "Metacognition", href: "/box/metacognition" },
     ]
   },
 ]
@@ -81,7 +82,7 @@ export function SimpleHeader() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.2 }}
-                            className="absolute top-full right-0 mt-2 w-48 bg-[#0f0f0f] border border-white/10 rounded-lg shadow-xl overflow-hidden"
+                            className="absolute top-full right-0 mt-2 w-48 bg-[#0f0f0f] border border-white/10 rounded-lg overflow-hidden"
                           >
                             {item.submenu.map((subItem) => (
                               <a
