@@ -625,9 +625,9 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
               <img
                 src="/images/report-preview.png"
                 alt=""
-                className="w-full max-w-3xl opacity-15 blur-sm scale-95"
+                className="w-full max-w-3xl opacity-30 blur scale-95"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-[#0f0f0f]/70 to-[#0f0f0f]" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-[#0f0f0f]/50 to-[#0f0f0f]" />
             </motion.div>
 
             {/* Content */}
