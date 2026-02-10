@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { SimpleHeader } from "@/components/simple-header"
 import { motion, AnimatePresence } from "framer-motion"
 import { Send, Loader2 } from "lucide-react"
@@ -12,14 +12,46 @@ interface Message {
   timestamp: number
 }
 
+function useVisualViewport() {
+  const [height, setHeight] = useState<number | null>(null)
+
+  useEffect(() => {
+    const viewport = window.visualViewport
+    if (!viewport) return
+
+    const handleResize = () => {
+      setHeight(viewport.height)
+    }
+
+    handleResize()
+    viewport.addEventListener("resize", handleResize)
+    viewport.addEventListener("scroll", handleResize)
+
+    return () => {
+      viewport.removeEventListener("resize", handleResize)
+      viewport.removeEventListener("scroll", handleResize)
+    }
+  }, [])
+
+  return height
+}
+
 export default function MetacognitionPage() {
   const [question, setQuestion] = useState("Which objective do you want to achieve?")
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isBouncing, setIsBouncing] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const visualViewportHeight = useVisualViewport()
+
+  const scrollInputIntoView = useCallback(() => {
+    // Small delay to let the keyboard finish opening
+    setTimeout(() => {
+      inputRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" })
+    }, 300)
+  }, [])
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
@@ -30,12 +62,10 @@ export default function MetacognitionPage() {
       timestamp: Date.now()
     }
 
-    // Trigger bounce animation
     setIsBouncing(true)
     setMessages(prev => [...prev, userMessage])
     setInput("")
     
-    // Reset bounce after animation
     setTimeout(() => setIsBouncing(false), 600)
     
     setIsLoading(true)
@@ -71,7 +101,7 @@ export default function MetacognitionPage() {
         setQuestion(newQuestion.trim())
       }
     } catch (error) {
-      console.error('[v0] Error sending message:', error)
+      console.error('Error sending message:', error)
     } finally {
       setIsLoading(false)
     }
@@ -84,15 +114,27 @@ export default function MetacognitionPage() {
     }
   }
 
+  // Compute container style based on visual viewport
+  const containerStyle: React.CSSProperties = visualViewportHeight
+    ? { height: `${visualViewportHeight}px` }
+    : { height: '100dvh' }
+
   return (
-    <main className="bg-[#0f0f0f] fixed inset-0 flex flex-col">
+    <div
+      ref={containerRef}
+      className="bg-[#0f0f0f] flex flex-col overflow-hidden"
+      style={containerStyle}
+    >
       <SimpleHeader />
+      
+      {/* Spacer for fixed header - 64px desktop, 96px mobile via CSS */}
+      <div className="flex-shrink-0 h-16 sm:h-16" style={{ minHeight: '64px' }} />
       
       {/* Main container */}
       <div className="flex-1 flex flex-col min-h-0">
         
-        {/* Top Section - Progress Area */}
-        <div className="flex-1 min-h-0 px-4 py-6 md:px-8 md:py-8 flex items-center justify-center">
+        {/* Top Section - Progress Area (shrinks when keyboard opens) */}
+        <div className="flex-1 min-h-0 flex items-center justify-center px-4 md:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -110,8 +152,8 @@ export default function MetacognitionPage() {
           </motion.div>
         </div>
 
-        {/* Middle Section - Floating Question Bar */}
-        <div className="flex-shrink-0 px-4 md:px-8">
+        {/* Middle Section - Question Bar (never shrinks) */}
+        <div className="flex-shrink-0 px-4 md:px-8 py-2">
           <motion.div
             key={question}
             initial={{ scale: 0.95, opacity: 0 }}
@@ -127,7 +169,7 @@ export default function MetacognitionPage() {
             }}
             className="max-w-2xl mx-auto"
           >
-            <div className="bg-black rounded-3xl px-6 py-5 md:px-8 md:py-6 border border-white/10 relative">
+            <div className="bg-black rounded-3xl px-6 py-5 md:px-8 md:py-6 border border-white/10">
               <div className="flex items-center gap-4">
                 <div className="flex-shrink-0">
                   <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 flex items-center justify-center p-2">
@@ -158,8 +200,8 @@ export default function MetacognitionPage() {
           </motion.div>
         </div>
 
-        {/* Bottom Section - Input Area */}
-        <div className="flex-1 min-h-0 px-4 py-4 md:px-8 md:py-6 flex items-center">
+        {/* Bottom Section - Input Area (never shrinks) */}
+        <div className="flex-shrink-0 px-4 py-3 md:px-8 md:py-6">
           <div className="max-w-2xl mx-auto w-full">
             <div className="bg-white/5 border border-white/10 rounded-2xl p-3 md:p-5">
               <div className="flex items-end gap-2">
@@ -169,6 +211,7 @@ export default function MetacognitionPage() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
+                    onFocus={scrollInputIntoView}
                     placeholder="Type your response..."
                     disabled={isLoading}
                     className="w-full bg-transparent text-white placeholder:text-white/30 text-sm md:text-base resize-none outline-none h-[44px] leading-tight py-2"
@@ -197,6 +240,6 @@ export default function MetacognitionPage() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   )
 }
