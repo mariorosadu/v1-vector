@@ -40,18 +40,14 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
-      console.error('[v0] Error saving metacognition dialogue:', error)
       return NextResponse.json(
         { error: 'Failed to save dialogue' },
         { status: 500 }
       )
     }
 
-    console.log('[v0] Saved metacognition dialogue:', data.id, 'Session:', session_id)
-
     return NextResponse.json({ success: true, data })
-  } catch (error) {
-    console.error('[v0] Error in save-metacognition API:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

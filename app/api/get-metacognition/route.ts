@@ -10,7 +10,6 @@ export async function GET() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('[v0] Error fetching metacognition dialogues:', error)
       return NextResponse.json(
         { error: 'Failed to fetch dialogues' },
         { status: 500 }
@@ -37,8 +36,7 @@ export async function GET() {
       totalSessions: Object.keys(groupedBySession).length,
       totalDialogues: data.length
     })
-  } catch (error) {
-    console.error('[v0] Error in get-metacognition API:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

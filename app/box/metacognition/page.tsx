@@ -142,7 +142,7 @@ export default function MetacognitionPage() {
             qualitative_progress: progress.qualitativeProgress,
             quantitative_progress: progress.quantitativeProgress
           })
-        }).catch(err => console.error('[v0] Error saving dialogue:', err))
+        }).catch(() => {})
       }
     } catch (error) {
       console.error('Error sending message:', error)
@@ -158,10 +158,8 @@ export default function MetacognitionPage() {
   // Process queued input when loading completes
   useEffect(() => {
     if (!isLoading && queuedInput.trim()) {
-      console.log("[v0] Processing queued input:", queuedInput)
       setInput(queuedInput)
       setQueuedInput("")
-      // Focus the input to show cursor
       setTimeout(() => {
         inputRef.current?.focus()
       }, 50)
@@ -172,8 +170,6 @@ export default function MetacognitionPage() {
     if (e.key === 'Enter') {
       e.preventDefault()
       if (isLoading) {
-        // Queue the input if interface is still updating
-        console.log("[v0] Queueing input during update:", input)
         setQueuedInput(input)
         setInput("")
       } else {

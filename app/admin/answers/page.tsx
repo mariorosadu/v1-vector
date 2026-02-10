@@ -75,8 +75,7 @@ export default function AnswersAdminPage() {
         sessions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         setMetacognitionSessions(sessions)
       }
-    } catch (err) {
-      console.error('[v0] Error fetching data:', err)
+    } catch {
       setError("Failed to load answers")
     } finally {
       setLoading(false)

@@ -28,9 +28,6 @@ export function getOrCreateSessionId(): string {
   if (!sessionId) {
     sessionId = generateSessionId()
     sessionStorage.setItem(storageKey, sessionId)
-    console.log('[v0] Generated new session ID:', sessionId)
-  } else {
-    console.log('[v0] Using existing session ID:', sessionId)
   }
   
   return sessionId
