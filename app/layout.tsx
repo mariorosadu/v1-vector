@@ -8,6 +8,11 @@ import './globals.css'
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: '--font-heading' });
 const inter = Inter({ subsets: ["latin"], variable: '--font-body' });
 
+export const viewport = {
+  maximumScale: 1,
+  interactiveWidget: 'resizes-content' as const,
+}
+
 export const metadata: Metadata = {
   title: 'VECTÖR | Human Cognition & AI Decision Intelligence', 
   description: 'Navigate the AI landscape with clarity. VECTÖR helps organizations understand human cognition and decision-making processes in the age of artificial intelligence.',
