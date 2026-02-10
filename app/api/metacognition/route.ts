@@ -102,6 +102,11 @@ Return a JSON object with:
       systemPrompt = `The analysis is complete. Provide a brief summary question asking if they'd like to explore any aspect further.`
     }
 
+    console.log("[v0] ===== API Request =====")
+    console.log("[v0] Current stage:", currentProgress.currentStage)
+    console.log("[v0] Messages count:", messages.length)
+    console.log("[v0] API Key status:", process.env.OPENAI_API_KEY ? "✓ Loaded" : "✗ Missing")
+    
     const result = await generateText({
       model: openai('gpt-5-mini', {
         apiKey: process.env.OPENAI_API_KEY,
@@ -112,15 +117,20 @@ Return a JSON object with:
       maxOutputTokens: 300,
     })
 
-    console.log("[v0] Model called: gpt-5-mini")
-    console.log("[v0] API Key loaded:", process.env.OPENAI_API_KEY ? "✓ Yes" : "✗ Missing")
-    console.log("[v0] Response generated successfully")
+    console.log("[v0] ===== API Response =====")
+    console.log("[v0] Model used: gpt-5-mini")
+    console.log("[v0] Raw response:", result.text)
+    console.log("[v0] Response length:", result.text.length, "chars")
 
     // Parse the AI response
     let parsedResponse
     try {
       parsedResponse = JSON.parse(result.text)
-    } catch {
+      console.log("[v0] ✓ JSON parsed successfully")
+      console.log("[v0] New question:", parsedResponse.question)
+    } catch (parseError) {
+      console.log("[v0] ✗ JSON parse failed, using fallback")
+      console.log("[v0] Parse error:", parseError)
       // Fallback if AI doesn't return JSON
       parsedResponse = {
         question: result.text,

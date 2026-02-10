@@ -107,11 +107,17 @@ export default function MetacognitionPage() {
 
       const data = await response.json()
       
+      console.log("[v0] Frontend received response:", data)
+      
       if (data.question) {
+        console.log("[v0] Updating question to:", data.question)
         setQuestion(data.question)
+      } else {
+        console.log("[v0] ✗ No question in response!")
       }
       
       if (data.progress) {
+        console.log("[v0] Updating progress:", data.progress)
         setProgress(data.progress)
       }
     } catch (error) {
