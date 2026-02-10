@@ -42,11 +42,23 @@ export async function POST(request: Request) {
 
     // Write to file
     await fs.writeFile(filePath, content, "utf-8")
+    
+    console.log("[v0] File written successfully to:", filePath)
+    console.log("[v0] File content length:", content.length)
+
+    // Verify the file was written
+    try {
+      await fs.access(filePath)
+      console.log("[v0] File verified to exist")
+    } catch (verifyError) {
+      console.error("[v0] File verification failed:", verifyError)
+    }
 
     return NextResponse.json({ 
       success: true, 
       filename,
-      path: filePath 
+      path: filePath,
+      contentPreview: content.substring(0, 200) 
     })
   } catch (error) {
     console.error("[v0] Error saving answers:", error)
