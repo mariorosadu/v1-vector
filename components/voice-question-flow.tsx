@@ -376,13 +376,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
               
               {/* Chrome Browser Notice */}
               <div className="flex items-center justify-center gap-2 mt-3 px-4 py-2 bg-white/5 border border-white/10 rounded-lg max-w-md mx-auto">
-                <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="9" fill="#EA4335" />
-                  <circle cx="12" cy="12" r="6" fill="#FBBC04" />
-                  <path d="M12 6 A6 6 0 0 1 15.46 6.54" fill="#4285F4" />
-                  <path d="M12 6 A6 6 0 0 0 8.54 6.54" fill="#34A853" />
-                  <path d="M12 12 L12 12" fill="white" />
-                </svg>
+                <img src="/chrome-icon.svg" alt="Chrome" className="w-4 h-4 flex-shrink-0" />
                 <p className="text-white/60 text-xs">
                   Works best on Google Chrome
                 </p>
