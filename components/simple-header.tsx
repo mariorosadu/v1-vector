@@ -28,7 +28,7 @@ export function SimpleHeader() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0f0f0f]/80 backdrop-blur-md border-b border-white/5">
         <div className="container mx-auto px-6 md:px-12">
           <div className="flex items-center justify-between h-16">
-            {/* Left - Logo (Mobile) / Navigation Links (Desktop) */}
+            {/* Left - Logo (Mobile only, desktop logo is centered) */}
             <div className="flex items-center">
               <img
                 src="/images/vector-logo-full.svg"
@@ -36,23 +36,6 @@ export function SimpleHeader() {
                 className="h-5 w-auto lg:hidden cursor-pointer"
                 onClick={() => router.push("/")}
               />
-              <div className="hidden lg:flex items-center gap-8">
-                {navigationItems.slice(0, 1).map((item) => (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    onClick={(e) => {
-                      if (item.href.startsWith('/')) {
-                        e.preventDefault()
-                        router.push(item.href)
-                      }
-                    }}
-                    className="text-white/60 text-sm tracking-wide hover:text-white transition-colors"
-                  >
-                    {item.label}
-                  </a>
-                ))}
-              </div>
             </div>
 
             {/* Center - Logo (Desktop only) */}
@@ -68,10 +51,10 @@ export function SimpleHeader() {
               />
             </motion.button>
 
-            {/* Right - Navigation Links (Desktop) / Menu Button (Mobile) */}
+            {/* Right - All Navigation Links (Desktop) / Menu Button (Mobile) */}
             <div className="flex items-center gap-8">
               <div className="hidden lg:flex items-center gap-8">
-                {navigationItems.slice(1).map((item) => (
+                {navigationItems.map((item) => (
                   item.submenu ? (
                     <div 
                       key={item.label}
