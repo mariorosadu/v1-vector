@@ -141,7 +141,7 @@ export function NewHeader() {
       setShowGhostCursor(true)
       const timeout = setTimeout(() => {
         setShowGhostCursor(false)
-      }, 1800) // Duration of animation
+      }, 2500) // Duration of animation
       return () => clearTimeout(timeout)
     }
   }, [isHoveringToyBox])
@@ -590,10 +590,21 @@ export function NewHeader() {
               >
                 Publications
               </a>
-              <div 
+              <motion.div 
                 className="relative w-full sm:w-auto"
                 onMouseEnter={() => setIsHoveringToyBox(true)}
                 onMouseLeave={() => setIsHoveringToyBox(false)}
+                animate={{
+                  scale: showGhostCursor ? [1, 1, 1, 1, 0.95, 1] : 1,
+                  backgroundColor: showGhostCursor 
+                    ? ["rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0.08)", "rgba(255,255,255,0)"]
+                    : "rgba(255,255,255,0)"
+                }}
+                transition={{
+                  duration: 2.5,
+                  times: [0, 0.5, 0.7, 0.75, 0.8, 1],
+                  ease: "easeInOut"
+                }}
               >
                 <a 
                   href="/box" 
@@ -609,43 +620,59 @@ export function NewHeader() {
                 <AnimatePresence>
                   {showGhostCursor && (
                     <motion.div
-                      initial={{ x: -200, y: 0, opacity: 0 }}
+                      initial={{ x: -400, y: -80, opacity: 0 }}
                       animate={{ 
-                        x: ["-200px", "0px", "0px"],
-                        y: ["0px", "0px", "0px"],
-                        opacity: [0, 1, 0],
+                        x: [
+                          -400,  // Start from far left
+                          -280,  // Wavy motion
+                          -160,  // Wavy motion
+                          -60,   // Approaching button
+                          0,     // Over button
+                          0,     // Ponder
+                          0,     // Start dissolve
+                        ],
+                        y: [
+                          -80,   // Start position
+                          -60,   // Wavy up
+                          -50,   // Wavy down
+                          -15,   // Approaching
+                          0,     // Over button
+                          0,     // Ponder
+                          0,     // Dissolve
+                        ],
+                        opacity: [0, 0.7, 1, 1, 1, 1, 0],
                       }}
                       exit={{ opacity: 0 }}
                       transition={{
-                        duration: 1.8,
-                        times: [0, 0.5, 1],
-                        ease: [0.22, 1, 0.36, 1]
+                        duration: 2.5,
+                        times: [0, 0.2, 0.4, 0.6, 0.7, 0.75, 1],
+                        ease: [0.16, 1, 0.3, 1]
                       }}
                       className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50"
                     >
                       <motion.div
                         animate={{
-                          rotate: [0, 0, -15],
+                          rotate: [10, 5, -5, -10, 0, 0, 0],
                         }}
                         transition={{
-                          duration: 1.8,
-                          times: [0, 0.5, 1],
+                          duration: 2.5,
+                          times: [0, 0.2, 0.4, 0.6, 0.7, 0.75, 1],
                         }}
                         className="relative"
                       >
-                        {/* Cursor Arrow */}
+                        {/* Cursor Arrow that morphs to hand */}
                         <motion.svg
                           width="24"
                           height="24"
                           viewBox="0 0 24 24"
                           fill="none"
-                          className="drop-shadow-lg"
+                          className="drop-shadow-[0_2px_8px_rgba(255,255,255,0.4)]"
                           animate={{
-                            scale: [1, 1, 0.9],
+                            scale: [1, 1, 1, 1, 1, 0.9, 0.5],
                           }}
                           transition={{
-                            duration: 1.8,
-                            times: [0, 0.5, 1],
+                            duration: 2.5,
+                            times: [0, 0.2, 0.4, 0.6, 0.7, 0.8, 1],
                           }}
                         >
                           <motion.path
@@ -658,12 +685,16 @@ export function NewHeader() {
                               d: [
                                 "M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z",
                                 "M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z",
+                                "M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z",
+                                "M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z",
+                                "M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z",
+                                "M5 2L5 12L11 9L14 14L16 12L12 7L15 7L5 2Z",
                                 "M5 2L5 12L11 9L14 14L16 12L12 7L15 7L5 2Z"
                               ]
                             }}
                             transition={{
-                              duration: 1.8,
-                              times: [0, 0.5, 1],
+                              duration: 2.5,
+                              times: [0, 0.2, 0.4, 0.6, 0.7, 0.75, 1],
                             }}
                           />
                         </motion.svg>
@@ -671,7 +702,7 @@ export function NewHeader() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             </motion.div>
           </div>
         </div>
