@@ -42,62 +42,62 @@ export function NewHeader() {
       const text1 = "We prime humans"
       for (let i = 0; i <= text1.length; i++) {
         setTypedText(text1.substring(0, i))
-        await wait(50)
+        await wait(60)
       }
       
       // Step 2: Delete the "s"
-      await wait(400)
+      await wait(500)
       setTypedText("We prime human")
       
       // Step 3: Pause as if in doubt
-      await wait(800)
+      await wait(900)
       
       // Step 4: Keep typing until "to"
       const text2 = "We prime human cognition to "
       for (let i = "We prime human".length; i <= text2.length; i++) {
         setTypedText(text2.substring(0, i))
-        await wait(50)
+        await wait(60)
       }
       
       // Step 5: Write "reach"
       const text3 = "We prime human cognition to reach"
       for (let i = text2.length; i <= text3.length; i++) {
         setTypedText(text3.substring(0, i))
-        await wait(60)
+        await wait(70)
       }
       
       // Step 6: Delete "reach"
-      await wait(500)
+      await wait(600)
       for (let i = text3.length; i >= text2.length; i--) {
         setTypedText(text3.substring(0, i))
-        await wait(40)
+        await wait(45)
       }
       
       // Step 7: Write "[unlock]" with pause
-      await wait(400)
+      await wait(500)
       const text4 = "We prime human cognition to [unlock]"
       for (let i = text2.length; i <= text4.length; i++) {
         setTypedText(text4.substring(0, i))
         const char = text4[i - 1]
         if (char === '[' || char === ']') {
-          await wait(150)
+          await wait(180)
         } else {
-          await wait(60)
+          await wait(70)
         }
       }
       
       // Step 8: Continue to "full"
-      await wait(300)
+      await wait(400)
       const text5 = "We prime human cognition to [unlock] artificial intelligence's full "
       for (let i = text4.length; i <= text5.length; i++) {
         setTypedText(text5.substring(0, i))
-        await wait(50)
+        await wait(60)
       }
       
       // Step 9: Slowly type "potential."
       for (let i = text5.length; i <= finalText.length; i++) {
         setTypedText(finalText.substring(0, i))
-        await wait(120)
+        await wait(140)
       }
       
       // Complete
