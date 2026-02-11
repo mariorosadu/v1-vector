@@ -13,13 +13,46 @@ export const viewport = {
   interactiveWidget: 'resizes-content' as const,
 }
 
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://vector-ai.com'
+
 export const metadata: Metadata = {
-  title: 'VECTÖR | Decision Intelligence', 
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: 'VECTÖR | Decision Intelligence',
+    template: '%s | VECTÖR',
+  },
   description: 'We prime human cognition to unlock artificial intelligence\'s full potential.',
   generator: 'v0.app',
   icons: {
     icon: '/favicon.png',
     apple: '/favicon.png',
+  },
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: baseUrl,
+    title: 'VECTÖR | Decision Intelligence',
+    description: 'We prime human cognition to unlock artificial intelligence\'s full potential.',
+    siteName: 'VECTÖR',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'VECTÖR | Decision Intelligence',
+    description: 'We prime human cognition to unlock artificial intelligence\'s full potential.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 }
 
