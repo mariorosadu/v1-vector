@@ -16,6 +16,7 @@ const navigationItems = [
       { label: "Metacognition", href: "/box/metacognition" },
     ]
   },
+  { label: "Contact", href: "/contact" },
 ]
 
 export function NewHeader() {
@@ -566,9 +567,11 @@ export function NewHeader() {
                 Publications
               </a>
               <a 
-                href="https://wa.me/5531936183384" 
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/contact" 
+                onClick={(e) => {
+                  e.preventDefault()
+                  router.push("/contact")
+                }}
                 className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors touch-manipulation"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
