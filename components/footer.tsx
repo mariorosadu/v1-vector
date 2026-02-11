@@ -77,7 +77,7 @@ export function Footer() {
             <ul className="space-y-3">
               {[
                 { label: "Cognitive Map", href: "/box/map" },
-                { label: "Prototype", href: "/prototype" },
+                { label: "Voice Flux", href: "/prototype" },
                 { label: "Profile Analysis", href: "/box/profile-analysis" },
                 { label: "Metacognition", href: "/box/metacognition" }
               ].map((item) => (

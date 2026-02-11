@@ -8,7 +8,7 @@ import { Menu, X } from "lucide-react"
 const navigationItems = [
   { label: "Publications", href: "#publications" },
   { label: "Map", href: "/map" },
-  { label: "Prototype", href: "/prototype" },
+  { label: "Voice Flux", href: "/prototype" },
 ]
 
 export function StickyHeader() {
