@@ -35,7 +35,7 @@ export default function ContactPage() {
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              <div className="relative h-10 w-24">
+              <div className={`relative ${link.label === "WhatsApp" ? "h-8.5 w-20" : "h-10 w-24"}`}>
                 <Image
                   src={link.icon}
                   alt={link.label}
