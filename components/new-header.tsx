@@ -387,7 +387,7 @@ export function NewHeader() {
               className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 relative z-10"
             >
               <a 
-                href="/prototype" 
+                href="/box/metacognition" 
                 className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 bg-white text-[#0f0f0f] text-sm font-medium tracking-wide hover:bg-white/90 transition-colors touch-manipulation"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
