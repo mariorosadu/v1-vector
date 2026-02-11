@@ -549,22 +549,12 @@ export function NewHeader() {
             >
               <a 
                 href="/box/metacognition" 
-                className="w-full sm:w-auto min-h-[48px] flex items-center justify-center gap-1 px-8 py-3 bg-white text-[#0f0f0f] text-sm font-medium tracking-wide hover:bg-white/90 transition-colors touch-manipulation"
+                className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 bg-white text-[#0f0f0f] text-sm font-medium tracking-wide hover:bg-white/90 transition-colors touch-manipulation"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                <span>Try Prototype</span>
-                {showButtonCursor && buttonCursorVisible && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="text-[#0f0f0f]"
-                  >
-                    _
-                  </motion.span>
-                )}
+                Try Prototype
               </a>
               <a 
                 href="/publications" 
