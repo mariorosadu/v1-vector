@@ -364,7 +364,7 @@ export function NewHeader() {
               transition={{ duration: 0.8, delay: 0.4 }}
               className="text-white/40 text-xs md:text-sm tracking-[0.3em] uppercase mb-8"
             >
-              Human Cognition & AI Decision Intelligence
+              Decision Intelligence
             </motion.p>
 
             {/* Description */}
@@ -374,9 +374,7 @@ export function NewHeader() {
               transition={{ duration: 0.8, delay: 0.6 }}
               className="text-white/70 text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-12"
             >
-              Navigate the AI landscape with clarity. We help organizations
-              understand human cognition and decision-making processes in the
-              age of artificial intelligence.
+              We prime human cognition to unlock artificial intelligence's full potential.
             </motion.p>
 
             {/* CTA Buttons */}
