@@ -18,7 +18,7 @@ export default function ContactPage() {
   ]
 
   return (
-    <main className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center px-6 pb-12">
+    <main className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center px-6 py-8 md:pb-12 md:pt-0">
       <div className="w-full max-w-md flex-1 flex items-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
