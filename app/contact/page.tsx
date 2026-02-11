@@ -18,13 +18,13 @@ export default function ContactPage() {
   ]
 
   return (
-    <main className="min-h-screen bg-[#0f0f0f] flex items-center justify-center px-6">
-      <div className="w-full max-w-md">
+    <main className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center px-6 pb-12">
+      <div className="w-full max-w-md flex-1 flex items-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="flex flex-col gap-6"
+          className="flex flex-col gap-6 w-full"
         >
           {links.map((link, index) => (
             <motion.a
@@ -52,6 +52,15 @@ export default function ContactPage() {
           ))}
         </motion.div>
       </div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.4 }}
+        className="text-white/30 text-xs tracking-wide"
+      >
+        © 2026 VECTOR
+      </motion.div>
     </main>
   )
 }
