@@ -1,52 +1,55 @@
 "use client"
 
 import { motion } from "framer-motion"
-import Link from "next/link"
+import Image from "next/image"
 
 export default function ContactPage() {
+  const links = [
+    {
+      icon: "/v-logo.svg",
+      href: "/",
+      label: "Back to Home"
+    },
+    {
+      icon: "/whatsapp-logo.svg",
+      href: "whatsapp://send?phone=5531936183384&text=Hi",
+      label: "WhatsApp"
+    }
+  ]
+
   return (
-    <main className="min-h-screen bg-[#0f0f0f] pt-32 pb-16">
-      <div className="container mx-auto px-6 md:px-12">
+    <main className="min-h-screen bg-[#0f0f0f] flex items-center justify-center px-6">
+      <div className="w-full max-w-md">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="max-w-2xl mx-auto text-center"
+          className="flex flex-col gap-6"
         >
-          <h1 className="text-4xl md:text-5xl font-light text-white mb-6 tracking-tight">
-            Get in Touch
-          </h1>
-          
-          <p className="text-white/60 text-lg mb-12 leading-relaxed">
-            We'd love to hear from you. Reach out to us on WhatsApp to discuss how we can help.
-          </p>
-
-          <motion.a
-            href="whatsapp://send?phone=5531936183384&text=Hi"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="inline-block min-h-[48px] px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors"
-            style={{
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            Contact via WhatsApp
-          </motion.a>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="mt-16"
-          >
-            <Link
-              href="/"
-              className="text-white/40 hover:text-white/60 transition-colors text-sm"
+          {links.map((link, index) => (
+            <motion.a
+              key={link.href}
+              href={link.href}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              className="group relative flex items-center justify-center h-20 border border-white/10 hover:border-white/30 bg-white/5 hover:bg-white/10 transition-all duration-300"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+              }}
             >
-              ← Back to home
-            </Link>
-          </motion.div>
+              <div className="relative h-10 w-24">
+                <Image
+                  src={link.icon}
+                  alt={link.label}
+                  fill
+                  className="object-contain transition-transform duration-300 group-hover:scale-110"
+                />
+              </div>
+              
+              <span className="sr-only">{link.label}</span>
+            </motion.a>
+          ))}
         </motion.div>
       </div>
     </main>
