@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 
 const navigationItems = [
-  { label: "Prototype", href: "/prototype" },
+  { label: "Metacognition Prototype", href: "/prototype" },
   { label: "Publications", href: "/publications" },
   { 
     label: "Toy Box", 
@@ -13,7 +13,7 @@ const navigationItems = [
     submenu: [
       { label: "Profile Analysis", href: "/box/profile-analysis" },
       { label: "Cognitive Map", href: "/box/map" },
-      { label: "Metacognition", href: "/box/metacognition" },
+      { label: "Voice Flux", href: "/box/voice-flux" },
     ]
   },
 ]
@@ -393,7 +393,7 @@ export function NewHeader() {
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                Try Prototype
+                Try Metacognition Prototype
               </a>
               <a 
                 href="/publications" 

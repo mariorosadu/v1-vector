@@ -22,9 +22,9 @@ export default function BoxPage() {
       gradient: "from-purple-600/20 to-pink-600/20",
     },
     {
-      title: "Metacognition",
-      description: "Analytical framework for exploring and understanding objective functions in cognitive systems and artificial intelligence.",
-      href: "/box/metacognition",
+      title: "Voice Flux",
+      description: "Interactive voice-driven question flow for building context and understanding through conversational exploration.",
+      href: "/box/voice-flux",
       gradient: "from-pink-600/20 to-orange-600/20",
     },
   ]

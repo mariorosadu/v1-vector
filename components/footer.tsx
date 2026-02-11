@@ -76,10 +76,10 @@ export function Footer() {
             </h4>
             <ul className="space-y-3">
               {[
-                { label: "Cognitive Map", href: "/box/map" },
-                { label: "Prototype", href: "/prototype" },
+                { label: "Metacognition Prototype", href: "/prototype" },
                 { label: "Profile Analysis", href: "/box/profile-analysis" },
-                { label: "Metacognition", href: "/box/metacognition" }
+                { label: "Cognitive Map", href: "/box/map" },
+                { label: "Voice Flux", href: "/box/voice-flux" }
               ].map((item) => (
                 <li key={item.label}>
                   <button
