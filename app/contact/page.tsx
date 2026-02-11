@@ -8,14 +8,12 @@ export default function ContactPage() {
     {
       icon: "/v-logo.svg",
       href: "/",
-      label: "Back to Home",
-      scale: 0.6
+      label: "Back to Home"
     },
     {
       icon: "/whatsapp-logo.svg",
       href: "whatsapp://send?phone=5531936183384&text=Hi",
-      label: "WhatsApp",
-      scale: 1
+      label: "WhatsApp"
     }
   ]
 
@@ -35,15 +33,12 @@ export default function ContactPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="group relative flex items-center justify-center h-32 border border-white/10 hover:border-white/30 bg-white/5 hover:bg-white/10 transition-all duration-300"
+              className="group relative flex items-center justify-center h-20 border border-white/10 hover:border-white/30 bg-white/5 hover:bg-white/10 transition-all duration-300"
               style={{
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              <div className="relative" style={{ 
-                width: `${120 * link.scale}px`, 
-                height: `${120 * link.scale}px` 
-              }}>
+              <div className="relative h-10 w-24">
                 <Image
                   src={link.icon}
                   alt={link.label}
