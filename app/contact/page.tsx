@@ -18,8 +18,8 @@ export default function ContactPage() {
   ]
 
   return (
-    <main className="min-h-screen bg-[#0f0f0f] flex flex-col items-center justify-center px-6 py-8 md:pb-12 md:pt-0">
-      <div className="w-full max-w-md flex-1 flex items-center">
+    <main className="h-screen bg-black flex flex-col items-center justify-center px-6">
+      <div className="w-full max-w-md flex flex-col items-center gap-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -48,16 +48,16 @@ export default function ContactPage() {
             </a>
           ))}
         </motion.div>
-      </div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.4 }}
-        className="text-white/30 text-xs tracking-wide"
-      >
-        © 2026 VECTÖR
-      </motion.div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          className="text-white/30 text-xs tracking-wide"
+        >
+          © 2026 VECTÖR
+        </motion.div>
+      </div>
     </main>
   )
 }
