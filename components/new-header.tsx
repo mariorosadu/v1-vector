@@ -28,54 +28,88 @@ export function NewHeader() {
   const [typingComplete, setTypingComplete] = useState(false)
   const [showButtonCursor, setShowButtonCursor] = useState(false)
 
-  const fullText = "We prime human cognition to [unlock] artificial intelligence's full potential."
+  const finalText = "We prime human cognition to [unlock] artificial intelligence's full potential."
   
   useEffect(() => {
-    let currentIndex = 0
     let timeoutId: NodeJS.Timeout
+    let step = 0
     
-    const typeNextChar = () => {
-      if (currentIndex < fullText.length) {
-        const char = fullText[currentIndex]
-        
-        // Add pause when we reach the opening bracket
-        if (char === '[') {
-          setTypedText(fullText.substring(0, currentIndex + 1))
-          currentIndex++
-          timeoutId = setTimeout(typeNextChar, 150) // Short pause before 'unlock'
-        }
-        // Add pause after closing bracket
-        else if (char === ']') {
-          setTypedText(fullText.substring(0, currentIndex + 1))
-          currentIndex++
-          timeoutId = setTimeout(typeNextChar, 300) // Longer pause after brackets
-        }
-        // Normal typing speed
-        else {
-          setTypedText(fullText.substring(0, currentIndex + 1))
-          currentIndex++
-          timeoutId = setTimeout(typeNextChar, 50) // Fast typing
-        }
-      } else {
-        // Typing complete
-        setTypingComplete(true)
-        // Quickly hide cursor after completion
-        timeoutId = setTimeout(() => {
-          setShowCursor(false)
-          // Show button cursor after main cursor disappears
-          setTimeout(() => {
-            setShowButtonCursor(true)
-            // Single blink - hide after 500ms
-            setTimeout(() => {
-              setShowButtonCursor(false)
-            }, 500)
-          }, 200)
-        }, 300)
+    const animationSequence = async () => {
+      const wait = (ms: number) => new Promise(resolve => timeoutId = setTimeout(resolve, ms))
+      
+      // Step 1: Type "We prime humans"
+      const text1 = "We prime humans"
+      for (let i = 0; i <= text1.length; i++) {
+        setTypedText(text1.substring(0, i))
+        await wait(50)
       }
+      
+      // Step 2: Delete the "s"
+      await wait(400)
+      setTypedText("We prime human")
+      
+      // Step 3: Pause as if in doubt
+      await wait(800)
+      
+      // Step 4: Keep typing until "to"
+      const text2 = "We prime human cognition to "
+      for (let i = "We prime human".length; i <= text2.length; i++) {
+        setTypedText(text2.substring(0, i))
+        await wait(50)
+      }
+      
+      // Step 5: Write "reach"
+      const text3 = "We prime human cognition to reach"
+      for (let i = text2.length; i <= text3.length; i++) {
+        setTypedText(text3.substring(0, i))
+        await wait(60)
+      }
+      
+      // Step 6: Delete "reach"
+      await wait(500)
+      for (let i = text3.length; i >= text2.length; i--) {
+        setTypedText(text3.substring(0, i))
+        await wait(40)
+      }
+      
+      // Step 7: Write "[unlock]" with pause
+      await wait(400)
+      const text4 = "We prime human cognition to [unlock]"
+      for (let i = text2.length; i <= text4.length; i++) {
+        setTypedText(text4.substring(0, i))
+        const char = text4[i - 1]
+        if (char === '[' || char === ']') {
+          await wait(150)
+        } else {
+          await wait(60)
+        }
+      }
+      
+      // Step 8: Continue to "full"
+      await wait(300)
+      const text5 = "We prime human cognition to [unlock] artificial intelligence's full "
+      for (let i = text4.length; i <= text5.length; i++) {
+        setTypedText(text5.substring(0, i))
+        await wait(50)
+      }
+      
+      // Step 9: Slowly type "potential."
+      for (let i = text5.length; i <= finalText.length; i++) {
+        setTypedText(finalText.substring(0, i))
+        await wait(120)
+      }
+      
+      // Complete
+      setTypingComplete(true)
+      await wait(300)
+      setShowCursor(false)
+      await wait(200)
+      setShowButtonCursor(true)
+      await wait(500)
+      setShowButtonCursor(false)
     }
     
-    // Start typing after initial delay
-    timeoutId = setTimeout(typeNextChar, 1000)
+    timeoutId = setTimeout(() => animationSequence(), 1000)
     
     return () => clearTimeout(timeoutId)
   }, [])
