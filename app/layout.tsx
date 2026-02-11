@@ -14,8 +14,8 @@ export const viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'VECTÖR | Human Cognition & AI Decision Intelligence', 
-  description: 'Navigate the AI landscape with clarity. VECTÖR helps organizations understand human cognition and decision-making processes in the age of artificial intelligence.',
+  title: 'VECTÖR | Decision Intelligence', 
+  description: 'We prime human cognition to unlock artificial intelligence\'s full potential.',
   generator: 'v0.app',
   icons: {
     icon: '/favicon.png',

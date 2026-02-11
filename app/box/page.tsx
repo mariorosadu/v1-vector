@@ -10,6 +10,12 @@ export default function BoxPage() {
 
   const tools = [
     {
+      title: "Voice Flux",
+      description: "Interactive voice-driven exploration tool for navigating complex cognitive landscapes through conversational interfaces.",
+      href: "/box/voiceflux",
+      gradient: "from-cyan-600/20 to-blue-600/20",
+    },
+    {
       title: "Profile Analysis",
       description: "Multi-dimensional radar analysis of professional profiles across technical, strategic, and leadership capabilities.",
       href: "/box/profile-analysis",
@@ -56,7 +62,7 @@ export default function BoxPage() {
           </div>
 
           {/* Tool Cards */}
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
             {tools.map((tool, index) => (
               <motion.button
                 key={tool.href}

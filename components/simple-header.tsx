@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 
 const navigationItems = [
-  { label: "Prototype", href: "/prototype" },
   { label: "Publications", href: "/publications" },
   { 
     label: "Toy Box", 
     href: "/box",
     submenu: [
+      { label: "Voice Flux", href: "/box/voiceflux" },
       { label: "Profile Analysis", href: "/box/profile-analysis" },
       { label: "Cognitive Map", href: "/box/map" },
       { label: "Metacognition", href: "/box/metacognition" },
