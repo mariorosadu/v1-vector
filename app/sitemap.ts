@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://vector-ai.com'
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://vector.cards'
   
   // Define your public routes here
   const routes = [
