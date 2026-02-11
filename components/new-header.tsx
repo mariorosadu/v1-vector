@@ -374,7 +374,27 @@ export function NewHeader() {
               transition={{ duration: 0.8, delay: 0.6 }}
               className="text-white/70 text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-12"
             >
-              We prime human cognition to unlock artificial intelligence's full potential.
+              We prime human cognition to{' '}
+              <span className="inline-flex items-center">
+                <motion.span
+                  initial={{ opacity: 0, x: -8, scaleX: 0.3 }}
+                  animate={{ opacity: 1, x: 0, scaleX: 1 }}
+                  transition={{ duration: 0.6, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                  className="inline-block origin-right"
+                >
+                  [
+                </motion.span>
+                <span className="mx-1">unlock</span>
+                <motion.span
+                  initial={{ opacity: 0, x: 8, scaleX: 0.3 }}
+                  animate={{ opacity: 1, x: 0, scaleX: 1 }}
+                  transition={{ duration: 0.6, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                  className="inline-block origin-left"
+                >
+                  ]
+                </motion.span>
+              </span>
+              {' '}artificial intelligence's full potential.
             </motion.p>
 
             {/* CTA Buttons */}
