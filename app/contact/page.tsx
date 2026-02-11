@@ -27,12 +27,9 @@ export default function ContactPage() {
           className="flex flex-col gap-6 w-full"
         >
           {links.map((link, index) => (
-            <motion.a
+            <a
               key={link.href}
               href={link.href}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
               className="group relative flex items-center justify-center h-20 border border-white/10 hover:border-white/30 bg-white/5 hover:bg-white/10 transition-all duration-300"
               style={{
                 WebkitTapHighlightColor: 'transparent',
@@ -48,7 +45,7 @@ export default function ContactPage() {
               </div>
               
               <span className="sr-only">{link.label}</span>
-            </motion.a>
+            </a>
           ))}
         </motion.div>
       </div>
@@ -59,7 +56,7 @@ export default function ContactPage() {
         transition={{ duration: 0.8, delay: 0.4 }}
         className="text-white/30 text-xs tracking-wide"
       >
-        © 2026 VECTOR
+        © 2026 VECTÖR
       </motion.div>
     </main>
   )
