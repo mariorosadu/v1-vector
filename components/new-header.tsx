@@ -23,6 +23,72 @@ export function NewHeader() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [typedText, setTypedText] = useState("")
+  const [showCursor, setShowCursor] = useState(true)
+  const [typingComplete, setTypingComplete] = useState(false)
+  const [showButtonCursor, setShowButtonCursor] = useState(false)
+
+  const fullText = "We prime human cognition to [unlock] artificial intelligence's full potential."
+  
+  useEffect(() => {
+    let currentIndex = 0
+    let timeoutId: NodeJS.Timeout
+    
+    const typeNextChar = () => {
+      if (currentIndex < fullText.length) {
+        const char = fullText[currentIndex]
+        
+        // Add pause when we reach the opening bracket
+        if (char === '[') {
+          setTypedText(fullText.substring(0, currentIndex + 1))
+          currentIndex++
+          timeoutId = setTimeout(typeNextChar, 150) // Short pause before 'unlock'
+        }
+        // Add pause after closing bracket
+        else if (char === ']') {
+          setTypedText(fullText.substring(0, currentIndex + 1))
+          currentIndex++
+          timeoutId = setTimeout(typeNextChar, 300) // Longer pause after brackets
+        }
+        // Normal typing speed
+        else {
+          setTypedText(fullText.substring(0, currentIndex + 1))
+          currentIndex++
+          timeoutId = setTimeout(typeNextChar, 50) // Fast typing
+        }
+      } else {
+        // Typing complete
+        setTypingComplete(true)
+        // Quickly hide cursor after completion
+        timeoutId = setTimeout(() => {
+          setShowCursor(false)
+          // Show button cursor after main cursor disappears
+          setTimeout(() => {
+            setShowButtonCursor(true)
+            // Single blink - hide after 500ms
+            setTimeout(() => {
+              setShowButtonCursor(false)
+            }, 500)
+          }, 200)
+        }, 300)
+      }
+    }
+    
+    // Start typing after initial delay
+    timeoutId = setTimeout(typeNextChar, 1000)
+    
+    return () => clearTimeout(timeoutId)
+  }, [])
+  
+  // Cursor blink effect
+  useEffect(() => {
+    if (!typingComplete) {
+      const interval = setInterval(() => {
+        setShowCursor(prev => !prev)
+      }, 530)
+      return () => clearInterval(interval)
+    }
+  }, [typingComplete])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -367,35 +433,69 @@ export function NewHeader() {
               Decision Intelligence
             </motion.p>
 
-            {/* Description */}
-            <motion.p
+            {/* Description with Typing Animation */}
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-white/70 text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-12"
+              className="text-white/70 text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-12 min-h-[4rem] flex items-center justify-center"
             >
-              We prime human cognition to{' '}
-              <span className="inline-flex items-center">
-                <motion.span
-                  initial={{ opacity: 0, x: -8, scaleX: 0.3 }}
-                  animate={{ opacity: 1, x: 0, scaleX: 1 }}
-                  transition={{ duration: 0.6, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                  className="inline-block origin-right"
-                >
-                  [
-                </motion.span>
-                <span className="mx-1">unlock</span>
-                <motion.span
-                  initial={{ opacity: 0, x: 8, scaleX: 0.3 }}
-                  animate={{ opacity: 1, x: 0, scaleX: 1 }}
-                  transition={{ duration: 0.6, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                  className="inline-block origin-left"
-                >
-                  ]
-                </motion.span>
-              </span>
-              {' '}artificial intelligence's full potential.
-            </motion.p>
+              <p className="relative inline-block">
+                {typedText.split('').map((char, index) => {
+                  const beforeBracket = typedText.substring(0, index)
+                  const isInsideBrackets = beforeBracket.includes('[') && !beforeBracket.includes(']')
+                  const isBracket = char === '[' || char === ']'
+                  
+                  if (isBracket) {
+                    // Animate brackets with unfold effect
+                    return (
+                      <motion.span
+                        key={index}
+                        initial={{ opacity: 0, scaleX: 0.3, scaleY: 0.8 }}
+                        animate={{ opacity: 1, scaleX: 1, scaleY: 1 }}
+                        transition={{ 
+                          duration: 0.4, 
+                          ease: [0.22, 1, 0.36, 1],
+                          delay: 0.05 
+                        }}
+                        className="inline-block"
+                        style={{ 
+                          transformOrigin: char === '[' ? 'right' : 'left'
+                        }}
+                      >
+                        {char}
+                      </motion.span>
+                    )
+                  }
+                  
+                  if (isInsideBrackets) {
+                    // Text inside brackets appears smoothly
+                    return (
+                      <motion.span
+                        key={index}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                        className="inline-block"
+                      >
+                        {char}
+                      </motion.span>
+                    )
+                  }
+                  
+                  return <span key={index}>{char}</span>
+                })}
+                {showCursor && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: showCursor ? 1 : 0 }}
+                    className="inline-block ml-0.5 text-white/70"
+                  >
+                    _
+                  </motion.span>
+                )}
+              </p>
+            </motion.div>
 
             {/* CTA Buttons */}
             <motion.div
@@ -404,15 +504,28 @@ export function NewHeader() {
               transition={{ duration: 0.8, delay: 0.8 }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 relative z-10"
             >
-              <a 
-                href="/box/metacognition" 
-                className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 bg-white text-[#0f0f0f] text-sm font-medium tracking-wide hover:bg-white/90 transition-colors touch-manipulation"
-                style={{
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                Try Prototype
-              </a>
+              <div className="relative w-full sm:w-auto">
+                <a 
+                  href="/box/metacognition" 
+                  className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 bg-white text-[#0f0f0f] text-sm font-medium tracking-wide hover:bg-white/90 transition-colors touch-manipulation"
+                  style={{
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  Try Prototype
+                </a>
+                {showButtonCursor && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-white/50 text-sm"
+                  >
+                    _
+                  </motion.span>
+                )}
+              </div>
               <a 
                 href="/publications" 
                 className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors touch-manipulation"
