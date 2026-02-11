@@ -28,8 +28,6 @@ export function NewHeader() {
   const [typingComplete, setTypingComplete] = useState(false)
   const [showButtonCursor, setShowButtonCursor] = useState(false)
   const [buttonCursorVisible, setButtonCursorVisible] = useState(true)
-  const [showGhostCursor, setShowGhostCursor] = useState(false)
-  const [isHoveringToyBox, setIsHoveringToyBox] = useState(false)
 
   const finalText = "We prime human cognition to [unlock] artificial intelligence's full potential."
   
@@ -134,17 +132,6 @@ export function NewHeader() {
       return () => clearInterval(interval)
     }
   }, [showButtonCursor])
-  
-  // Ghost cursor animation on hover
-  useEffect(() => {
-    if (isHoveringToyBox) {
-      setShowGhostCursor(true)
-      const timeout = setTimeout(() => {
-        setShowGhostCursor(false)
-      }, 2500) // Duration of animation
-      return () => clearTimeout(timeout)
-    }
-  }, [isHoveringToyBox])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -590,119 +577,15 @@ export function NewHeader() {
               >
                 Publications
               </a>
-              <motion.div 
-                className="relative w-full sm:w-auto"
-                onMouseEnter={() => setIsHoveringToyBox(true)}
-                onMouseLeave={() => setIsHoveringToyBox(false)}
-                animate={{
-                  scale: showGhostCursor ? [1, 1, 1, 1, 0.95, 1] : 1,
-                  backgroundColor: showGhostCursor 
-                    ? ["rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0)", "rgba(255,255,255,0.08)", "rgba(255,255,255,0)"]
-                    : "rgba(255,255,255,0)"
-                }}
-                transition={{
-                  duration: 2.5,
-                  times: [0, 0.5, 0.7, 0.75, 0.8, 1],
-                  ease: "easeInOut"
+              <a 
+                href="/box" 
+                className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors touch-manipulation"
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                <a 
-                  href="/box" 
-                  className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors touch-manipulation"
-                  style={{
-                    WebkitTapHighlightColor: 'transparent',
-                  }}
-                >
-                  Explore Toy Box
-                </a>
-                
-                {/* Ghost Cursor Animation */}
-                <AnimatePresence>
-                  {showGhostCursor && (
-                    <motion.div
-                      initial={{ x: -400, y: -80, opacity: 0 }}
-                      animate={{ 
-                        x: [
-                          -400,  // Start from far left
-                          -280,  // Wavy motion
-                          -160,  // Wavy motion
-                          -60,   // Approaching button
-                          0,     // Over button
-                          0,     // Ponder
-                          0,     // Start dissolve
-                        ],
-                        y: [
-                          -80,   // Start position
-                          -60,   // Wavy up
-                          -50,   // Wavy down
-                          -15,   // Approaching
-                          0,     // Over button
-                          0,     // Ponder
-                          0,     // Dissolve
-                        ],
-                        opacity: [0, 0.7, 1, 1, 1, 1, 0],
-                      }}
-                      exit={{ opacity: 0 }}
-                      transition={{
-                        duration: 2.5,
-                        times: [0, 0.2, 0.4, 0.6, 0.7, 0.75, 1],
-                        ease: [0.16, 1, 0.3, 1]
-                      }}
-                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50"
-                    >
-                      <motion.div
-                        animate={{
-                          rotate: [10, 5, -5, -10, 0, 0, 0],
-                        }}
-                        transition={{
-                          duration: 2.5,
-                          times: [0, 0.2, 0.4, 0.6, 0.7, 0.75, 1],
-                        }}
-                        className="relative"
-                      >
-                        {/* Cursor Arrow that morphs to hand */}
-                        <motion.svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          className="drop-shadow-[0_2px_8px_rgba(255,255,255,0.4)]"
-                          animate={{
-                            scale: [1, 1, 1, 1, 1, 0.9, 0.5],
-                          }}
-                          transition={{
-                            duration: 2.5,
-                            times: [0, 0.2, 0.4, 0.6, 0.7, 0.8, 1],
-                          }}
-                        >
-                          <motion.path
-                            d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z"
-                            fill="white"
-                            stroke="#0f0f0f"
-                            strokeWidth="1"
-                            initial={{ d: "M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" }}
-                            animate={{ 
-                              d: [
-                                "M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z",
-                                "M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z",
-                                "M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z",
-                                "M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z",
-                                "M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z",
-                                "M5 2L5 12L11 9L14 14L16 12L12 7L15 7L5 2Z",
-                                "M5 2L5 12L11 9L14 14L16 12L12 7L15 7L5 2Z"
-                              ]
-                            }}
-                            transition={{
-                              duration: 2.5,
-                              times: [0, 0.2, 0.4, 0.6, 0.7, 0.75, 1],
-                            }}
-                          />
-                        </motion.svg>
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
+                Explore Toy Box
+              </a>
             </motion.div>
           </div>
         </div>
