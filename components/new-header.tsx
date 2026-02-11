@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 
 const navigationItems = [
-  { label: "Voice Flux", href: "/prototype" },
+  { label: "Voice Flux", href: "/box/voiceflux" },
   { label: "Publications", href: "/publications" },
   { 
     label: "Toy Box", 
