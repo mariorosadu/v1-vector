@@ -13,7 +13,7 @@ export const viewport = {
   interactiveWidget: 'resizes-content' as const,
 }
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://vector-ai.com'
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://vector.cards'
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
