@@ -27,6 +27,7 @@ export function NewHeader() {
   const [showCursor, setShowCursor] = useState(true)
   const [typingComplete, setTypingComplete] = useState(false)
   const [showButtonCursor, setShowButtonCursor] = useState(false)
+  const [buttonCursorVisible, setButtonCursorVisible] = useState(true)
 
   const finalText = "We prime human cognition to [unlock] artificial intelligence's full potential."
   
@@ -105,8 +106,6 @@ export function NewHeader() {
       setShowCursor(false)
       await wait(200)
       setShowButtonCursor(true)
-      await wait(500)
-      setShowButtonCursor(false)
     }
     
     timeoutId = setTimeout(() => animationSequence(), 1000)
@@ -114,7 +113,7 @@ export function NewHeader() {
     return () => clearTimeout(timeoutId)
   }, [])
   
-  // Cursor blink effect
+  // Cursor blink effect for main text
   useEffect(() => {
     if (!typingComplete) {
       const interval = setInterval(() => {
@@ -123,6 +122,16 @@ export function NewHeader() {
       return () => clearInterval(interval)
     }
   }, [typingComplete])
+  
+  // Cursor blink effect for button cursor
+  useEffect(() => {
+    if (showButtonCursor) {
+      const interval = setInterval(() => {
+        setButtonCursorVisible(prev => !prev)
+      }, 530)
+      return () => clearInterval(interval)
+    }
+  }, [showButtonCursor])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -548,11 +557,10 @@ export function NewHeader() {
                 >
                   Try Prototype
                 </a>
-                {showButtonCursor && (
+                {showButtonCursor && buttonCursorVisible && (
                   <motion.span
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
                     transition={{ duration: 0.3 }}
                     className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-white/50 text-sm"
                   >
