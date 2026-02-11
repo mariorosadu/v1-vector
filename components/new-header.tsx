@@ -566,13 +566,15 @@ export function NewHeader() {
                 Publications
               </a>
               <a 
-                href="/box" 
+                href="https://wa.me/5531936183384" 
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-8 py-3 border border-white/20 text-white text-sm tracking-wide hover:bg-white/5 transition-colors touch-manipulation"
                 style={{
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                Explore Toy Box
+                Contact
               </a>
             </motion.div>
           </div>
