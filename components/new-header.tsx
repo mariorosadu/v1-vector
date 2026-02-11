@@ -16,6 +16,7 @@ const navigationItems = [
       { label: "Metacognition", href: "/box/metacognition" },
     ]
   },
+  { label: "Contact", href: "/contact" },
 ]
 
 export function NewHeader() {
