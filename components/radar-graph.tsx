@@ -97,7 +97,7 @@ function generateAlignmentReport(profile1: ProfileData, profile2: ProfileData): 
   
   const compatibility = calculateCompatibility(profile1, profile2)
   
-  const paragraph1 = `The convergence of ${profile1.name} and ${profile2.name} reveals a powerful alignment in ${commonStrengths.length} critical dimensions. Their shared mastery in ${commonStrengths.slice(0, 3).join(", ")} forms a foundation of exceptional collaborative potential. This symmetry of expertise creates a multiplier effect, where combined capabilities exceed the sum of individual contributions—a vector pointing toward transformative innovation and sustained competitive advantage.`
+  const paragraph1 = `The convergence of ${profile1.name} and ${profile2.name} reveals a powerful alignment in ${commonStrengths.length} critical dimensions. Their shared mastery in ${commonStrengths.slice(0, 3).join(", ")} forms a foundation of exceptional collaborative potential. This symmetry of expertise creates a multiplier effect, where combined capabilities exceed the sum of individual contributions—a trajectory pointing toward transformative innovation and sustained competitive advantage.`
   
   const paragraph2 = `Beyond parallel strengths, their complementary expertise in ${complementaryAreas.slice(0, 2).join(" and ")} presents opportunities for knowledge synthesis and mutual elevation. This configuration—where one's depth compensates for the other's developing areas—cultivates an environment of continuous learning and exponential growth. Together, they embody the blueprint for next-generation collaboration: resilient, adaptive, and primed to navigate complexity with precision and vision.`
   
@@ -366,7 +366,7 @@ export function RadarGraph() {
                   {loadingProgress}
                 </div>
                 <div className="text-white/60 text-sm uppercase tracking-widest">
-                  Analyzing vectors...
+                  Analyzing profiles...
                 </div>
               </div>
             </div>
@@ -389,7 +389,7 @@ export function RadarGraph() {
                   className="text-center space-y-2 border-b border-white/10 pb-6"
                 >
                   <div className="text-white/40 text-xs uppercase tracking-[0.3em] font-mono">
-                    Vector Analysis Complete
+                    Vekthös Analysis Complete
                   </div>
                   <h2 className="text-white text-2xl font-light tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
                     Professional Alignment Report

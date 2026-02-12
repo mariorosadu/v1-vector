@@ -33,7 +33,7 @@ export function Footer() {
           >
             <img
               src="/images/vector-logo.svg"
-              alt="VECTÖR Logo"
+              alt="VEKTHÖS Logo"
               className="h-8 w-auto mb-6"
             />
             <p className="text-white/50 text-sm leading-relaxed max-w-sm">
@@ -125,7 +125,7 @@ export function Footer() {
           className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-white/5"
         >
           <p className="text-white/30 text-xs">
-            {new Date().getFullYear()} VECTÖR. All rights reserved.
+            {new Date().getFullYear()} VEKTHÖS. All rights reserved.
           </p>
           <div className="flex items-center gap-6 mt-4 md:mt-0">
             <button

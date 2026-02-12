@@ -19,7 +19,7 @@ export function AboutSection() {
               transition={{ duration: 0.8 }}
               className="text-white/40 text-xs tracking-[0.3em] uppercase mb-4"
             >
-              About VECTÖR
+              About VEKTHÖS
             </motion.p>
             <motion.h2
               initial={{ opacity: 0, y: 30 }}
@@ -41,7 +41,7 @@ export function AboutSection() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="text-white/60 text-sm md:text-base leading-relaxed"
             >
-              In an era where artificial intelligence shapes every decision, understanding how humans process, interpret, and act on AI-generated information has become paramount. VECTÖR provides the cognitive frameworks necessary for organizations to navigate this complexity.
+              In an era where artificial intelligence shapes every decision, understanding how humans process, interpret, and act on AI-generated information has become paramount. VEKTHÖS provides the cognitive frameworks necessary for organizations to navigate this complexity.
             </motion.p>
             <motion.p
               initial={{ opacity: 0, y: 20 }}

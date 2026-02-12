@@ -568,7 +568,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
               Review Your Answers
             </h3>
             <p className="text-white/40 text-sm mb-6">
-              Edit if needed or submit to generate your Vector Alignment Report.
+              Edit if needed or submit to generate your Vekthös Alignment Report.
             </p>
 
             <div className="space-y-3 mb-8">
@@ -726,7 +726,7 @@ export function VoiceQuestionFlow({ onComplete }: VoiceQuestionFlowProps) {
                 Your responses have been saved successfully. We appreciate you taking the time to map your problem surface.
               </p>
               <p className="text-white/40 text-base mb-10 max-w-lg mx-auto leading-relaxed">
-                Your personalised Vector Alignment Report will appear here once the prototype is fully operational. Stay tuned.
+                Your personalised Vekthös Alignment Report will appear here once the prototype is fully operational. Stay tuned.
               </p>
               <button
                 onClick={handleCancel}

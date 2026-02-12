@@ -216,7 +216,7 @@ export function NewHeader() {
                     {/* Main logo */}
                     <img
                       src="/images/vector-logo.svg"
-                      alt="VECTÖR"
+                      alt="VEKTHÖS"
                       className="h-6 sm:h-8 w-auto relative"
                     />
                   </motion.div>
@@ -346,7 +346,7 @@ export function NewHeader() {
             >
               <img
                 src="/images/vector-logo-full.svg"
-                alt="VECTÖR"
+                alt="VEKTHÖS"
                 className="h-5 w-auto"
               />
               <button
@@ -458,7 +458,7 @@ export function NewHeader() {
             >
               <img
                 src="/images/vector-logo-full.svg"
-                alt="VECTÖR"
+                alt="VEKTHÖS"
                 className="w-full max-w-3xl h-auto"
                 style={{
                   WebkitBackfaceVisibility: 'hidden',

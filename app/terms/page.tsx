@@ -23,7 +23,7 @@ export default function TermsPage() {
               <section className="mt-8">
                 <h2 className="text-xl md:text-2xl font-light text-white mb-4">Acceptance of Terms</h2>
                 <p>
-                  By accessing and using VECTÖR's platform and services, you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
+                  By accessing and using VEKTHÖS's platform and services, you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
                 </p>
               </section>
 
@@ -37,21 +37,21 @@ export default function TermsPage() {
               <section className="mt-8">
                 <h2 className="text-xl md:text-2xl font-light text-white mb-4">Intellectual Property</h2>
                 <p>
-                  The content, features, and functionality of VECTÖR's platform are owned by us and are protected by international copyright, trademark, and other intellectual property laws. Our research methodologies, analysis frameworks, and tools are proprietary to VECTÖR.
+                  The content, features, and functionality of VEKTHÖS's platform are owned by us and are protected by international copyright, trademark, and other intellectual property laws. Our research methodologies, analysis frameworks, and tools are proprietary to VEKTHÖS.
                 </p>
               </section>
 
               <section className="mt-8">
                 <h2 className="text-xl md:text-2xl font-light text-white mb-4">User Content</h2>
                 <p>
-                  You retain ownership of any content you submit through our platform, including responses to mapping sessions and analysis inputs. By submitting content, you grant VECTÖR a license to use, modify, and analyze this content for research and service improvement purposes.
+                  You retain ownership of any content you submit through our platform, including responses to mapping sessions and analysis inputs. By submitting content, you grant VEKTHÖS a license to use, modify, and analyze this content for research and service improvement purposes.
                 </p>
               </section>
 
               <section className="mt-8">
                 <h2 className="text-xl md:text-2xl font-light text-white mb-4">Limitation of Liability</h2>
                 <p>
-                  VECTÖR provides its services "as is" without warranties of any kind. We shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use our services.
+                  VEKTHÖS provides its services "as is" without warranties of any kind. We shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use our services.
                 </p>
               </section>
 
