@@ -32,8 +32,8 @@ export function Footer() {
             className="md:col-span-2"
           >
             <img
-              src="/images/vekthos-logo.svg"
-              alt="VEKTHÖS Logo"
+              src="/images/v-logo-white-simple.svg"
+              alt="V Logo"
               className="h-8 w-auto mb-6"
             />
             <p className="text-white/50 text-sm leading-relaxed max-w-sm">
