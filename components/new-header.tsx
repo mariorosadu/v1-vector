@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion"
 const navigationItems = [
   { label: "Publications", href: "/publications" },
   { 
-    label: "Toy Box", 
+    label: "Labs", 
     href: "/box",
     submenu: [
       { label: "Voice Flux", href: "/box/voiceflux" },
