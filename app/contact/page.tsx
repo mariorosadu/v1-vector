@@ -55,7 +55,7 @@ export default function ContactPage() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="text-white/30 text-xs tracking-wide"
         >
-          © 2026 VECTÖR
+          © 2026 VEKTHÖS
         </motion.div>
       </div>
     </main>

@@ -23,14 +23,14 @@ export default function PrivacyPage() {
               <section className="mt-8">
                 <h2 className="text-xl md:text-2xl font-light text-white mb-4">Information We Collect</h2>
                 <p>
-                  VECTÖR collects information that you provide directly to us when using our platform, including when you participate in problem surface mapping sessions, use our analysis tools, or communicate with us.
+                  VEKTHÖS collects information that you provide directly to us when using our platform, including when you participate in problem surface mapping sessions, use our analysis tools, or communicate with us.
                 </p>
               </section>
 
               <section className="mt-8">
                 <h2 className="text-xl md:text-2xl font-light text-white mb-4">How We Use Your Information</h2>
                 <p>
-                  We use the information we collect to provide, maintain, and improve our services, to develop new features, and to protect VECTÖR and our users. Your data helps us understand cognitive patterns and decision-making processes to enhance our research and tools.
+                  We use the information we collect to provide, maintain, and improve our services, to develop new features, and to protect VEKTHÖS and our users. Your data helps us understand cognitive patterns and decision-making processes to enhance our research and tools.
                 </p>
               </section>
 

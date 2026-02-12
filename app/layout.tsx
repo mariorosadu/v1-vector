@@ -18,8 +18,8 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.vekthos.com'
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: 'VECTÖR | Decision Intelligence',
-    template: '%s | VECTÖR',
+    default: 'VEKTHÖS | Decision Intelligence',
+    template: '%s | VEKTHÖS',
   },
   description: 'We prime human cognition to unlock artificial intelligence\'s full potential.',
   generator: 'v0.app',
@@ -34,13 +34,13 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: baseUrl,
-    title: 'VECTÖR | Decision Intelligence',
+    title: 'VEKTHÖS | Decision Intelligence',
     description: 'We prime human cognition to unlock artificial intelligence\'s full potential.',
-    siteName: 'VECTÖR',
+    siteName: 'VEKTHÖS',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'VECTÖR | Decision Intelligence',
+    title: 'VEKTHÖS | Decision Intelligence',
     description: 'We prime human cognition to unlock artificial intelligence\'s full potential.',
   },
   robots: {

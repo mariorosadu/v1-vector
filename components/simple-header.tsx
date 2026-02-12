@@ -33,7 +33,7 @@ export function SimpleHeader() {
             <div className="flex items-center">
               <img
                 src="/images/vector-logo-full.svg"
-                alt="VECTÖR"
+                alt="VEKTHÖS"
                 className="h-5 w-auto lg:hidden cursor-pointer"
                 onClick={() => router.push("/")}
               />
@@ -47,7 +47,7 @@ export function SimpleHeader() {
             >
               <img
                 src="/images/vector-logo.svg"
-                alt="VECTÖR"
+                alt="VEKTHÖS"
                 className="h-8 w-auto"
               />
             </motion.button>
@@ -174,7 +174,7 @@ export function SimpleHeader() {
             >
               <img
                 src="/images/vector-logo-full.svg"
-                alt="VECTÖR"
+                alt="VEKTHÖS"
                 className="h-5 w-auto"
               />
               <button
