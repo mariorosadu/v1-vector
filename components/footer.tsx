@@ -57,7 +57,7 @@ export function Footer() {
                 <li key={item.label}>
                   <button
                     onClick={() => handleNavigation(item.href)}
-                    className="text-white/60 text-sm hover:text-white transition-colors text-left"
+                    className="text-white/60 text-sm hover:text-white transition-colors text-left cursor-pointer"
                   >
                     {item.label}
                   </button>
@@ -84,7 +84,7 @@ export function Footer() {
                 <li key={item.label}>
                   <button
                     onClick={() => handleNavigation(item.href)}
-                    className="text-white/60 text-sm hover:text-white transition-colors text-left"
+                    className="text-white/60 text-sm hover:text-white transition-colors text-left cursor-pointer"
                   >
                     {item.label}
                   </button>
@@ -108,7 +108,7 @@ export function Footer() {
                 <li key={item.label}>
                   <button
                     onClick={() => handleNavigation(item.href)}
-                    className="text-white/60 text-sm hover:text-white transition-colors text-left"
+                    className="text-white/60 text-sm hover:text-white transition-colors text-left cursor-pointer"
                   >
                     {item.label}
                   </button>
@@ -130,13 +130,13 @@ export function Footer() {
           <div className="flex items-center gap-6 mt-4 md:mt-0">
             <button
               onClick={() => handleNavigation("/privacy")}
-              className="text-white/30 text-xs hover:text-white/60 transition-colors"
+              className="text-white/30 text-xs hover:text-white/60 transition-colors cursor-pointer"
             >
               Privacy
             </button>
             <button
               onClick={() => handleNavigation("/terms")}
-              className="text-white/30 text-xs hover:text-white/60 transition-colors"
+              className="text-white/30 text-xs hover:text-white/60 transition-colors cursor-pointer"
             >
               Terms
             </button>
