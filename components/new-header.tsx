@@ -194,7 +194,7 @@ export function NewHeader() {
                   >
                     {/* Chromatic aberration effect layers */}
                     <motion.img
-                      src="/images/vector-logo.svg"
+                      src="/images/vekthos-logo.svg"
                       alt=""
                       className="h-6 sm:h-8 w-auto absolute inset-0 opacity-30"
                       initial={{ x: -2, filter: "hue-rotate(0deg)" }}
@@ -204,7 +204,7 @@ export function NewHeader() {
                       aria-hidden="true"
                     />
                     <motion.img
-                      src="/images/vector-logo.svg"
+                      src="/images/vekthos-logo.svg"
                       alt=""
                       className="h-6 sm:h-8 w-auto absolute inset-0 opacity-30"
                       initial={{ x: 2, filter: "hue-rotate(180deg)" }}
@@ -215,7 +215,7 @@ export function NewHeader() {
                     />
                     {/* Main logo */}
                     <img
-                      src="/images/vector-logo.svg"
+                      src="/images/vekthos-logo.svg"
                       alt="VEKTHÖS"
                       className="h-6 sm:h-8 w-auto relative"
                     />
@@ -345,7 +345,7 @@ export function NewHeader() {
               }}
             >
               <img
-                src="/images/vector-logo-full.svg"
+                src="/images/vekthos-logo.svg"
                 alt="VEKTHÖS"
                 className="h-5 w-auto"
               />
@@ -457,7 +457,7 @@ export function NewHeader() {
               }}
             >
               <img
-                src="/images/vector-logo-full.svg"
+                src="/images/vekthos-logo.svg"
                 alt="VEKTHÖS"
                 className="w-full max-w-3xl h-auto"
                 style={{

@@ -74,7 +74,7 @@ export function StickyHeader() {
               aria-label="Go to home"
             >
               <img
-                src="/images/vector-logo.svg"
+                src="/images/vekthos-logo.svg"
                 alt="VEKTHÖS Logo"
                 className="h-16 md:h-24 lg:h-32 w-auto"
               />
