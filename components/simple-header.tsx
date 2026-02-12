@@ -32,7 +32,7 @@ export function SimpleHeader() {
             {/* Left - Logo (Mobile only, desktop logo is centered) */}
             <div className="flex items-center">
               <img
-                src="/images/vector-logo-full.svg"
+                src="/images/vekthos-logo.svg"
                 alt="VEKTHÖS"
                 className="h-5 w-auto lg:hidden cursor-pointer"
                 onClick={() => router.push("/")}
@@ -46,7 +46,7 @@ export function SimpleHeader() {
               whileHover={{ scale: 1.05 }}
             >
               <img
-                src="/images/vector-logo.svg"
+                src="/images/vekthos-logo.svg"
                 alt="VEKTHÖS"
                 className="h-8 w-auto"
               />
@@ -173,7 +173,7 @@ export function SimpleHeader() {
               }}
             >
               <img
-                src="/images/vector-logo-full.svg"
+                src="/images/vekthos-logo.svg"
                 alt="VEKTHÖS"
                 className="h-5 w-auto"
               />
