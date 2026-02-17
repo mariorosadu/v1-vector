@@ -3,14 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 
 export const maxDuration = 30
 
-type Stage = 'objective' | 'qualitative' | 'quantitative' | 'complete'
+type Stage = 'problem_surface' | 'qualitative' | 'quantitative' | 'complete'
 
 interface ProgressState {
-  objectiveProgress: number
-  qualitativeProgress: number
-  quantitativeProgress: number
+  overallProgress: number
   currentStage: Stage
-  objectiveClarity: number
+  questionCount: number
 }
 
 export async function POST(req: Request) {
@@ -18,11 +16,9 @@ export async function POST(req: Request) {
     const { messages, currentQuestion, progress, sessionId } = await req.json()
 
     const currentProgress: ProgressState = progress || {
-      objectiveProgress: 0,
-      qualitativeProgress: 0,
-      quantitativeProgress: 0,
-      currentStage: 'objective' as Stage,
-      objectiveClarity: 0
+      overallProgress: 0,
+      currentStage: 'problem_surface' as Stage,
+      questionCount: 0
     }
 
     // Initialize Supabase client
@@ -33,68 +29,63 @@ export async function POST(req: Request) {
 
     // Determine system prompt based on current stage
     let systemPrompt = ''
+    const questionsAsked = currentProgress.questionCount
     
-    if (currentProgress.currentStage === 'objective') {
-      systemPrompt = `You are a metacognition guide in the OBJECTIVE DEFINITION phase.
+    if (currentProgress.currentStage === 'problem_surface') {
+      systemPrompt = `You are a metacognition guide helping map the PROBLEM SURFACE.
 
-Your goal: Help the user clearly define their objective through ${5 - messages.length} more targeted questions.
+Total questions in this phase: 4
+Current question: ${questionsAsked + 1}/4
 
-Current objective clarity: ${currentProgress.objectiveClarity}/100
+Ask ONE concise, insightful question to understand:
+1. WHAT they want to achieve (objective definition)
+2. WHY this objective matters (motivation)
+3. Key constraints or requirements
+4. Success criteria and implicit assumptions
 
-Ask ONE concise question that:
-1. Clarifies WHAT they want to achieve specifically
-2. Explores WHY this objective matters to them
-3. Identifies key constraints or requirements
-4. Reveals implicit assumptions about success
+After 4 questions, transition to qualitative analysis.
 
-Progress heuristics:
-- Strong specificity in answer = +20 clarity
-- Clear motivation stated = +15 clarity
-- Constraints identified = +10 clarity
-- Vague or general answers = +5 clarity
-
-Once clarity reaches 100, move to qualitative phase.
-
-Return a JSON object with:
+Return a JSON object:
 {
   "question": "Your next question here",
-  "clarityGain": <number 5-20>,
   "reasoning": "Brief reasoning for this question"
 }`
     } else if (currentProgress.currentStage === 'qualitative') {
-      systemPrompt = `You are a metacognition guide in the QUALITATIVE ANALYSIS phase.
+      systemPrompt = `You are a metacognition guide in QUALITATIVE (QUALIA) ANALYSIS.
 
-The user's objective is now clear. Ask questions to understand the QUALITATIVE aspects:
+Total questions in this phase: 3
+Current question: ${questionsAsked - 4 + 1}/3
+
+The problem surface is mapped. Now explore QUALITATIVE aspects:
 - Values and principles involved
 - Emotional/psychological factors
-- Stakeholder perspectives
-- Quality measures and standards
+- Stakeholder perspectives and quality standards
 - Contextual considerations
 
 Ask ONE question that deepens qualitative understanding.
 
-Return a JSON object with:
+Return a JSON object:
 {
   "question": "Your next question here",
-  "progressGain": <number 15-25>,
   "reasoning": "Brief reasoning"
 }`
     } else if (currentProgress.currentStage === 'quantitative') {
-      systemPrompt = `You are a metacognition guide in the QUANTITATIVE ANALYSIS phase.
+      systemPrompt = `You are a metacognition guide in QUANTITATIVE (QUANTA) ANALYSIS.
 
-Ask questions to gather QUANTITATIVE information:
+Total questions in this phase: 3
+Current question: ${questionsAsked - 7 + 1}/3
+
+Now gather QUANTITATIVE information:
 - Specific metrics and KPIs
 - Timelines and deadlines
 - Budget/resource constraints
-- Scale and scope numbers
-- Success thresholds
+- Scale, scope, and measurable success thresholds
 
 Ask ONE question that captures measurable data.
 
-Return a JSON object with:
+Return a JSON object:
 {
   "question": "Your next question here",
-  "progressGain": <number 15-25>,
   "reasoning": "Brief reasoning"
 }`
     } else {
@@ -142,32 +133,20 @@ Return a JSON object with:
 
     // Update progress based on response
     const newProgress = { ...currentProgress }
+    newProgress.questionCount += 1
 
-    if (currentProgress.currentStage === 'objective') {
-      newProgress.objectiveClarity += parsedResponse.clarityGain || 10
-      newProgress.objectiveProgress = Math.min(100, (newProgress.objectiveClarity / 100) * 100)
-      
-      // Transition to qualitative when objective is clear
-      if (newProgress.objectiveClarity >= 100) {
-        newProgress.currentStage = 'qualitative'
-        newProgress.objectiveProgress = 100
-      }
-    } else if (currentProgress.currentStage === 'qualitative') {
-      newProgress.qualitativeProgress = Math.min(100, newProgress.qualitativeProgress + (parsedResponse.progressGain || 20))
-      
-      // Transition to quantitative after ~5 qualitative questions
-      if (newProgress.qualitativeProgress >= 100) {
-        newProgress.currentStage = 'quantitative'
-        newProgress.qualitativeProgress = 100
-      }
-    } else if (currentProgress.currentStage === 'quantitative') {
-      newProgress.quantitativeProgress = Math.min(100, newProgress.quantitativeProgress + (parsedResponse.progressGain || 20))
-      
-      // Complete after quantitative is done
-      if (newProgress.quantitativeProgress >= 100) {
-        newProgress.currentStage = 'complete'
-        newProgress.quantitativeProgress = 100
-      }
+    // Total of 10 questions: 4 problem surface + 3 qualitative + 3 quantitative
+    // Each question = 10% progress
+    newProgress.overallProgress = Math.min(100, (newProgress.questionCount / 10) * 100)
+
+    // Stage transitions based on question count
+    if (currentProgress.currentStage === 'problem_surface' && newProgress.questionCount >= 4) {
+      newProgress.currentStage = 'qualitative'
+    } else if (currentProgress.currentStage === 'qualitative' && newProgress.questionCount >= 7) {
+      newProgress.currentStage = 'quantitative'
+    } else if (currentProgress.currentStage === 'quantitative' && newProgress.questionCount >= 10) {
+      newProgress.currentStage = 'complete'
+      newProgress.overallProgress = 100
     }
 
     // Save the current question-answer pair to database
@@ -179,10 +158,8 @@ Return a JSON object with:
         question: currentQuestion,
         answer: lastUserMessage.content,
         stage: currentProgress.currentStage,
-        question_index: messages.filter((m: any) => m.role === 'user').length,
-        objective_progress: newProgress.objectiveProgress,
-        qualitative_progress: newProgress.qualitativeProgress,
-        quantitative_progress: newProgress.quantitativeProgress
+        question_index: newProgress.questionCount,
+        overall_progress: newProgress.overallProgress
       })
     }
 

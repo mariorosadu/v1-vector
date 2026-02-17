@@ -14,14 +14,12 @@ interface Message {
   timestamp: number
 }
 
-type Stage = 'objective' | 'qualitative' | 'quantitative' | 'complete'
+type Stage = 'problem_surface' | 'qualitative' | 'quantitative' | 'complete'
 
 interface ProgressState {
-  objectiveProgress: number
-  qualitativeProgress: number
-  quantitativeProgress: number
+  overallProgress: number
   currentStage: Stage
-  objectiveClarity: number
+  questionCount: number
 }
 
 export default function ProtectedMetacognitionPage() {
@@ -34,11 +32,9 @@ export default function ProtectedMetacognitionPage() {
   const [isBouncing, setIsBouncing] = useState(false)
   const [viewportTop, setViewportTop] = useState(0)
   const [progress, setProgress] = useState<ProgressState>({
-    objectiveProgress: 0,
-    qualitativeProgress: 0,
-    quantitativeProgress: 0,
-    currentStage: 'objective',
-    objectiveClarity: 0
+    overallProgress: 0,
+    currentStage: 'problem_surface',
+    questionCount: 0
   })
   const [queuedInput, setQueuedInput] = useState<string>("")
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
@@ -231,9 +227,7 @@ export default function ProtectedMetacognitionPage() {
         >
           <div className="bg-black rounded-3xl px-6 py-5 md:px-8 md:py-6 border border-white/10">
             {/* Completion state */}
-            {progress.objectiveProgress === 100 && 
-             progress.qualitativeProgress === 100 && 
-             progress.quantitativeProgress === 100 ? (
+            {progress.overallProgress === 100 ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -295,76 +289,31 @@ export default function ProtectedMetacognitionPage() {
                 {/* Divider */}
                 <div className="h-px bg-white/10 mb-5" />
 
-                {/* Dynamic Status Bar */}
-                <AnimatePresence mode="wait">
-                  {progress.objectiveProgress < 100 ? (
+                {/* Single Unified Progress Bar */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white/50 text-[11px] font-medium tracking-wider uppercase">
+                      {progress.currentStage === 'problem_surface' && 'Problem Surface Mapping'}
+                      {progress.currentStage === 'qualitative' && 'Qualitative Analysis'}
+                      {progress.currentStage === 'quantitative' && 'Quantitative Analysis'}
+                    </span>
+                    <span className="text-white/30 text-[11px] font-mono">
+                      {progress.questionCount}/10
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                     <motion.div
-                      key="objective"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.4, ease: "easeOut" }}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-white/50 text-[11px] font-medium tracking-wider uppercase">
-                          Objective Definition
-                        </span>
-                        <span className="text-white/30 text-[11px] font-mono">
-                          {Math.round(progress.objectiveProgress)}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${progress.objectiveProgress}%` }}
-                          transition={{ duration: 0.8, ease: "easeOut" }}
-                        />
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="analysis"
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.5, ease: "easeOut" }}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-white/50 text-[11px] font-medium tracking-wider uppercase">
-                          Qualitative & Quantitative Analysis
-                        </span>
-                        <span className="text-white/30 text-[11px] font-mono">
-                          {Math.round((progress.qualitativeProgress + progress.quantitativeProgress) / 2)}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
-                        <div className="flex h-full">
-                          <motion.div
-                            className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${progress.qualitativeProgress / 2}%` }}
-                            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-                          />
-                          <motion.div
-                            className="h-full bg-gradient-to-r from-pink-500 to-orange-500"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${progress.quantitativeProgress / 2}%` }}
-                            transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
-                          />
-                        </div>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-white/20 text-[10px] font-mono">
-                          Qualitative: {Math.round(progress.qualitativeProgress)}%
-                        </span>
-                        <span className="text-white/20 text-[10px] font-mono">
-                          Quantitative: {Math.round(progress.quantitativeProgress)}%
-                        </span>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress.overallProgress}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                    />
+                  </div>
+                </motion.div>
               </>
             )}
           </div>
@@ -372,9 +321,7 @@ export default function ProtectedMetacognitionPage() {
       </div>
 
       {/* Input area */}
-      {!(progress.objectiveProgress === 100 && 
-         progress.qualitativeProgress === 100 && 
-         progress.quantitativeProgress === 100) && (
+      {progress.overallProgress < 100 && (
         <div
           ref={inputBarRef}
           className="fixed left-0 right-0 z-20 px-4 py-3 md:px-8 md:py-4 bg-[#0f0f0f]"
