@@ -28,6 +28,23 @@ export default function MetacognitionPage() {
   const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [question, setQuestion] = useState("Which objective do you want to achieve?")
+  const [input, setInput] = useState("")
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isBouncing, setIsBouncing] = useState(false)
+  const [viewportTop, setViewportTop] = useState(0)
+  const [progress, setProgress] = useState<ProgressState>({
+    objectiveProgress: 0,
+    qualitativeProgress: 0,
+    quantitativeProgress: 0,
+    currentStage: 'objective',
+    objectiveClarity: 0
+  })
+  const [queuedInput, setQueuedInput] = useState<string>("")
+  const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const inputBarRef = useRef<HTMLDivElement>(null)
 
   // Check if user is already authenticated and redirect
   useEffect(() => {
@@ -56,34 +73,12 @@ export default function MetacognitionPage() {
     }
   }
 
-  const [question, setQuestion] = useState("Which objective do you want to achieve?")
-  const [input, setInput] = useState("")
-  const [messages, setMessages] = useState<Message[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isBouncing, setIsBouncing] = useState(false)
-  const [viewportTop, setViewportTop] = useState(0)
-  const [progress, setProgress] = useState<ProgressState>({
-    objectiveProgress: 0,
-    qualitativeProgress: 0,
-    quantitativeProgress: 0,
-    currentStage: 'objective',
-    objectiveClarity: 0
-  })
-  const [queuedInput, setQueuedInput] = useState<string>("")
-  const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
-  const inputBarRef = useRef<HTMLDivElement>(null)
-
-  // iOS Safari fix: use `top` + translateY(-100%) to pin input above keyboard
-  // This is the proven technique since iOS ignores `bottom` on fixed elements
-  // when the keyboard is open
+  // iOS Safari fix
   useEffect(() => {
     const vv = window.visualViewport
     if (!vv) return
 
     const update = () => {
-      // vv.height = visible area height (shrinks when keyboard opens)
-      // vv.offsetTop = how much Safari scrolled the layout viewport
       setViewportTop(vv.offsetTop + vv.height)
     }
 
@@ -141,26 +136,19 @@ export default function MetacognitionPage() {
       const data = await response.json()
       
       if (data.question) {
-        // Additional safeguard: clean any remaining JSON artifacts from question text
         let cleanQuestion = data.question.trim()
-        
-        // Remove any remaining markdown code blocks
         cleanQuestion = cleanQuestion.replace(/```json|```/g, '').trim()
-        
-        // If question somehow contains JSON structure, extract just the question field
         if (cleanQuestion.startsWith('{') && cleanQuestion.includes('"question"')) {
           try {
             const parsed = JSON.parse(cleanQuestion)
             cleanQuestion = parsed.question || cleanQuestion
           } catch {
-            // If parsing fails, try to extract question value with regex
             const questionMatch = cleanQuestion.match(/"question":\s*"([^"]+)"/)
             if (questionMatch) {
               cleanQuestion = questionMatch[1]
             }
           }
         }
-        
         setQuestion(cleanQuestion)
       }
       
@@ -171,7 +159,6 @@ export default function MetacognitionPage() {
       console.error('Error sending message:', error)
     } finally {
       setIsLoading(false)
-      // Refocus input after completing the update
       setTimeout(() => {
         inputRef.current?.focus()
       }, 50)
@@ -181,10 +168,8 @@ export default function MetacognitionPage() {
   // Process queued input when loading completes
   useEffect(() => {
     if (!isLoading && queuedInput.trim()) {
-      console.log("[v0] Processing queued input:", queuedInput)
       setInput(queuedInput)
       setQueuedInput("")
-      // Focus the input to show cursor
       setTimeout(() => {
         inputRef.current?.focus()
       }, 50)
@@ -195,8 +180,6 @@ export default function MetacognitionPage() {
     if (e.key === 'Enter') {
       e.preventDefault()
       if (isLoading) {
-        // Queue the input if interface is still updating
-        console.log("[v0] Queueing input during update:", input)
         setQueuedInput(input)
         setInput("")
       } else {
@@ -205,11 +188,28 @@ export default function MetacognitionPage() {
     }
   }
 
-  return (
-    <div className="bg-[#0f0f0f] h-dvh w-full overflow-hidden">
-      <SimpleHeader />
+  // Show loading while checking authentication
+  if (isAuthenticated === null) {
+    return (
+      <div className="h-[100dvh] w-full flex items-center justify-center bg-[#0a0a0a]">
+        <Loader2 className="w-8 h-8 text-white/50 animate-spin" />
+      </div>
+    )
+  }
 
-      {/* Question bar with integrated status bar - vertically centered in available space */}
+  return (
+    <div className="h-[100dvh] w-full flex flex-col relative bg-[#0a0a0a] overflow-hidden">
+      <SimpleHeader />
+      
+      {/* Background with proper viewport height containment */}
+      <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden"
+        style={{
+          background: 'radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.03) 0%, transparent 50%)'
+        }}
+      >
+      </div>
+
+      {/* Question bar with integrated status bar - vertically centered */}
       <div className="fixed inset-0 flex items-center justify-center z-10 px-4 md:px-8 pointer-events-none">
         <motion.div
           key={question}
@@ -227,7 +227,7 @@ export default function MetacognitionPage() {
           className="max-w-2xl w-full pointer-events-auto"
         >
           <div className="bg-black rounded-3xl px-6 py-5 md:px-8 md:py-6 border border-white/10">
-            {/* Show completion message when both stages are at 100% */}
+            {/* Completion state */}
             {progress.objectiveProgress === 100 && 
              progress.qualitativeProgress === 100 && 
              progress.quantitativeProgress === 100 ? (
@@ -292,10 +292,9 @@ export default function MetacognitionPage() {
                 {/* Divider */}
                 <div className="h-px bg-white/10 mb-5" />
 
-                {/* Dynamic Status Bar - Transitions based on progress */}
+                {/* Dynamic Status Bar */}
                 <AnimatePresence mode="wait">
                   {progress.objectiveProgress < 100 ? (
-                    // Objective Definition Status Bar
                     <motion.div
                       key="objective"
                       initial={{ opacity: 0, y: 10 }}
@@ -321,7 +320,6 @@ export default function MetacognitionPage() {
                       </div>
                     </motion.div>
                   ) : (
-                    // Combined Qualitative & Quantitative Analysis Status Bar
                     <motion.div
                       key="analysis"
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -412,8 +410,7 @@ export default function MetacognitionPage() {
         </motion.div>
       </div>
 
-      {/* Input area - pinned to visual viewport bottom using top + translateY(-100%)
-          This is the proven iOS Safari keyboard fix */}
+      {/* Input area */}
       {isAuthenticated !== false && !(progress.objectiveProgress === 100 && 
          progress.qualitativeProgress === 100 && 
          progress.quantitativeProgress === 100) && (
