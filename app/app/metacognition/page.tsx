@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { SimpleHeader } from "@/components/simple-header"
 import { motion, AnimatePresence } from "framer-motion"
-import { Send, Loader2 } from "lucide-react"
+import { Send, Loader2, LogOut } from "lucide-react"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
@@ -24,38 +24,9 @@ interface ProgressState {
   objectiveClarity: number
 }
 
-export default function MetacognitionPage() {
+export default function ProtectedMetacognitionPage() {
   const router = useRouter()
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-
-  // Check if user is already authenticated and redirect
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        router.replace('/app/metacognition')
-      } else {
-        setIsAuthenticated(false)
-      }
-    })
-  }, [router])
-
-  const handleGoogleLogin = async () => {
-    setIsGoogleLoading(true)
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/app/metacognition`,
-      },
-    })
-    if (error) {
-      console.error('Google login error:', error.message)
-      setIsGoogleLoading(false)
-    }
-  }
-
+  const [userName, setUserName] = useState<string | null>(null)
   const [question, setQuestion] = useState("Which objective do you want to achieve?")
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<Message[]>([])
@@ -74,16 +45,30 @@ export default function MetacognitionPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const inputBarRef = useRef<HTMLDivElement>(null)
 
-  // iOS Safari fix: use `top` + translateY(-100%) to pin input above keyboard
-  // This is the proven technique since iOS ignores `bottom` on fixed elements
-  // when the keyboard is open
+  // Check auth and get user info
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        router.replace('/box/metacognition')
+      } else {
+        setUserName(user.user_metadata?.full_name || user.email || 'User')
+      }
+    })
+  }, [router])
+
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.replace('/box/metacognition')
+  }
+
+  // iOS Safari fix
   useEffect(() => {
     const vv = window.visualViewport
     if (!vv) return
 
     const update = () => {
-      // vv.height = visible area height (shrinks when keyboard opens)
-      // vv.offsetTop = how much Safari scrolled the layout viewport
       setViewportTop(vv.offsetTop + vv.height)
     }
 
@@ -141,26 +126,19 @@ export default function MetacognitionPage() {
       const data = await response.json()
       
       if (data.question) {
-        // Additional safeguard: clean any remaining JSON artifacts from question text
         let cleanQuestion = data.question.trim()
-        
-        // Remove any remaining markdown code blocks
         cleanQuestion = cleanQuestion.replace(/```json|```/g, '').trim()
-        
-        // If question somehow contains JSON structure, extract just the question field
         if (cleanQuestion.startsWith('{') && cleanQuestion.includes('"question"')) {
           try {
             const parsed = JSON.parse(cleanQuestion)
             cleanQuestion = parsed.question || cleanQuestion
           } catch {
-            // If parsing fails, try to extract question value with regex
             const questionMatch = cleanQuestion.match(/"question":\s*"([^"]+)"/)
             if (questionMatch) {
               cleanQuestion = questionMatch[1]
             }
           }
         }
-        
         setQuestion(cleanQuestion)
       }
       
@@ -171,7 +149,6 @@ export default function MetacognitionPage() {
       console.error('Error sending message:', error)
     } finally {
       setIsLoading(false)
-      // Refocus input after completing the update
       setTimeout(() => {
         inputRef.current?.focus()
       }, 50)
@@ -181,10 +158,8 @@ export default function MetacognitionPage() {
   // Process queued input when loading completes
   useEffect(() => {
     if (!isLoading && queuedInput.trim()) {
-      console.log("[v0] Processing queued input:", queuedInput)
       setInput(queuedInput)
       setQueuedInput("")
-      // Focus the input to show cursor
       setTimeout(() => {
         inputRef.current?.focus()
       }, 50)
@@ -195,8 +170,6 @@ export default function MetacognitionPage() {
     if (e.key === 'Enter') {
       e.preventDefault()
       if (isLoading) {
-        // Queue the input if interface is still updating
-        console.log("[v0] Queueing input during update:", input)
         setQueuedInput(input)
         setInput("")
       } else {
@@ -205,11 +178,41 @@ export default function MetacognitionPage() {
     }
   }
 
+  if (!userName) {
+    return (
+      <div className="bg-[#0f0f0f] h-dvh w-full flex items-center justify-center">
+        <Loader2 className="w-6 h-6 text-white/40 animate-spin" />
+      </div>
+    )
+  }
+
   return (
     <div className="bg-[#0f0f0f] h-dvh w-full overflow-hidden">
-      <SimpleHeader />
+      {/* Custom header with sign out */}
+      <nav className="fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-6 py-4 md:px-8">
+        <div className="flex items-center gap-3">
+          <Image
+            src="/v-logo-white.svg"
+            alt="V Logo"
+            width={24}
+            height={24}
+            className="opacity-70"
+          />
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-white/50 text-sm hidden sm:block">{userName}</span>
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-2 text-white/40 hover:text-white/70 transition-colors text-sm"
+            aria-label="Sign out"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Sign out</span>
+          </button>
+        </div>
+      </nav>
 
-      {/* Question bar with integrated status bar - vertically centered in available space */}
+      {/* Question bar with integrated status bar - vertically centered */}
       <div className="fixed inset-0 flex items-center justify-center z-10 px-4 md:px-8 pointer-events-none">
         <motion.div
           key={question}
@@ -227,7 +230,7 @@ export default function MetacognitionPage() {
           className="max-w-2xl w-full pointer-events-auto"
         >
           <div className="bg-black rounded-3xl px-6 py-5 md:px-8 md:py-6 border border-white/10">
-            {/* Show completion message when both stages are at 100% */}
+            {/* Completion state */}
             {progress.objectiveProgress === 100 && 
              progress.qualitativeProgress === 100 && 
              progress.quantitativeProgress === 100 ? (
@@ -292,10 +295,9 @@ export default function MetacognitionPage() {
                 {/* Divider */}
                 <div className="h-px bg-white/10 mb-5" />
 
-                {/* Dynamic Status Bar - Transitions based on progress */}
+                {/* Dynamic Status Bar */}
                 <AnimatePresence mode="wait">
                   {progress.objectiveProgress < 100 ? (
-                    // Objective Definition Status Bar
                     <motion.div
                       key="objective"
                       initial={{ opacity: 0, y: 10 }}
@@ -321,7 +323,6 @@ export default function MetacognitionPage() {
                       </div>
                     </motion.div>
                   ) : (
-                    // Combined Qualitative & Quantitative Analysis Status Bar
                     <motion.div
                       key="analysis"
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -367,54 +368,11 @@ export default function MetacognitionPage() {
               </>
             )}
           </div>
-
-          {/* Continue with Google button */}
-          {isAuthenticated === false && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
-              className="mt-4"
-            >
-              <button
-                onClick={handleGoogleLogin}
-                disabled={isGoogleLoading}
-                className="w-full flex items-center justify-center gap-3 bg-white/[0.07] hover:bg-white/[0.12] border border-white/10 hover:border-white/20 rounded-2xl px-6 py-4 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isGoogleLoading ? (
-                  <Loader2 className="w-5 h-5 text-white/70 animate-spin" />
-                ) : (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-                      fill="#4285F4"
-                    />
-                    <path
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      fill="#34A853"
-                    />
-                    <path
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                      fill="#FBBC05"
-                    />
-                    <path
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                      fill="#EA4335"
-                    />
-                  </svg>
-                )}
-                <span className="text-white/80 text-sm font-medium">
-                  {isGoogleLoading ? 'Redirecting...' : 'Continue with Google'}
-                </span>
-              </button>
-            </motion.div>
-          )}
         </motion.div>
       </div>
 
-      {/* Input area - pinned to visual viewport bottom using top + translateY(-100%)
-          This is the proven iOS Safari keyboard fix */}
-      {isAuthenticated !== false && !(progress.objectiveProgress === 100 && 
+      {/* Input area */}
+      {!(progress.objectiveProgress === 100 && 
          progress.qualitativeProgress === 100 && 
          progress.quantitativeProgress === 100) && (
         <div
