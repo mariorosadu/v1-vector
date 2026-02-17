@@ -122,10 +122,15 @@ export default function MetacognitionPage() {
   const handleSendCraftedPrompt = async () => {
     if (!craftedPrompt.trim() || isChatLoading) return
 
+    console.log('[v0] Sending crafted prompt to chat:', craftedPrompt)
+
+    // appendChat expects just the message content
     await appendChat({
       role: 'user',
       content: craftedPrompt,
     })
+
+    console.log('[v0] Crafted prompt sent successfully')
 
     // Reset clarification state for a new cycle
     setCraftedPrompt("")
