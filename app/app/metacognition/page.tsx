@@ -127,19 +127,25 @@ export default function ProtectedMetacognitionPage() {
     if (!craftedPrompt.trim() || isChatLoading) return
 
     console.log('[v0] Sending crafted prompt to chat:', craftedPrompt)
+    console.log('[v0] Current chat messages count:', chatMessages.length)
 
-    // appendChat expects just the message content
-    await appendChat({
-      role: 'user',
-      content: craftedPrompt,
-    })
+    try {
+      // useChat's append function - sends user message and gets AI response
+      await appendChat({
+        role: 'user',
+        content: craftedPrompt,
+      })
 
-    console.log('[v0] Crafted prompt sent successfully')
+      console.log('[v0] Crafted prompt sent successfully')
+      console.log('[v0] New chat messages count:', chatMessages.length)
 
-    // Reset clarification state for a new cycle
-    setCraftedPrompt("")
-    setClarifyMessages([])
-    setClarifyingQuestion("What else would you like to explore?")
+      // Reset clarification state for a new cycle
+      setCraftedPrompt("")
+      setClarifyMessages([])
+      setClarifyingQuestion("What else would you like to explore?")
+    } catch (error) {
+      console.error('[v0] Error sending crafted prompt:', error)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -270,8 +276,8 @@ export default function ProtectedMetacognitionPage() {
                       </div>
                       <button
                         onClick={handleSendCraftedPrompt}
-                        disabled={isChatLoading}
-                        className="flex-shrink-0 flex items-center gap-2 bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:cursor-not-allowed border border-white/15 hover:border-white/25 rounded-xl px-4 py-2.5 transition-all duration-200"
+                        disabled={!craftedPrompt.trim() || isChatLoading}
+                        className="flex-shrink-0 flex items-center gap-2 bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed border border-white/15 hover:border-white/25 rounded-xl px-4 py-2.5 transition-all duration-200"
                         aria-label="Send crafted prompt"
                       >
                         {isChatLoading ? (
