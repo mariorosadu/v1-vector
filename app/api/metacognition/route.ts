@@ -1,195 +1,69 @@
 import { generateText } from 'ai'
-import { createClient } from '@supabase/supabase-js'
 
 export const maxDuration = 30
 
-type Stage = 'objective' | 'qualitative' | 'quantitative' | 'complete'
-
-interface ProgressState {
-  objectiveProgress: number
-  qualitativeProgress: number
-  quantitativeProgress: number
-  currentStage: Stage
-  objectiveClarity: number
-}
-
 export async function POST(req: Request) {
   try {
-    const { messages, currentQuestion, progress, sessionId } = await req.json()
+    const { messages, craftedPrompt } = await req.json()
 
-    const currentProgress: ProgressState = progress || {
-      objectiveProgress: 0,
-      qualitativeProgress: 0,
-      quantitativeProgress: 0,
-      currentStage: 'objective' as Stage,
-      objectiveClarity: 0
-    }
+    // Build conversation context for the AI
+    const conversationHistory = messages.map((m: { role: string; content: string }) => ({
+      role: m.role,
+      content: m.content,
+    }))
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    const systemPrompt = `You are a metacognition assistant that helps users clarify their intent. You have TWO jobs on every response:
 
-    // Determine system prompt based on current stage
-    let systemPrompt = ''
-    
-    if (currentProgress.currentStage === 'objective') {
-      systemPrompt = `You are a metacognition guide in the OBJECTIVE DEFINITION phase.
+1. **Clarifying Question**: Ask ONE short, incisive question to better understand what the user truly wants. Focus on uncovering implicit assumptions, constraints, desired tone, audience, scope, or success criteria. Be concise - one sentence max.
 
-Your goal: Help the user clearly define their objective through ${5 - messages.length} more targeted questions.
+2. **Crafted Prompt**: Based on everything the user has said so far, write a SHORT, refined prompt that captures their true intent. This prompt will later be sent to an AI to generate a response. It should be clear, specific, and well-structured. Incorporate any new information from the latest answer.
 
-Current objective clarity: ${currentProgress.objectiveClarity}/100
+${craftedPrompt ? `The current crafted prompt is: "${craftedPrompt}". Refine it based on the user's latest response.` : 'This is the first message. Create an initial crafted prompt from what the user described.'}
 
-Ask ONE concise question that:
-1. Clarifies WHAT they want to achieve specifically
-2. Explores WHY this objective matters to them
-3. Identifies key constraints or requirements
-4. Reveals implicit assumptions about success
-
-Progress heuristics:
-- Strong specificity in answer = +20 clarity
-- Clear motivation stated = +15 clarity
-- Constraints identified = +10 clarity
-- Vague or general answers = +5 clarity
-
-Once clarity reaches 100, move to qualitative phase.
-
-Return a JSON object with:
+IMPORTANT: Return ONLY a JSON object with exactly these two fields:
 {
-  "question": "Your next question here",
-  "clarityGain": <number 5-20>,
-  "reasoning": "Brief reasoning for this question"
-}`
-    } else if (currentProgress.currentStage === 'qualitative') {
-      systemPrompt = `You are a metacognition guide in the QUALITATIVE ANALYSIS phase.
+  "question": "Your clarifying question here",
+  "craftedPrompt": "The refined prompt here"
+}
 
-The user's objective is now clear. Ask questions to understand the QUALITATIVE aspects:
-- Values and principles involved
-- Emotional/psychological factors
-- Stakeholder perspectives
-- Quality measures and standards
-- Contextual considerations
-
-Ask ONE question that deepens qualitative understanding.
-
-Return a JSON object with:
-{
-  "question": "Your next question here",
-  "progressGain": <number 15-25>,
-  "reasoning": "Brief reasoning"
-}`
-    } else if (currentProgress.currentStage === 'quantitative') {
-      systemPrompt = `You are a metacognition guide in the QUANTITATIVE ANALYSIS phase.
-
-Ask questions to gather QUANTITATIVE information:
-- Specific metrics and KPIs
-- Timelines and deadlines
-- Budget/resource constraints
-- Scale and scope numbers
-- Success thresholds
-
-Ask ONE question that captures measurable data.
-
-Return a JSON object with:
-{
-  "question": "Your next question here",
-  "progressGain": <number 15-25>,
-  "reasoning": "Brief reasoning"
-}`
-    } else {
-      systemPrompt = `The analysis is complete. Provide a brief summary question asking if they'd like to explore any aspect further.`
-    }
+Do NOT wrap in markdown code blocks. Return raw JSON only.`
 
     const result = await generateText({
       model: 'openai/gpt-4o',
       system: systemPrompt,
-      messages,
+      messages: conversationHistory,
       temperature: 0.7,
-      maxOutputTokens: 300,
+      maxOutputTokens: 500,
     })
 
-    // Parse the AI response with robust handling for markdown-wrapped JSON
+    // Parse the AI response
     let parsedResponse
     try {
       let textToParse = result.text.trim()
-      
-      // Remove markdown code block wrappers if present (```json ... ``` or ``` ... ```)
+
+      // Remove markdown code block wrappers if present
       if (textToParse.startsWith('```')) {
-        // Extract content between ``` markers
         const codeBlockMatch = textToParse.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
         if (codeBlockMatch) {
           textToParse = codeBlockMatch[1].trim()
         }
       }
-      
+
       parsedResponse = JSON.parse(textToParse)
-      
-      // Ensure question field is clean text without any JSON artifacts
-      if (parsedResponse.question) {
-        parsedResponse.question = parsedResponse.question.trim()
-      }
-    } catch (error) {
-      console.error('[v0] Failed to parse AI response:', result.text)
-      // Fallback if AI doesn't return valid JSON
+    } catch {
+      console.error('Failed to parse AI response:', result.text)
+      // Fallback: try to extract fields from malformed response
+      const questionMatch = result.text.match(/"question"\s*:\s*"([^"]+)"/)
+      const promptMatch = result.text.match(/"craftedPrompt"\s*:\s*"([^"]+)"/)
       parsedResponse = {
-        question: result.text.replace(/```json|```/g, '').trim(),
-        clarityGain: 10,
-        progressGain: 20,
-        reasoning: 'Continuing analysis'
+        question: questionMatch?.[1] || 'Could you tell me more about what you need?',
+        craftedPrompt: promptMatch?.[1] || craftedPrompt || '',
       }
-    }
-
-    // Update progress based on response
-    const newProgress = { ...currentProgress }
-
-    if (currentProgress.currentStage === 'objective') {
-      newProgress.objectiveClarity += parsedResponse.clarityGain || 10
-      newProgress.objectiveProgress = Math.min(100, (newProgress.objectiveClarity / 100) * 100)
-      
-      // Transition to qualitative when objective is clear
-      if (newProgress.objectiveClarity >= 100) {
-        newProgress.currentStage = 'qualitative'
-        newProgress.objectiveProgress = 100
-      }
-    } else if (currentProgress.currentStage === 'qualitative') {
-      newProgress.qualitativeProgress = Math.min(100, newProgress.qualitativeProgress + (parsedResponse.progressGain || 20))
-      
-      // Transition to quantitative after ~5 qualitative questions
-      if (newProgress.qualitativeProgress >= 100) {
-        newProgress.currentStage = 'quantitative'
-        newProgress.qualitativeProgress = 100
-      }
-    } else if (currentProgress.currentStage === 'quantitative') {
-      newProgress.quantitativeProgress = Math.min(100, newProgress.quantitativeProgress + (parsedResponse.progressGain || 20))
-      
-      // Complete after quantitative is done
-      if (newProgress.quantitativeProgress >= 100) {
-        newProgress.currentStage = 'complete'
-        newProgress.quantitativeProgress = 100
-      }
-    }
-
-    // Save the current question-answer pair to database
-    if (sessionId && messages.length > 0) {
-      const lastUserMessage = messages[messages.length - 1]
-      
-      await supabase.from('metacognition_dialogues').insert({
-        session_id: sessionId,
-        question: currentQuestion,
-        answer: lastUserMessage.content,
-        stage: currentProgress.currentStage,
-        question_index: messages.filter((m: any) => m.role === 'user').length,
-        objective_progress: newProgress.objectiveProgress,
-        qualitative_progress: newProgress.qualitativeProgress,
-        quantitative_progress: newProgress.quantitativeProgress
-      })
     }
 
     return Response.json({
-      question: parsedResponse.question,
-      progress: newProgress,
-      reasoning: parsedResponse.reasoning
+      question: parsedResponse.question?.trim() || 'Could you tell me more?',
+      craftedPrompt: parsedResponse.craftedPrompt?.trim() || craftedPrompt || '',
     })
   } catch (error) {
     console.error('Error in metacognition API:', error)
