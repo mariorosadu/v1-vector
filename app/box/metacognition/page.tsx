@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import { Loader2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 
 export default function MetacognitionLoginPage() {
   const router = useRouter()
@@ -61,12 +62,14 @@ export default function MetacognitionLoginPage() {
           className="max-w-md w-full"
         >
           <div className="text-center mb-8">
-            <h1 className="text-white text-2xl md:text-3xl font-light mb-3">
-              Welcome to Metacognition
-            </h1>
-            <p className="text-white/50 text-sm md:text-base">
-              Sign in to craft better prompts with AI-powered clarification
-            </p>
+            <Image
+              src="/v-logo-large.svg"
+              alt="Metacognition"
+              width={200}
+              height={113}
+              className="mx-auto mb-6 opacity-90"
+              priority
+            />
           </div>
 
           <button
