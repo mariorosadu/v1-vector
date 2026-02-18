@@ -1,10 +1,11 @@
 import { generateText } from 'ai'
+import { createClient } from '@supabase/supabase-js'
 
 export const maxDuration = 30
 
 export async function POST(req: Request) {
   try {
-    const { messages, craftedPrompt } = await req.json()
+    const { messages, craftedPrompt, sessionId, currentQuestion } = await req.json()
 
     // Build conversation context for the AI
     const conversationHistory = messages.map((m: { role: string; content: string }) => ({
@@ -61,10 +62,50 @@ Do NOT wrap in markdown code blocks. Return raw JSON only.`
       }
     }
 
-    return Response.json({
+    const responseData = {
       question: parsedResponse.question?.trim() || 'Could you tell me more?',
       craftedPrompt: parsedResponse.craftedPrompt?.trim() || craftedPrompt || '',
-    })
+    }
+
+    // Log to database if sessionId provided and we have a user response
+    if (sessionId && messages.length > 0 && currentQuestion) {
+      const lastUserMessage = messages[messages.length - 1]
+      
+      // Only log if the last message is from the user
+      if (lastUserMessage.role === 'user') {
+        try {
+          const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+          )
+
+          const questionIndex = messages.filter((m: any) => m.role === 'user').length
+
+          await supabase.from('metacognition_dialogues').insert({
+            session_id: sessionId,
+            question: currentQuestion, // The question that was displayed before this answer
+            answer: lastUserMessage.content,
+            stage: 'clarification',
+            question_index: questionIndex,
+            objective_progress: 0,
+            qualitative_progress: 0,
+            quantitative_progress: 0,
+          })
+
+          console.log('[v0] Logged Q&A to database:', {
+            sessionId,
+            questionIndex,
+            question: currentQuestion,
+            answer: lastUserMessage.content.substring(0, 50) + '...',
+          })
+        } catch (dbError) {
+          console.error('[v0] Error logging to database:', dbError)
+          // Don't fail the request if logging fails
+        }
+      }
+    }
+
+    return Response.json(responseData)
   } catch (error) {
     console.error('Error in metacognition API:', error)
     return Response.json({ error: 'Error processing request' }, { status: 500 })

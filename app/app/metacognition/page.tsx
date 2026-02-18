@@ -16,6 +16,7 @@ interface ClarifyMessage {
 export default function ProtectedMetacognitionPage() {
   const router = useRouter()
   const [userName, setUserName] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string>('')
 
   // Clarification state
   const [clarifyingQuestion, setClarifyingQuestion] = useState("Which objective do you want to achieve?")
@@ -37,6 +38,11 @@ export default function ProtectedMetacognitionPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
   const [viewportTop, setViewportTop] = useState(0)
+
+  // Generate session ID on mount
+  useEffect(() => {
+    setSessionId(`session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`)
+  }, [])
 
   // Check auth and get user info
   useEffect(() => {
@@ -102,6 +108,8 @@ export default function ProtectedMetacognitionPage() {
         body: JSON.stringify({
           messages: newMessages.map(m => ({ role: m.role, content: m.content })),
           craftedPrompt,
+          sessionId,
+          currentQuestion: clarifyingQuestion, // Send the question that was just answered
         }),
       })
 
