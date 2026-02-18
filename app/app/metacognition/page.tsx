@@ -2,13 +2,12 @@
 
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Send, Loader2, LogOut, ArrowUp } from "lucide-react"
+import { Send, Loader2, LogOut } from "lucide-react"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { useChat } from "@ai-sdk/react"
 
-interface ClarifyMessage {
+interface Message {
   role: 'user' | 'assistant'
   content: string
 }
@@ -18,26 +17,15 @@ export default function ProtectedMetacognitionPage() {
   const [userName, setUserName] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string>('')
 
-  // Clarification state
-  const [clarifyingQuestion, setClarifyingQuestion] = useState("Which objective do you want to achieve?")
-  const [craftedPrompt, setCraftedPrompt] = useState("")
-  const [clarifyMessages, setClarifyMessages] = useState<ClarifyMessage[]>([])
+  // Question flow state
+  const [currentQuestion, setCurrentQuestion] = useState("What objective would you like to achieve?")
+  const [questionNumber, setQuestionNumber] = useState(1)
+  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
-  const [isClarifying, setIsClarifying] = useState(false)
-  const [isBouncing, setIsBouncing] = useState(false)
-
-  // Chat state (after "Send" on crafted prompt)
-  const {
-    messages: chatMessages,
-    append: appendChat,
-    isLoading: isChatLoading,
-  } = useChat({
-    api: '/api/chat',
-  })
+  const [isLoading, setIsLoading] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
 
   const inputRef = useRef<HTMLInputElement>(null)
-  const chatEndRef = useRef<HTMLDivElement>(null)
-  const [viewportTop, setViewportTop] = useState(0)
 
   // Generate session ID on mount
   useEffect(() => {
@@ -62,54 +50,41 @@ export default function ProtectedMetacognitionPage() {
     router.replace('/box/metacognition')
   }
 
-  // iOS Safari keyboard fix
-  useEffect(() => {
-    const vv = window.visualViewport
-    if (!vv) return
-    const update = () => setViewportTop(vv.offsetTop + vv.height)
-    vv.addEventListener("resize", update)
-    vv.addEventListener("scroll", update)
-    update()
-    return () => {
-      vv.removeEventListener("resize", update)
-      vv.removeEventListener("scroll", update)
-    }
-  }, [])
-
   // Auto-focus input
   useEffect(() => {
-    if (inputRef.current && !isClarifying) {
+    if (inputRef.current && !isLoading && !isComplete) {
       inputRef.current.focus()
     }
-  }, [isClarifying])
+  }, [isLoading, isComplete])
 
-  // Scroll chat to bottom on new messages
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [chatMessages])
-
-  // Handle user input -> send to clarification API
+  // Handle user input
   const handleSend = async () => {
-    if (!input.trim() || isClarifying) return
+    if (!input.trim() || isLoading || isComplete) return
 
-    const userMessage: ClarifyMessage = { role: 'user', content: input.trim() }
-    const newMessages = [...clarifyMessages, userMessage]
+    const userMessage: Message = { role: 'user', content: input.trim() }
+    const newMessages = [...messages, userMessage]
 
-    setIsBouncing(true)
-    setClarifyMessages(newMessages)
+    setMessages(newMessages)
     setInput("")
-    setTimeout(() => setIsBouncing(false), 600)
+    setIsLoading(true)
 
-    setIsClarifying(true)
+    // Check if we've reached 7 questions
+    if (questionNumber >= 7) {
+      // Complete the flow
+      setIsComplete(true)
+      setIsLoading(false)
+      return
+    }
+
     try {
       const response = await fetch('/api/metacognition', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-          craftedPrompt,
           sessionId,
-          currentQuestion: clarifyingQuestion, // Send the question that was just answered
+          currentQuestion,
+          questionNumber,
         }),
       })
 
@@ -117,42 +92,14 @@ export default function ProtectedMetacognitionPage() {
       const data = await response.json()
 
       if (data.question) {
-        setClarifyingQuestion(data.question.trim())
-      }
-      if (data.craftedPrompt) {
-        setCraftedPrompt(data.craftedPrompt.trim())
+        setCurrentQuestion(data.question.trim())
+        setQuestionNumber(prev => prev + 1)
       }
     } catch (error) {
-      console.error('Error in clarification:', error)
+      console.error('Error in question flow:', error)
     } finally {
-      setIsClarifying(false)
+      setIsLoading(false)
       setTimeout(() => inputRef.current?.focus(), 50)
-    }
-  }
-
-  // Handle "Send" on crafted prompt -> send to chat API
-  const handleSendCraftedPrompt = async () => {
-    if (!craftedPrompt.trim() || isChatLoading) return
-
-    console.log('[v0] Sending crafted prompt to chat:', craftedPrompt)
-    console.log('[v0] Current chat messages count:', chatMessages.length)
-
-    try {
-      // useChat's append function - sends user message and gets AI response
-      await appendChat({
-        role: 'user',
-        content: craftedPrompt,
-      })
-
-      console.log('[v0] Crafted prompt sent successfully')
-      console.log('[v0] New chat messages count:', chatMessages.length)
-
-      // Reset clarification state for a new cycle
-      setCraftedPrompt("")
-      setClarifyMessages([])
-      setClarifyingQuestion("What else would you like to explore?")
-    } catch (error) {
-      console.error('[v0] Error sending crafted prompt:', error)
     }
   }
 
@@ -170,6 +117,8 @@ export default function ProtectedMetacognitionPage() {
       </div>
     )
   }
+
+  const progressPercentage = ((questionNumber - 1) / 7) * 100
 
   return (
     <div className="bg-[#0a0a0a] h-dvh w-full flex flex-col overflow-hidden">
@@ -197,125 +146,45 @@ export default function ProtectedMetacognitionPage() {
         </div>
       </nav>
 
-      {/* Main content area - flex column, fills remaining space */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        {/* Chat area - scrollable, takes all available space at top */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6">
-          <div className="max-w-2xl mx-auto">
-            {chatMessages.length === 0 ? (
-              <div className="flex items-center justify-center h-full min-h-[200px] opacity-30">
-                <p className="text-white/40 text-sm text-center">
-                  Clarify your intent below, then send the crafted prompt.
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-6">
-                {chatMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {msg.role === 'assistant' && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mt-1">
-                        <Image
-                          src="/v-logo-white.svg"
-                          alt="V"
-                          width={16}
-                          height={16}
-                          className="opacity-70"
-                        />
-                      </div>
-                    )}
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                        msg.role === 'user'
-                          ? 'bg-white/10 text-white/90'
-                          : 'bg-white/[0.04] text-white/80 border border-white/5'
-                      }`}
-                    >
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                  </div>
-                ))}
-                {isChatLoading && (
-                  <div className="flex gap-3 justify-start">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mt-1">
-                      <Image
-                        src="/v-logo-white.svg"
-                        alt="V"
-                        width={16}
-                        height={16}
-                        className="opacity-70"
-                      />
-                    </div>
-                    <div className="bg-white/[0.04] border border-white/5 rounded-2xl px-4 py-3">
-                      <Loader2 className="w-4 h-4 text-white/40 animate-spin" />
-                    </div>
-                  </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-8 py-6">
+        <div className="max-w-2xl w-full flex flex-col gap-4">
 
-        {/* Bottom section - fixed/pinned boxes */}
-        <div className="flex-shrink-0 px-4 md:px-8 pb-4 pt-2">
-          <div className="max-w-2xl mx-auto flex flex-col gap-3">
-
-            {/* Grey Box - Crafted Prompt */}
-            <AnimatePresence>
-              {craftedPrompt && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20, height: 0 }}
-                  animate={{ opacity: 1, y: 0, height: 'auto' }}
-                  exit={{ opacity: 0, y: 20, height: 0 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                >
-                  <div className="bg-white/[0.06] border border-white/10 rounded-2xl px-5 py-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white/30 text-[10px] font-medium tracking-wider uppercase mb-2">
-                          Crafted Prompt
-                        </p>
-                        <p className="text-white/80 text-sm leading-relaxed">
-                          {craftedPrompt}
-                        </p>
-                      </div>
-                      <button
-                        onClick={handleSendCraftedPrompt}
-                        disabled={!craftedPrompt.trim() || isChatLoading}
-                        className="flex-shrink-0 flex items-center gap-2 bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed border border-white/15 hover:border-white/25 rounded-xl px-4 py-2.5 transition-all duration-200"
-                        aria-label="Send crafted prompt"
-                      >
-                        {isChatLoading ? (
-                          <Loader2 className="w-4 h-4 text-white/60 animate-spin" />
-                        ) : (
-                          <>
-                            <span className="text-white/70 text-xs font-medium">Send</span>
-                            <ArrowUp className="w-3.5 h-3.5 text-white/60" />
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Black Box - Clarifying Question */}
+          {/* Progress Bar */}
+          {!isComplete && (
             <motion.div
-              key={clarifyingQuestion}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-2"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-white/40 text-xs font-medium tracking-wider uppercase">
+                  Objective Mapping
+                </span>
+                <span className="text-white/40 text-xs font-mono">
+                  Question {questionNumber}/7
+                </span>
+              </div>
+              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercentage}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {/* Question Box or Completion Message */}
+          {!isComplete ? (
+            <motion.div
+              key={currentQuestion}
               initial={{ scale: 0.97, opacity: 0 }}
-              animate={{
-                scale: 1,
-                opacity: 1,
-                y: isBouncing ? [0, -6, 0] : 0,
-              }}
+              animate={{ scale: 1, opacity: 1 }}
               transition={{
                 scale: { type: "spring", stiffness: 200, damping: 20 },
                 opacity: { duration: 0.3 },
-                y: { duration: 0.5, ease: "easeInOut" },
               }}
             >
               <div className="bg-black rounded-2xl px-5 py-4 border border-white/10">
@@ -331,17 +200,17 @@ export default function ProtectedMetacognitionPage() {
                   </div>
                   <AnimatePresence mode="wait">
                     <motion.p
-                      key={clarifyingQuestion}
+                      key={currentQuestion}
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -5 }}
                       className="text-white text-sm md:text-base font-light leading-relaxed"
                     >
-                      {clarifyingQuestion}
+                      {currentQuestion}
                     </motion.p>
                   </AnimatePresence>
                 </div>
-                {isClarifying && (
+                {isLoading && (
                   <div className="mt-3 flex items-center gap-2">
                     <div className="h-px flex-1 bg-white/5" />
                     <Loader2 className="w-3 h-3 text-white/30 animate-spin" />
@@ -350,8 +219,39 @@ export default function ProtectedMetacognitionPage() {
                 )}
               </div>
             </motion.div>
+          ) : (
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="text-center py-12"
+            >
+              <div className="mb-6">
+                <div className="w-16 h-16 mx-auto rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-4">
+                  <svg
+                    className="w-8 h-8 text-green-500"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-white text-xl md:text-2xl font-light mb-2">
+                  Flow Completed
+                </h2>
+                <p className="text-white/60 text-sm md:text-base">
+                  Thank you for mapping your objective. We will get back to you soon.
+                </p>
+              </div>
+            </motion.div>
+          )}
 
-            {/* Input Bar */}
+          {/* Input Bar */}
+          {!isComplete && (
             <div className="bg-white/5 border border-white/10 rounded-2xl p-3 md:p-4">
               <div className="flex items-center gap-2">
                 <input
@@ -360,16 +260,17 @@ export default function ProtectedMetacognitionPage() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={isClarifying ? "Thinking..." : "Type your response..."}
+                  placeholder={isLoading ? "Thinking..." : "Type your response..."}
                   enterKeyHint="send"
-                  className="flex-1 min-w-0 bg-transparent text-white placeholder:text-white/30 text-sm md:text-base outline-none h-[44px]"
+                  disabled={isLoading}
+                  className="flex-1 min-w-0 bg-transparent text-white placeholder:text-white/30 text-sm md:text-base outline-none h-[44px] disabled:opacity-50"
                 />
                 <button
                   onClick={handleSend}
-                  disabled={!input.trim() || isClarifying}
+                  disabled={!input.trim() || isLoading}
                   className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:cursor-not-allowed transition-colors flex items-center justify-center border border-white/10"
                 >
-                  {isClarifying ? (
+                  {isLoading ? (
                     <Loader2 className="w-4 h-4 text-white/60 animate-spin" />
                   ) : (
                     <Send className="w-4 h-4 text-white/60" />
@@ -380,8 +281,8 @@ export default function ProtectedMetacognitionPage() {
                 <p className="text-white/30 text-xs">Press Enter to send</p>
               </div>
             </div>
+          )}
 
-          </div>
         </div>
       </div>
     </div>
