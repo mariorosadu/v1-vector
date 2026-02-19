@@ -160,7 +160,7 @@ Be concise - one sentence. No markdown code blocks. Raw JSON only.`
       }
     }
 
-    // Log to database
+    // Log to database - questionNumber represents the question that was just answered
     if (sessionId && messages.length > 0 && currentQuestion) {
       const lastUserMessage = messages[messages.length - 1]
       
@@ -176,10 +176,16 @@ Be concise - one sentence. No markdown code blocks. Raw JSON only.`
             question: currentQuestion,
             answer: lastUserMessage.content,
             stage: focusArea,
-            question_index: questionNumber - 1, // Previous question number
+            question_index: questionNumber,
             objective_progress: 0,
             qualitative_progress: 0,
             quantitative_progress: 0,
+          })
+
+          console.log('[v0] Logged Q&A:', {
+            sessionId,
+            questionIndex: questionNumber,
+            stage: focusArea,
           })
         } catch (dbError) {
           console.error('[v0] Error logging to database:', dbError)
