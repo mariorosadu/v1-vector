@@ -68,25 +68,6 @@ export default function ProtectedMetacognitionPage() {
     setInput("")
     setIsLoading(true)
 
-    // Log to database immediately
-    if (sessionId && currentQuestion) {
-      try {
-        const supabase = createClient()
-        await supabase.from('metacognition_dialogues').insert({
-          session_id: sessionId,
-          question: currentQuestion,
-          answer: userMessage.content,
-          stage: 'objective mapping',
-          question_index: questionNumber,
-          objective_progress: 0,
-          qualitative_progress: 0,
-          quantitative_progress: 0,
-        })
-      } catch (dbError) {
-        console.error('[v0] Error logging to database:', dbError)
-      }
-    }
-
     // Check if this was the 7th answer
     if (questionNumber >= 7) {
       setIsComplete(true)
@@ -136,7 +117,7 @@ export default function ProtectedMetacognitionPage() {
     )
   }
 
-  const progressPercentage = (questionNumber / 7) * 100
+  const progressPercentage = ((questionNumber - 1) / 7) * 100
 
   return (
     <div className="bg-[#0a0a0a] h-dvh w-full flex flex-col overflow-hidden">
