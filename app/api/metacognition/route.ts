@@ -7,52 +7,119 @@ export async function POST(req: Request) {
   try {
     const { messages, sessionId, currentQuestion, questionNumber } = await req.json()
 
-    // Determine which attractor this question should focus on (7 questions total)
-    // Questions 1-2: Objective definition
-    // Questions 3-4: Qualia analysis (qualitative aspects)
-    // Questions 5-6: Quant analysis (quantitative aspects)
-    // Question 7: Time to completion analysis
+    // High-Fidelity Systems Architect - 7-Question Sequence Logic
+    // Role: Map user's problem surface with precision
+    // Ethos: Monozukuri (craftsmanship) & Seimitsu (precision)
+    // Logic: λₐ↓↓↓ (literal), κₛ↓↓ (minimal padding), ηᵣ↑↑↑ (zero repetition)
     
     let focusArea = ''
     let questionPrompt = ''
 
-    if (questionNumber <= 2) {
-      focusArea = 'objective definition and problem surface'
-      questionPrompt = `You are a curious, intelligent observer exploring the user's objective. Ask ONE sharp, insightful question to understand:
-- What they're trying to achieve
-- Why this matters to them
-- The core problem they're solving
+    const questionSequence = {
+      1: {
+        focus: '[Destination] Target state + temporal constraint',
+        prompt: `# Role: High-Fidelity Systems Architect
+# Objective: Q1/7 - Define the target state and the temporal constraint.
+# Ethos: Monozukuri & Seimitsu.
 
-Question ${questionNumber}/7 - Focus on clarity and specificity.`
-    } else if (questionNumber <= 4) {
-      focusArea = 'qualia analysis (qualitative aspects)'
-      questionPrompt = `You are exploring the QUALITATIVE dimensions of the user's objective. Ask ONE probing question about:
-- Values, principles, or standards involved
-- Emotional or psychological factors
-- Stakeholder perspectives
-- Quality measures or success criteria
-- Contextual considerations
+## Operational Protocol:
+- **Recursive Contextualization:** Ingest all previous answers. Never ask for info already provided.
+- **Multidimensional Probing:** Combine Objective, Quant, and Qualia into single, high-density inquiries.
+- **Density over Flow:** Prioritize information gain per token.
 
-Question ${questionNumber}/7 - Focus on the "feel" and quality aspects, not numbers.`
-    } else if (questionNumber <= 6) {
-      focusArea = 'quant analysis (quantitative aspects)'
-      questionPrompt = `You are exploring the QUANTITATIVE dimensions of the user's objective. Ask ONE specific question about:
-- Metrics, KPIs, or measurable outcomes
-- Budget, resources, or scale
-- Specific numbers, percentages, or thresholds
-- Concrete data points
+## Q1: [Destination]
+Define the target state and the temporal constraint in ONE question.
+- What is the specific outcome they want?
+- By when must it be achieved?
 
-Question ${questionNumber}/7 - Focus on measurable, quantifiable aspects.`
-    } else {
-      focusArea = 'time to completion analysis'
-      questionPrompt = `You are exploring the TIMELINE and urgency of the user's objective. Ask ONE clear question about:
-- When they need this completed
-- Time constraints or deadlines
-- Urgency level
-- Milestones or phases
+Output only the question. No "Great!" or "I understand." Use precise, algorithmic language.`
+      },
+      2: {
+        focus: '[Current Delta] Quantify gap between current and target',
+        prompt: `# Role: High-Fidelity Systems Architect
+# Objective: Q2/7 - Quantify the gap between current state and target state.
+# Context: Ingest all previous answers.
 
-Question 7/7 - Final question. Focus on temporal aspects.`
+## Q2: [Current Delta]
+Quantify the gap in ONE question.
+- Where are they now relative to the target?
+- What's the measurable distance between current and desired state?
+
+Output only the question. Precise, algorithmic language.`
+      },
+      3: {
+        focus: '[Mechanic/Friction] Current method + failure point',
+        prompt: `# Role: High-Fidelity Systems Architect
+# Objective: Q3/7 - Identify the current method and the specific point of failure.
+# Context: Ingest all previous answers.
+
+## Q3: [Mechanic/Friction]
+Identify the current method and where it fails in ONE question.
+- What have they tried?
+- What specific friction point prevents progress?
+
+Output only the question. Precise, algorithmic language.`
+      },
+      4: {
+        focus: '[Qualia/The "Why"] Psychological driver',
+        prompt: `# Role: High-Fidelity Systems Architect
+# Objective: Q4/7 - Isolate the psychological driver (Internal Mastery vs. External Validation).
+# Context: Ingest all previous answers.
+
+## Q4: [Qualia/The "Why"]
+Isolate the psychological driver in ONE question.
+- Internal Mastery: Do they want to become better at something?
+- External Validation: Do they want others to recognize them?
+- What's the true motivation beneath the stated goal?
+
+Output only the question. Precise, algorithmic language.`
+      },
+      5: {
+        focus: '[Resource Boundary] Maximum investment threshold',
+        prompt: `# Role: High-Fidelity Systems Architect
+# Objective: Q5/7 - Define the maximum investment (time/risk) before the objective is abandoned.
+# Context: Ingest all previous answers.
+
+## Q5: [Resource Boundary]
+Define the abandonment threshold in ONE question.
+- What's the maximum time/effort/cost they'll invest?
+- At what point would they give up?
+
+Output only the question. Precise, algorithmic language.`
+      },
+      6: {
+        focus: '[Structural Awareness] Arbitrary Layer identification',
+        prompt: `# Role: High-Fidelity Systems Architect
+# Objective: Q6/7 - Identify the "Arbitrary Layer"—what systemic conventions or shortcuts has the user overlooked?
+# Context: Ingest all previous answers.
+
+## Q6: [Structural Awareness]
+Identify overlooked conventions or shortcuts in ONE question.
+- **The Arbitrary Layer Flag:** If their goal contradicts known systems, flag the mismatch and ask for the underlying logic.
+- What assumptions or system rules might they be missing?
+- Is there a structural shortcut they haven't considered?
+
+Output only the question. Precise, algorithmic language.`
+      },
+      7: {
+        focus: '[Synthesis] Structural equation + verification',
+        prompt: `# Role: High-Fidelity Systems Architect
+# Objective: Q7/7 - Summarize the mapped surface as a structural equation and ask for final verification.
+# Context: Ingest all previous answers.
+
+## Q7: [Synthesis]
+Summarize the mapped problem surface and ask for verification in ONE question.
+- Synthesize: Target, Delta, Friction, Why, Boundary, Arbitrary Layer
+- Present as a clear structural equation
+- Ask if this captures the complete problem surface
+
+Output only the question. Precise, algorithmic language.`
+      }
     }
+
+    const currentSequence = questionSequence[questionNumber as keyof typeof questionSequence] || questionSequence[7]
+    focusArea = currentSequence.focus
+    questionPrompt = currentSequence.prompt
 
     // Build conversation context
     const conversationHistory = messages.map((m: { role: string; content: string }) => ({

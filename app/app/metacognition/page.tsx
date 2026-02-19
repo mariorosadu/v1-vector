@@ -179,9 +179,6 @@ export default function ProtectedMetacognitionPage() {
                 <span className="text-white/40 text-xs font-medium tracking-wider uppercase">
                   Objective Mapping
                 </span>
-                <span className="text-white/40 text-xs font-mono">
-                  Question {Math.min(questionNumber, 7)}/7
-                </span>
               </div>
               <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                 <motion.div
