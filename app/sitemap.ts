@@ -1,8 +1,8 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  // Canonical format: HTTPS with www subdomain
-  const baseUrl = 'https://www.vekthos.com'
+  // Canonical format: HTTPS without www subdomain
+  const baseUrl = 'https://vekthos.com'
   
   // Only include public, canonical URLs that return 200 status
   // Exclude: auth-protected routes (/admin, /app, /login, /box/metacognition)
