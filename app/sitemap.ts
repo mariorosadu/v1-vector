@@ -1,9 +1,11 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.vekthos.com'
+  // Canonical format: HTTPS with www subdomain
+  const baseUrl = 'https://www.vekthos.com'
   
-  // Define your public routes here
+  // Only include public, canonical URLs that return 200 status
+  // Exclude: auth-protected routes (/admin, /app, /login, /box/metacognition)
   const routes = [
     '',
     '/privacy',
@@ -11,6 +13,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/publications',
     '/prototype',
     '/box',
+    '/box/map',
+    '/box/profile-analysis',
+    '/box/voiceflux',
+    '/contact',
   ]
 
   return routes.map((route) => ({
