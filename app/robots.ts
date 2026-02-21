@@ -1,8 +1,8 @@
 import { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
-  // Use canonical format: HTTPS with www subdomain
-  const baseUrl = 'https://www.vekthos.com'
+  // Use canonical format: HTTPS without www subdomain
+  const baseUrl = 'https://vekthos.com'
   
   return {
     rules: [

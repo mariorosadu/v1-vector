@@ -13,7 +13,7 @@ export const viewport = {
   interactiveWidget: 'resizes-content' as const,
 }
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.vekthos.com'
+const baseUrl = 'https://vekthos.com'
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -70,9 +70,6 @@ export const metadata: Metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
-  },
-  verification: {
-    google: 'google-site-verification-code',
   },
 }
 
