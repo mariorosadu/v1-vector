@@ -97,13 +97,15 @@ export async function ensureLoaded(): Promise<void> {
 }
 
 /** Compute parent / siblings / children purely from in-memory graph. Zero API calls. */
-export function computeView(termId: string): LexiconView | null {
+export function computeView(termId?: string): LexiconView | null {
+  const id = termId ?? store.selectedId
+  if (!id) return null
   const termMap = new Map(store.terms.map(t => [t.id, t]))
-  const selected = termMap.get(termId)
+  const selected = termMap.get(id)
   if (!selected) return null
 
   // Parent edge
-  const parentEdge = store.edges.find(e => e.child_id === termId)
+  const parentEdge = store.edges.find(e => e.child_id === id)
   const parent = parentEdge ? (termMap.get(parentEdge.parent_id) ?? null) : null
 
   // Siblings: all children of the same parent, sorted
@@ -120,7 +122,7 @@ export function computeView(termId: string): LexiconView | null {
 
   // Children: direct children of selected
   const children = store.edges
-    .filter(e => e.parent_id === termId)
+    .filter(e => e.parent_id === id)
     .sort((a, b) => a.sort_order - b.sort_order)
     .map(e => termMap.get(e.child_id))
     .filter(Boolean) as LexiconTerm[]
