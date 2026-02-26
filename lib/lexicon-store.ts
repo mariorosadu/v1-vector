@@ -97,9 +97,11 @@ export async function ensureLoaded(): Promise<void> {
 }
 
 /** Compute parent / siblings / children purely from in-memory graph. Zero API calls. */
-export function computeView(termId: string): LexiconView | null {
+export function computeView(termId?: string): LexiconView | null {
+  const id = termId ?? store.selectedId
+  if (!id) return null
   const termMap = new Map(store.terms.map(t => [t.id, t]))
-  const selected = termMap.get(termId)
+  const selected = termMap.get(id)
   if (!selected) return null
 
   // Parent edge

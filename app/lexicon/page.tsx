@@ -124,10 +124,14 @@ function LexiconInner() {
       const label = params.get("term") ?? "KNOWLEDGE"
       const t = findByLabel(label) ?? findByLabel("KNOWLEDGE")
       if (t) setSelectedId(t.id)
-      setView(computeView())
+      const v = computeView()
+      setView(v)
       setReady(true)
     })
-    return subscribe(() => setView(computeView()))
+    return subscribe(() => {
+      const v = computeView()
+      if (v) setView(v)
+    })
   }, []) // eslint-disable-line
 
   // On load: set half-padding + center selected word instantly
