@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback, useLayoutEffect, Suspense } from "react"
+import { useState, useEffect, useRef, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { AnimatePresence, motion, LayoutGroup } from "framer-motion"
 import { SimpleHeader } from "@/components/simple-header"
 import { ChevronUp } from "lucide-react"
 import {
@@ -9,21 +10,19 @@ import {
   type LexiconView,
 } from "@/lib/lexicon-store"
 
-// ─── Fixed row heights (px) ───────────────────────────────────────────────────
-const H = { parent: 28, divider: 20, siblings: 40, children: 28 }
+// ─── Constants ────────────────────────────────────────────────────────────────
+const ROW_H = { parent: 28, siblings: 40, children: 28 }
+const DIVIDER_H = 20
+const SLIDE_Y = 48  // px to slide rows up/down between levels
+
+// ─── Spring configs ───────────────────────────────────────────────────────────
+const spring = { type: "spring", stiffness: 380, damping: 36, mass: 0.8 } as const
+const underlineSpring = { type: "spring", stiffness: 500, damping: 40, mass: 0.6 } as const
 
 // ─── DragScroll ───────────────────────────────────────────────────────────────
-function DragScroll({ children, style, innerRef }: {
-  children: React.ReactNode
-  style?: React.CSSProperties
-  innerRef?: React.RefObject<HTMLDivElement | null>
-}) {
+function DragScroll({ children, height }: { children: React.ReactNode; height: number }) {
   const ref = useRef<HTMLDivElement>(null)
   const drag = useRef({ on: false, startX: 0, left: 0, moved: false })
-
-  useEffect(() => {
-    if (innerRef) (innerRef as React.MutableRefObject<HTMLDivElement | null>).current = ref.current
-  })
 
   const down = (e: React.MouseEvent) => {
     const el = ref.current; if (!el) return
@@ -38,116 +37,238 @@ function DragScroll({ children, style, innerRef }: {
     el.scrollLeft = drag.current.left - d
   }
   const up = () => { if (ref.current) { drag.current.on = false; ref.current.style.cursor = "grab" } }
-  const clickCapture = (e: React.MouseEvent) => {
+  const cap = (e: React.MouseEvent) => {
     if (drag.current.moved) { e.stopPropagation(); drag.current.moved = false }
   }
 
   return (
-    <div ref={ref} style={{ overflowX: "auto", overflowY: "hidden", cursor: "grab",
-      userSelect: "none", scrollbarWidth: "none", ...style }}
-      onMouseDown={down} onMouseMove={move} onMouseUp={up} onMouseLeave={up} onClickCapture={clickCapture}
+    <div
+      ref={ref}
+      style={{
+        height, overflow: "hidden", cursor: "grab",
+        userSelect: "none", scrollbarWidth: "none",
+        display: "flex", alignItems: "center",
+      }}
+      onMouseDown={down} onMouseMove={move} onMouseUp={up}
+      onMouseLeave={up} onClickCapture={cap}
     >
       {children}
     </div>
   )
 }
 
-// ─── Center helpers ───────────────────────────────────────────────────────────
-function centerLeft(container: HTMLDivElement, el: HTMLElement) {
-  return el.offsetLeft + el.offsetWidth / 2 - container.offsetWidth / 2
-}
+// ─── Siblings row — centered on selected via CSS scroll into view ─────────────
+function SiblingsRow({
+  siblings,
+  selectedId,
+  onSelect,
+}: {
+  siblings: LexiconView["siblings"]
+  selectedId: string
+  onSelect: (label: string) => void
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const selectedRef  = useRef<HTMLButtonElement | null>(null)
 
-function centerWordInstant(container: HTMLDivElement | null, label: string) {
-  if (!container) return
-  const el = container.querySelector(`[data-label="${CSS.escape(label)}"]`) as HTMLElement | null
-  if (!el) return
-  container.scrollLeft = centerLeft(container, el)
-}
+  // Center selected whenever it changes or siblings list changes
+  useEffect(() => {
+    const container = containerRef.current
+    const el = selectedRef.current
+    if (!container || !el) return
 
-function centerWordAnimated(container: HTMLDivElement | null, label: string, duration = 380): Promise<void> {
-  return new Promise<void>((resolve) => {
-    if (!container) return resolve()
-    const el = container.querySelector(`[data-label="${CSS.escape(label)}"]`) as HTMLElement | null
-    if (!el) return resolve()
-    const from = container.scrollLeft
-    const to = centerLeft(container, el)
-    if (!Number.isFinite(to) || Math.abs(to - from) < 0.5) {
-      container.scrollLeft = to
-      return resolve()
+    // Pad inner so edge words can reach center
+    const pad = container.offsetWidth / 2
+    const inner = container.firstElementChild as HTMLElement
+    if (inner) {
+      inner.style.paddingLeft  = `${pad}px`
+      inner.style.paddingRight = `${pad}px`
     }
-    const start = performance.now()
-    const ease = (t: number) => 1 - Math.pow(1 - t, 3)
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration)
-      container.scrollLeft = from + (to - from) * ease(t)
-      if (t < 1) requestAnimationFrame(tick)
-      else resolve()
+
+    const target = el.offsetLeft + el.offsetWidth / 2 - container.offsetWidth / 2
+    container.scrollTo({ left: target, behavior: "smooth" })
+  }, [selectedId, siblings.length])
+
+  // On first mount — instant (no smooth)
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const pad = container.offsetWidth / 2
+    const inner = container.firstElementChild as HTMLElement
+    if (inner) {
+      inner.style.paddingLeft  = `${pad}px`
+      inner.style.paddingRight = `${pad}px`
     }
-    requestAnimationFrame(tick)
-  })
+    const sel = container.querySelector("[data-selected='true']") as HTMLElement | null
+    if (sel) container.scrollLeft = sel.offsetLeft + sel.offsetWidth / 2 - container.offsetWidth / 2
+  }, []) // eslint-disable-line
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        height: ROW_H.siblings, overflow: "hidden", cursor: "grab",
+        userSelect: "none", scrollbarWidth: "none",
+        display: "flex", alignItems: "center",
+        position: "relative",
+      }}
+    >
+      <LayoutGroup id="lexicon-siblings">
+        <div style={{ display: "inline-flex", gap: 36, alignItems: "center", position: "relative" }}>
+          {siblings.map((s) => {
+            const sel = s.id === selectedId
+            return (
+              <button
+                key={s.id}
+                ref={sel ? selectedRef : null}
+                data-selected={sel ? "true" : "false"}
+                onClick={() => !sel && onSelect(s.label)}
+                style={{ flexShrink: 0, position: "relative", paddingBottom: 6, cursor: sel ? "default" : "pointer", border: "none", background: "none" }}
+              >
+                <span style={{
+                  fontSize: 13, letterSpacing: "0.18em", textTransform: "uppercase",
+                  fontWeight: 400, transition: "color 200ms",
+                  color: sel ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.28)",
+                  display: "block",
+                }}>
+                  {s.label}
+                </span>
+                {sel && (
+                  <motion.div
+                    layoutId="underline"
+                    transition={underlineSpring}
+                    style={{
+                      position: "absolute", bottom: 0, left: 0, right: 0,
+                      height: 1.5, background: "white",
+                    }}
+                  />
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </LayoutGroup>
+    </div>
+  )
 }
 
-function nextFrame() {
-  return new Promise<void>((r) => requestAnimationFrame(() => r()))
+// ─── The three rows as a single animated unit ─────────────────────────────────
+const rowVariants = {
+  enterFromBelow: { y: SLIDE_Y, opacity: 0 },
+  enterFromAbove: { y: -SLIDE_Y, opacity: 0 },
+  center:         { y: 0, opacity: 1 },
+  exitToAbove:    { y: -SLIDE_Y, opacity: 0 },
+  exitToBelow:    { y: SLIDE_Y, opacity: 0 },
 }
 
-function waitTransitionEnd(el: HTMLElement, prop = "transform", timeoutMs = 800): Promise<void> {
-  return new Promise<void>((resolve) => {
-    let done = false
-    const cleanup = () => {
-      if (done) return
-      done = true
-      el.removeEventListener("transitionend", onEnd)
-      clearTimeout(t)
-      resolve()
-    }
-    const onEnd = (e: TransitionEvent) => {
-      if (e.target === el && e.propertyName === prop) cleanup()
-    }
-    const t = window.setTimeout(cleanup, timeoutMs)
-    el.addEventListener("transitionend", onEnd)
-  })
-}
+function RowsBlock({
+  view,
+  direction,
+  onNavigate,
+}: {
+  view: LexiconView
+  direction: "up" | "down" | "lateral"
+  onNavigate: (label: string, from: "parent" | "sibling" | "child") => void
+}) {
+  const enterVariant = direction === "down" ? "enterFromBelow" : direction === "up" ? "enterFromAbove" : "center"
+  const exitVariant  = direction === "down" ? "exitToAbove"    : direction === "up" ? "exitToBelow"    : "center"
 
-async function animateWrapperShift(wrapper: HTMLDivElement | null, deltaY: number, duration = 480) {
-  if (!wrapper) return
-  wrapper.style.willChange = "transform"
-  wrapper.style.transition = "none"
-  wrapper.style.transform = "translateY(0px)"
-  wrapper.getBoundingClientRect() // force reflow
-  wrapper.style.transition = `transform ${duration}ms cubic-bezier(0.33, 1, 0.68, 1)`
-  wrapper.style.transform = `translateY(${deltaY}px)`
-  await waitTransitionEnd(wrapper, "transform", duration + 250)
-  // keep shifted — useLayoutEffect will snap pre-paint
-  wrapper.style.transition = "none"
+  return (
+    <motion.div
+      key={view.selected.id}
+      custom={direction}
+      variants={rowVariants}
+      initial={enterVariant}
+      animate="center"
+      exit={exitVariant}
+      transition={spring}
+      style={{ padding: "28px 32px" }}
+    >
+      {/* ROW 1 — Parent */}
+      <DragScroll height={ROW_H.parent}>
+        <div style={{ display: "inline-flex", gap: 24, alignItems: "center", paddingLeft: "50%", paddingRight: "50%" }}>
+          {view.parent ? (
+            <button
+              onClick={() => onNavigate(view.parent!.label, "parent")}
+              style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", background: "none", border: "none", flexShrink: 0 }}
+              className="group"
+            >
+              <ChevronUp style={{ width: 10, height: 10, color: "rgba(255,255,255,0.25)", transition: "color 200ms" }} className="group-hover:!text-white/60" />
+              <span style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.32)", transition: "color 200ms" }} className="group-hover:!text-white/70">
+                {view.parent.label}
+              </span>
+            </button>
+          ) : (
+            <span style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.14)" }}>root</span>
+          )}
+        </div>
+      </DragScroll>
+
+      {/* Divider */}
+      <div style={{ height: DIVIDER_H, display: "flex", alignItems: "center" }}>
+        <div style={{ width: "100%", height: 1, background: "rgba(255,255,255,0.07)" }} />
+      </div>
+
+      {/* ROW 2 — Siblings */}
+      <SiblingsRow
+        siblings={view.siblings}
+        selectedId={view.selected.id}
+        onSelect={(label) => onNavigate(label, "sibling")}
+      />
+
+      {/* Divider */}
+      <div style={{ height: DIVIDER_H, display: "flex", alignItems: "center" }}>
+        <div style={{ width: "100%", height: 1, background: "rgba(255,255,255,0.07)" }} />
+      </div>
+
+      {/* ROW 3 — Children */}
+      <DragScroll height={ROW_H.children}>
+        <div style={{ display: "inline-flex", gap: 28, alignItems: "center", paddingLeft: "50%", paddingRight: "50%" }}>
+          {view.children.length > 0 ? (
+            view.children.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => onNavigate(c.label, "child")}
+                style={{ flexShrink: 0, cursor: "pointer", background: "none", border: "none" }}
+                className="group"
+              >
+                <span style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.28)", transition: "color 200ms" }} className="group-hover:!text-white/65">
+                  {c.label}
+                </span>
+              </button>
+            ))
+          ) : (
+            <span style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.13)" }}>leaf</span>
+          )}
+        </div>
+      </DragScroll>
+    </motion.div>
+  )
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function Skeleton() {
   return (
-    <div className="bg-[#0a0a0a] min-h-dvh flex flex-col font-sans">
+    <div style={{ background: "#0a0a0a", minHeight: "100dvh", display: "flex", flexDirection: "column" }} className="font-sans">
       <SimpleHeader />
-      <main className="flex-1 flex items-center justify-center pt-16 px-4">
-        <div className="w-full max-w-2xl">
-          <div className="bg-[#1c1c1c] rounded-sm border border-white/5 shadow-2xl shadow-black/60 overflow-hidden">
-            <div className="h-px bg-white/20" />
-            <div className="py-6 text-center border-b border-white/10">
-              <span className="text-xl font-normal tracking-[0.25em] text-white/20 uppercase">Lexicon</span>
+      <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 64, padding: "64px 16px 16px" }}>
+        <div style={{ width: "100%", maxWidth: 640 }}>
+          <div style={{ background: "#1c1c1c", borderRadius: 2, border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.6)" }}>
+            <div style={{ height: 1, background: "rgba(255,255,255,0.18)" }} />
+            <div style={{ padding: "20px 0", textAlign: "center", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <span style={{ fontSize: 18, fontWeight: 400, letterSpacing: "0.25em", color: "rgba(255,255,255,0.15)", textTransform: "uppercase" }}>Lexicon</span>
             </div>
-            <div className="px-8 py-8 space-y-0">
-              <div style={{ height: H.parent }} className="flex items-center justify-center">
-                <div className="h-2 w-20 rounded bg-white/8 animate-pulse" />
-              </div>
-              <div style={{ height: H.divider }} className="flex items-center"><div className="w-full h-px bg-white/8" /></div>
-              <div style={{ height: H.siblings }} className="flex items-center justify-center gap-8">
-                {[80,120,96].map((w,i) => <div key={i} className="h-3 rounded bg-white/8 animate-pulse flex-shrink-0" style={{ width: w }} />)}
-              </div>
-              <div style={{ height: H.divider }} className="flex items-center"><div className="w-full h-px bg-white/8" /></div>
-              <div style={{ height: H.children }} className="flex items-center justify-center gap-6">
-                {[64,96,80].map((w,i) => <div key={i} className="h-2 rounded bg-white/8 animate-pulse flex-shrink-0" style={{ width: w }} />)}
-              </div>
+            <div style={{ padding: "28px 32px" }}>
+              {[20, 28, 40, 28].map((h, i) => (
+                i === 1 || i === 3
+                  ? <div key={i} style={{ height: DIVIDER_H, display: "flex", alignItems: "center" }}><div style={{ width: "100%", height: 1, background: "rgba(255,255,255,0.06)" }} /></div>
+                  : <div key={i} style={{ height: h, display: "flex", alignItems: "center", justifyContent: "center", gap: 24 }}>
+                      {[80, 120, 96].slice(0, i === 0 ? 1 : 3).map((w, j) => (
+                        <div key={j} style={{ height: 8, width: w, borderRadius: 2, background: "rgba(255,255,255,0.06)", animation: "pulse 2s infinite" }} />
+                      ))}
+                    </div>
+              ))}
             </div>
-            <div className="h-px bg-white/8" />
+            <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
           </div>
         </div>
       </main>
@@ -160,44 +281,14 @@ export default function LexiconPage() {
   return <Suspense fallback={<Skeleton />}><LexiconInner /></Suspense>
 }
 
-// ─── Inner ────────────────────────────────────────────────────────���───────────
+// ─── Inner ────────────────────────────────────────────────────────────────────
 function LexiconInner() {
   const router = useRouter()
   const params = useSearchParams()
-  const [view, setView]   = useState<LexiconView | null>(null)
+  const [view, setView] = useState<LexiconView | null>(null)
+  const [direction, setDirection] = useState<"up" | "down" | "lateral">("lateral")
   const [ready, setReady] = useState(false)
 
-  // Scroll container refs
-  const parentRef   = useRef<HTMLDivElement | null>(null)
-  const siblingsRef = useRef<HTMLDivElement | null>(null)
-  const siblingsInnerRef = useRef<HTMLDivElement | null>(null)
-  const childrenRef = useRef<HTMLDivElement | null>(null)
-
-  // The wrapper that slides vertically
-  const wrapperRef = useRef<HTMLDivElement | null>(null)
-
-  // Lock to prevent overlapping navigations
-  const busy = useRef(false)
-  // Pre-paint finalization refs
-  const pendingCenter = useRef<{ label: string; mode: "instant" | "animate" } | null>(null)
-  const pendingWrapperReset = useRef(false)
-
-  // Traveling underline: tracks position of selected word in siblings row
-  const underlineRef = useRef<HTMLSpanElement | null>(null)
-
-  const updateUnderline = useCallback((instant = false) => {
-    const inner = siblingsInnerRef.current
-    const ul = underlineRef.current
-    if (!inner || !ul) return
-    const sel = inner.querySelector("[data-selected='true']") as HTMLElement | null
-    if (!sel) return
-    if (instant) ul.style.transition = "none"
-    else ul.style.transition = "left 320ms cubic-bezier(0.4, 0, 0.2, 1), width 320ms cubic-bezier(0.4, 0, 0.2, 1)"
-    ul.style.left  = `${sel.offsetLeft}px`
-    ul.style.width = `${sel.offsetWidth}px`
-    ul.style.opacity = "1"
-    if (instant) ul.getBoundingClientRect() // flush
-  }, [])
   useEffect(() => {
     ensureLoaded().then(() => {
       const label = params.get("term") ?? "KNOWLEDGE"
@@ -213,211 +304,52 @@ function LexiconInner() {
     })
   }, []) // eslint-disable-line
 
-  // Pre-paint: snap wrapper + center selected word (no blink)
-  // IMPORTANT: skip centering when mode === "animate" (useEffect handles that)
-  useLayoutEffect(() => {
-    if (!ready || !view) return
-    const sc = siblingsRef.current
-    const si = siblingsInnerRef.current
-    if (!sc || !si) return
-
-    const half = sc.offsetWidth / 2
-    si.style.paddingLeft  = `${half}px`
-    si.style.paddingRight = `${half}px`
-
-    if (pendingWrapperReset.current) {
-      const w = wrapperRef.current
-      if (w) {
-        w.style.transition = "none"
-        w.style.transform  = "translateY(0px)"
-      }
-      pendingWrapperReset.current = false
-    }
-
-    const p = pendingCenter.current
-    if (!p || p.mode === "instant") {
-      centerWordInstant(sc, p?.label ?? view.selected.label)
-      pendingCenter.current = null
-    }
-    // Position underline instantly (no travel animation on load/vertical nav)
-    requestAnimationFrame(() => updateUnderline(true))
-  }, [ready, view?.selected?.id, view?.siblings?.length, updateUnderline]) // eslint-disable-line
-
-  // Post-commit: animated centering + traveling underline for sibling clicks
-  useEffect(() => {
-    if (!ready || !view) return
-    const p = pendingCenter.current
-    if (!p || p.mode !== "animate") return
-    const sc = siblingsRef.current
-    if (!sc) return
-    const label = p.label
-    pendingCenter.current = null
-    requestAnimationFrame(() => {
-      centerWordAnimated(sc, label, 260)
-      updateUnderline(false) // travel from prev word to new word
-    })
-  }, [ready, view?.selected?.id, view?.siblings?.length, updateUnderline]) // eslint-disable-line
-
-  // ─── Navigate ───────────────────────────────────────────────────────────────
-  const navigate = useCallback(async (label: string, from: "parent" | "sibling" | "child") => {
-    if (busy.current) return
+  const navigate = useCallback((label: string, from: "parent" | "sibling" | "child") => {
     const term = findByLabel(label)
     if (!term || term.id === view?.selected.id) return
-    busy.current = true
-
-    try {
-      // ── Sibling: horizontal only ─────────────────────────────────────────
-      if (from === "sibling") {
-        pendingCenter.current = { label, mode: "animate" }
-        setSelectedId(term.id) // subscribe() → setView
-        router.replace(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
-        return
-      }
-
-      // ── Parent / Child: two-phase ─────────────────────────────────────────
-      // PHASE 1 — center clicked word in its row
-      const sourceContainer = from === "child" ? childrenRef.current : parentRef.current
-      await centerWordAnimated(sourceContainer, label, 360)
-
-      // PHASE 2 — slide wrapper by fixed height constants
-      const delta = from === "child"
-        ? -(H.divider + (H.siblings + H.children) / 2)
-        :   H.divider + (H.parent  + H.siblings) / 2
-
-      await animateWrapperShift(wrapperRef.current, delta, 480)
-
-      // Single render: useLayoutEffect will snap + center pre-paint
-      pendingCenter.current = { label, mode: "instant" }
-      pendingWrapperReset.current = true
-      setSelectedId(term.id) // subscribe() → setView
-      router.replace(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
-
-      await nextFrame()
-    } finally {
-      busy.current = false
-    }
-  }, [view?.selected?.id, router])
+    setDirection(from === "child" ? "down" : from === "parent" ? "up" : "lateral")
+    setSelectedId(term.id)
+    router.replace(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
+  }, [view?.selected.id, router])
 
   if (!ready || !view) return <Skeleton />
 
   return (
-    <div className="bg-[#0a0a0a] min-h-dvh flex flex-col font-sans">
+    <div style={{ background: "#0a0a0a", minHeight: "100dvh", display: "flex", flexDirection: "column" }} className="font-sans">
       <SimpleHeader />
-      <main className="flex-1 flex items-center justify-center pt-16 px-4">
-        <div className="w-full max-w-2xl">
-          <div className="bg-[#1c1c1c] rounded-sm border border-white/5 shadow-2xl shadow-black/60">
-
-            <div className="h-px bg-white/20" />
+      <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 16px 16px" }}>
+        <div style={{ width: "100%", maxWidth: 640 }}>
+          <div style={{
+            background: "#1c1c1c", borderRadius: 2,
+            border: "1px solid rgba(255,255,255,0.05)",
+            boxShadow: "0 25px 50px -12px rgba(0,0,0,0.6)",
+            overflow: "hidden",
+          }}>
+            <div style={{ height: 1, background: "rgba(255,255,255,0.18)" }} />
 
             {/* Title */}
-            <div className="py-6 border-b border-white/10 text-center">
-              <h1 className="text-xl font-normal tracking-[0.25em] text-white uppercase">Lexicon</h1>
+            <div style={{ padding: "20px 0", textAlign: "center", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <h1 style={{ fontSize: 18, fontWeight: 400, letterSpacing: "0.25em", color: "white", textTransform: "uppercase", margin: 0 }}>
+                Lexicon
+              </h1>
             </div>
 
-            {/* Clip window — hides rows that slide out of view */}
-            <div style={{ overflow: "hidden" }}>
-              <div ref={wrapperRef} className="px-8 py-8">
-
-                {/* ROW 1 — Parent */}
-                <DragScroll innerRef={parentRef}
-                  style={{ height: H.parent, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}
-                >
-                  <div data-row="parent"
-                    style={{ display: "inline-flex", gap: 24, alignItems: "center", paddingLeft: "50%", paddingRight: "50%" }}
-                  >
-                    {view.parent ? (
-                      <button
-                        data-label={view.parent.label}
-                        onClick={() => navigate(view.parent!.label, "parent")}
-                        className="flex items-center gap-1.5 group cursor-pointer flex-shrink-0"
-                      >
-                        <ChevronUp className="w-2.5 h-2.5 text-white/25 group-hover:text-white/60 transition-colors" />
-                        <span className="text-[11px] tracking-[0.22em] uppercase text-white/35 group-hover:text-white/70 transition-colors">
-                          {view.parent.label}
-                        </span>
-                      </button>
-                    ) : (
-                      <span className="text-[11px] tracking-[0.22em] uppercase text-white/15">root</span>
-                    )}
-                  </div>
-                </DragScroll>
-
-                {/* Divider */}
-                <div style={{ height: H.divider, display: "flex", alignItems: "center" }}>
-                  <div className="w-full h-px bg-white/8" />
-                </div>
-
-                {/* ROW 2 — Siblings */}
-                <DragScroll innerRef={siblingsRef}
-                  style={{ height: H.siblings, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}
-                >
-                  <div data-row="siblings" ref={siblingsInnerRef}
-                    style={{ display: "inline-flex", gap: 36, alignItems: "center", position: "relative" }}
-                  >
-                    {/* Single traveling underline */}
-                    <span ref={underlineRef} style={{
-                      position: "absolute", bottom: 0, height: 1.5,
-                      background: "white", pointerEvents: "none",
-                      left: 0, width: 0, opacity: 0,
-                    }} />
-                    {view.siblings.map((s) => {
-                      const sel = s.id === view.selected.id
-                      return (
-                        <button key={s.id}
-                          data-label={s.label}
-                          data-selected={sel ? "true" : "false"}
-                          onClick={() => !sel && navigate(s.label, "sibling")}
-                          className={`relative flex-shrink-0 pb-1.5 ${sel ? "cursor-default" : "cursor-pointer group"}`}
-                        >
-                          <span className={`text-sm tracking-[0.2em] uppercase font-normal transition-colors duration-200
-                            ${sel ? "text-white" : "text-white/30 group-hover:text-white/65"}`}>
-                            {s.label}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </DragScroll>
-
-                {/* Divider */}
-                <div style={{ height: H.divider, display: "flex", alignItems: "center" }}>
-                  <div className="w-full h-px bg-white/8" />
-                </div>
-
-                {/* ROW 3 — Children */}
-                <DragScroll innerRef={childrenRef}
-                  style={{ height: H.children, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}
-                >
-                  <div data-row="children"
-                    style={{ display: "inline-flex", gap: 28, alignItems: "center", paddingLeft: "50%", paddingRight: "50%" }}
-                  >
-                    {view.children.length > 0 ? (
-                      view.children.map((c) => (
-                        <button key={c.id}
-                          data-label={c.label}
-                          onClick={() => navigate(c.label, "child")}
-                          className="flex-shrink-0 cursor-pointer group"
-                        >
-                          <span className="text-[11px] tracking-[0.22em] uppercase text-white/30 group-hover:text-white/65 transition-colors">
-                            {c.label}
-                          </span>
-                        </button>
-                      ))
-                    ) : (
-                      <span className="text-[11px] tracking-[0.22em] uppercase text-white/15">leaf node</span>
-                    )}
-                  </div>
-                </DragScroll>
-
-              </div>
+            {/* Animated rows */}
+            <div style={{ overflow: "hidden", position: "relative" }}>
+              <AnimatePresence mode="wait" initial={false}>
+                <RowsBlock
+                  key={view.selected.id}
+                  view={view}
+                  direction={direction}
+                  onNavigate={navigate}
+                />
+              </AnimatePresence>
             </div>
 
-            <div className="h-px bg-white/8" />
+            <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
           </div>
         </div>
       </main>
     </div>
   )
 }
-
-
