@@ -160,7 +160,7 @@ export default function LexiconPage() {
   return <Suspense fallback={<Skeleton />}><LexiconInner /></Suspense>
 }
 
-// ─── Inner ────────────────────────────────────────────────────────��───────────
+// ─── Inner ────────────────────────────────────────────────────────���───────────
 function LexiconInner() {
   const router = useRouter()
   const params = useSearchParams()
@@ -182,7 +182,22 @@ function LexiconInner() {
   const pendingCenter = useRef<{ label: string; mode: "instant" | "animate" } | null>(null)
   const pendingWrapperReset = useRef(false)
 
-  // Load graph + subscribe
+  // Traveling underline: tracks position of selected word in siblings row
+  const underlineRef = useRef<HTMLSpanElement | null>(null)
+
+  const updateUnderline = useCallback((instant = false) => {
+    const inner = siblingsInnerRef.current
+    const ul = underlineRef.current
+    if (!inner || !ul) return
+    const sel = inner.querySelector("[data-selected='true']") as HTMLElement | null
+    if (!sel) return
+    if (instant) ul.style.transition = "none"
+    else ul.style.transition = "left 320ms cubic-bezier(0.4, 0, 0.2, 1), width 320ms cubic-bezier(0.4, 0, 0.2, 1)"
+    ul.style.left  = `${sel.offsetLeft}px`
+    ul.style.width = `${sel.offsetWidth}px`
+    ul.style.opacity = "1"
+    if (instant) ul.getBoundingClientRect() // flush
+  }, [])
   useEffect(() => {
     ensureLoaded().then(() => {
       const label = params.get("term") ?? "KNOWLEDGE"
@@ -224,9 +239,11 @@ function LexiconInner() {
       centerWordInstant(sc, p?.label ?? view.selected.label)
       pendingCenter.current = null
     }
-  }, [ready, view?.selected?.id, view?.siblings?.length]) // eslint-disable-line
+    // Position underline instantly (no travel animation on load/vertical nav)
+    requestAnimationFrame(() => updateUnderline(true))
+  }, [ready, view?.selected?.id, view?.siblings?.length, updateUnderline]) // eslint-disable-line
 
-  // Post-commit: animated centering for sibling clicks
+  // Post-commit: animated centering + traveling underline for sibling clicks
   useEffect(() => {
     if (!ready || !view) return
     const p = pendingCenter.current
@@ -237,8 +254,9 @@ function LexiconInner() {
     pendingCenter.current = null
     requestAnimationFrame(() => {
       centerWordAnimated(sc, label, 260)
+      updateUnderline(false) // travel from prev word to new word
     })
-  }, [ready, view?.selected?.id, view?.siblings?.length]) // eslint-disable-line
+  }, [ready, view?.selected?.id, view?.siblings?.length, updateUnderline]) // eslint-disable-line
 
   // ─── Navigate ───────────────────────────────────────────────────────────────
   const navigate = useCallback(async (label: string, from: "parent" | "sibling" | "child") => {
@@ -334,8 +352,14 @@ function LexiconInner() {
                   style={{ height: H.siblings, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}
                 >
                   <div data-row="siblings" ref={siblingsInnerRef}
-                    style={{ display: "inline-flex", gap: 36, alignItems: "center" }}
+                    style={{ display: "inline-flex", gap: 36, alignItems: "center", position: "relative" }}
                   >
+                    {/* Single traveling underline */}
+                    <span ref={underlineRef} style={{
+                      position: "absolute", bottom: 0, height: 1.5,
+                      background: "white", pointerEvents: "none",
+                      left: 0, width: 0, opacity: 0,
+                    }} />
                     {view.siblings.map((s) => {
                       const sel = s.id === view.selected.id
                       return (
@@ -349,13 +373,6 @@ function LexiconInner() {
                             ${sel ? "text-white" : "text-white/30 group-hover:text-white/65"}`}>
                             {s.label}
                           </span>
-                          {/* Animated underline for selected */}
-                          <span style={{
-                            position: "absolute", bottom: 0, left: 0, right: 0, height: 1.5,
-                            background: "white", transformOrigin: "left center",
-                            transform: sel ? "scaleX(1)" : "scaleX(0)",
-                            transition: "transform 320ms cubic-bezier(0.4, 0, 0.2, 1)",
-                          }} />
                         </button>
                       )
                     })}
