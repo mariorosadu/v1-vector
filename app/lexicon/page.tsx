@@ -15,18 +15,18 @@ import {
 } from "@/lib/lexicon-store"
 
 // ─── DragScroll wrapper ───────────────────────────────────────────────────────
-// Hides the scrollbar, enables mouse-drag + touch-drag horizontal scroll.
-// Fires onDragEnd(true) if the pointer moved < 6px (i.e. a click), false if a drag.
 function DragScroll({
   children,
   style,
   className,
+  innerRef,
 }: {
   children: React.ReactNode
   style?: React.CSSProperties
   className?: string
+  innerRef?: React.RefObject<HTMLDivElement>
 }) {
-  const ref = useRef<HTMLDivElement>(null)
+  const ref = innerRef ?? useRef<HTMLDivElement>(null)
   const drag = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false })
 
   const onMouseDown = (e: React.MouseEvent) => {
@@ -44,20 +44,12 @@ function DragScroll({
     if (Math.abs(dist) > 4) drag.current.moved = true
     el.scrollLeft = drag.current.scrollLeft - dist
   }
-  const onMouseUp = () => {
+  const stop = () => {
     const el = ref.current
     if (!el) return
     drag.current.active = false
     el.style.cursor = "grab"
   }
-  const onMouseLeave = () => {
-    const el = ref.current
-    if (!el) return
-    drag.current.active = false
-    el.style.cursor = "grab"
-  }
-
-  // Prevent click-firing on children when the pointer moved (it was a drag)
   const onClickCapture = (e: React.MouseEvent) => {
     if (drag.current.moved) {
       e.stopPropagation()
@@ -74,25 +66,23 @@ function DragScroll({
         overflowY: "hidden",
         cursor: "grab",
         userSelect: "none",
-        // Hide scrollbar cross-browser
         scrollbarWidth: "none",
         msOverflowStyle: "none",
         ...style,
       }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseLeave}
+      onMouseUp={stop}
+      onMouseLeave={stop}
       onClickCapture={onClickCapture}
     >
-      {/* Hide webkit scrollbar */}
       <style>{`.drag-scroll::-webkit-scrollbar { display: none; }`}</style>
       {children}
     </div>
   )
 }
 
-// ─── Tiny fade+slide hook ────────────────────────────────────────────────────
+// ─── Fade transition hook ────────────────────────────────────────────────────
 function useViewTransition(view: LexiconView | null) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
@@ -104,7 +94,7 @@ function useViewTransition(view: LexiconView | null) {
   return visible
 }
 
-// ─── Page shell (Suspense boundary required for useSearchParams) ─────────────
+// ─── Page shell ──────────────────────────────────────────────────────────────
 export default function LexiconPage() {
   return (
     <Suspense fallback={<LexiconSkeleton />}>
@@ -119,33 +109,33 @@ function LexiconSkeleton() {
       <SimpleHeader />
       <main className="flex-1 flex flex-col items-center justify-center pt-16 px-4">
         <div className="w-full max-w-2xl">
-          <div className="bg-[#f5f0e8] rounded-sm shadow-2xl shadow-black/40 overflow-hidden">
-            <div className="h-1 bg-[#1a1a1a]" />
-            <div className="px-6 py-10 md:px-10 md:py-14">
-              <div className="flex items-center justify-center mb-10" style={{ height: 32 }}>
-                <div className="h-3 w-24 rounded bg-[#1a1a1a]/10 animate-pulse" />
+          <div className="bg-[#1c1c1c] rounded-sm shadow-2xl shadow-black/60 overflow-hidden border border-white/5">
+            <div className="h-px bg-white/10" />
+            <div className="px-6 py-8 md:px-10 md:py-10">
+              <div className="flex items-center justify-center mb-8" style={{ height: 24 }}>
+                <div className="h-2 w-20 rounded bg-white/10 animate-pulse" />
               </div>
-              <div className="h-px bg-[#1a1a1a]/10 mb-8" />
-              <div className="flex items-center justify-center mb-8" style={{ minHeight: 48 }}>
+              <div className="h-px bg-white/8 mb-6" />
+              <div className="flex items-center justify-center mb-6" style={{ height: 36 }}>
                 <div className="flex gap-8">
                   {[80, 120, 96].map((w, i) => (
-                    <div key={i} className="h-4 rounded bg-[#1a1a1a]/10 animate-pulse" style={{ width: w }} />
+                    <div key={i} className="h-3 rounded bg-white/10 animate-pulse flex-shrink-0" style={{ width: w }} />
                   ))}
                 </div>
               </div>
-              <div className="h-px bg-[#1a1a1a]/10 mb-10" />
-              <div className="flex items-center justify-center" style={{ minHeight: 32 }}>
+              <div className="h-px bg-white/8 mb-6" />
+              <div className="flex items-center justify-center" style={{ height: 24 }}>
                 <div className="flex gap-6">
                   {[64, 96, 80, 72].map((w, i) => (
-                    <div key={i} className="h-3 rounded bg-[#1a1a1a]/10 animate-pulse" style={{ width: w }} />
+                    <div key={i} className="h-2 rounded bg-white/10 animate-pulse flex-shrink-0" style={{ width: w }} />
                   ))}
                 </div>
               </div>
             </div>
-            <div className="h-px bg-[#1a1a1a]/10" />
+            <div className="h-px bg-white/8" />
             <div className="px-6 py-3 md:px-10 flex items-center justify-between">
-              <span className="text-[#1a1a1a]/20 text-[10px] tracking-[0.3em] uppercase" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>Lexicon</span>
-              <span className="text-[#1a1a1a]/20 text-[10px] tracking-[0.3em] uppercase" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>—</span>
+              <span className="font-sans text-white/15 text-[10px] tracking-[0.3em] uppercase">Lexicon</span>
+              <span className="font-sans text-white/15 text-[10px] tracking-[0.3em] uppercase">—</span>
             </div>
           </div>
         </div>
@@ -154,46 +144,41 @@ function LexiconSkeleton() {
   )
 }
 
-// ─── Inner component (uses useSearchParams — must be inside Suspense) ─────────
+// ─── Inner (useSearchParams requires Suspense) ────────────────────────────────
 function LexiconInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
 
   const [view, setView] = useState<LexiconView | null>(null)
-  const [ready, setReady] = useState(false) // true once graph is in memory
+  const [ready, setReady] = useState(false)
 
-  // Recompute view whenever the store emits
+  // Refs to the two DragScroll containers for scrollIntoView centering
+  const siblingsRef = useRef<HTMLDivElement>(null)
+  const childrenRef = useRef<HTMLDivElement>(null)
+
   const recompute = useCallback(() => {
     const s = getStore()
     if (!s.loaded || !s.selectedId) return
     const v = computeView(s.selectedId)
-    if (v) {
-      setView(v)
-      setReady(true)
-    }
+    if (v) { setView(v); setReady(true) }
   }, [])
 
-  // Bootstrap: load graph once, subscribe to store changes
   useEffect(() => {
     const unsub = subscribe(recompute)
     ensureLoaded().then(recompute)
     return unsub
   }, [recompute])
 
-  // Sync selectedId with URL param on mount + URL changes
   useEffect(() => {
     const termLabel = searchParams.get("term")
     if (!termLabel) return
     const s = getStore()
     if (!s.loaded) return
     const term = findByLabel(termLabel)
-    if (term && term.id !== s.selectedId) {
-      setSelectedId(term.id)
-    }
+    if (term && term.id !== s.selectedId) setSelectedId(term.id)
   }, [searchParams])
 
-  // On initial load, if URL has no ?term, set it to KNOWLEDGE after graph loads
   useEffect(() => {
     if (!ready) return
     const termLabel = searchParams.get("term")
@@ -201,12 +186,22 @@ function LexiconInner() {
       const s = getStore()
       if (s.selectedId) {
         const v = computeView(s.selectedId)
-        if (v) {
-          router.replace(`/lexicon?term=${encodeURIComponent(v.selected.label)}`, { scroll: false })
-        }
+        if (v) router.replace(`/lexicon?term=${encodeURIComponent(v.selected.label)}`, { scroll: false })
       }
     }
   }, [ready, searchParams, router])
+
+  // Auto-center selected sibling on selection change
+  useEffect(() => {
+    if (!view || !siblingsRef.current) return
+    const container = siblingsRef.current
+    const selected = container.querySelector("[data-selected='true']") as HTMLElement | null
+    if (!selected) return
+    // Fast, decisive scroll to center
+    const containerCenter = container.offsetWidth / 2
+    const elCenter = selected.offsetLeft + selected.offsetWidth / 2
+    container.scrollTo({ left: elCenter - containerCenter, behavior: "smooth" })
+  }, [view?.selected.id])
 
   const navigateTo = useCallback((label: string) => {
     const term = findByLabel(label)
@@ -219,16 +214,15 @@ function LexiconInner() {
 
   const visible = useViewTransition(view)
 
-  // ─── Transition style helper ────────────────────────────────────────────
   const fade = {
     opacity: visible ? 1 : 0,
-    transform: visible ? "translateY(0)" : "translateY(6px)",
-    transition: "opacity 0.22s ease, transform 0.22s ease",
+    transform: visible ? "translateY(0)" : "translateY(4px)",
+    transition: "opacity 0.18s ease, transform 0.18s ease",
   }
   const fadeUp = {
     opacity: visible ? 1 : 0,
-    transform: visible ? "translateY(0)" : "translateY(-6px)",
-    transition: "opacity 0.22s ease, transform 0.22s ease",
+    transform: visible ? "translateY(0)" : "translateY(-4px)",
+    transition: "opacity 0.18s ease, transform 0.18s ease",
   }
 
   return (
@@ -236,22 +230,18 @@ function LexiconInner() {
       <SimpleHeader />
 
       <main className="flex-1 flex flex-col items-center justify-center pt-16 px-4">
-        {/* Card — dimensions are FIXED. No reflow ever. */}
-        <div
-          className="w-full max-w-2xl"
-          style={{ opacity: 1, transform: "translateY(0)", transition: "opacity 0.4s ease" }}
-        >
-          <div className="bg-[#f5f0e8] rounded-sm shadow-2xl shadow-black/40 overflow-hidden">
-            {/* Top accent bar */}
-            <div className="h-1 bg-[#1a1a1a]" />
+        <div className="w-full max-w-2xl">
+          <div className="bg-[#1c1c1c] rounded-sm shadow-2xl shadow-black/60 overflow-hidden border border-white/5">
 
-            <div className="px-6 py-10 md:px-10 md:py-14">
+            {/* Top accent line */}
+            <div className="h-px bg-white/20" />
 
-              {/* ── ROW 1: Parent ── fixed height 32px, no reflow */}
-              <div className="flex items-center justify-center mb-10" style={{ height: 32 }}>
+            <div className="px-6 py-8 md:px-10 md:py-10">
+
+              {/* ── ROW 1: Parent — height 24px ── */}
+              <div className="flex items-center justify-center mb-8" style={{ height: 24 }}>
                 {!ready ? (
-                  // Skeleton — same height as real content
-                  <div className="h-3 w-24 rounded bg-[#1a1a1a]/10 animate-pulse" />
+                  <div className="h-2 w-20 rounded bg-white/10 animate-pulse" />
                 ) : (
                   <div style={fadeUp}>
                     {view?.parent ? (
@@ -259,31 +249,28 @@ function LexiconInner() {
                         onClick={() => navigateTo(view.parent!.label)}
                         className="flex items-center gap-2 group cursor-pointer"
                       >
-                        <ChevronUp className="w-3.5 h-3.5 text-[#1a1a1a]/30 group-hover:text-[#1a1a1a]/70 transition-colors" />
-                        <span
-                          className="text-[#1a1a1a]/40 text-xs tracking-[0.25em] font-light uppercase group-hover:text-[#1a1a1a]/70 transition-colors"
-                          style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
-                        >
+                        <ChevronUp className="w-3 h-3 text-white/25 group-hover:text-white/60 transition-colors" />
+                        <span className="font-sans text-white/35 text-[10px] tracking-[0.28em] uppercase group-hover:text-white/70 transition-colors duration-150">
                           {view.parent.label}
                         </span>
                       </button>
                     ) : (
-                      // Root node — keep height occupied with invisible spacer
-                      <span className="invisible text-xs">ROOT</span>
+                      <span className="invisible text-[10px]">ROOT</span>
                     )}
                   </div>
                 )}
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-[#1a1a1a]/10 mb-8" />
+              <div className="h-px bg-white/8 mb-6" />
 
-              {/* ── ROW 2: Siblings ── fixed height 48px, drag-scrollable */}
+              {/* ── ROW 2: Siblings — height 36px, drag-to-scroll, auto-center on select ── */}
               <DragScroll
-                className="drag-scroll mb-8"
+                className="drag-scroll mb-6"
+                innerRef={siblingsRef}
                 style={{
-                  height: 48,
-                  lineHeight: "48px",
+                  height: 36,
+                  lineHeight: "36px",
                   display: "flex",
                   alignItems: "center",
                   flexWrap: "nowrap",
@@ -293,7 +280,7 @@ function LexiconInner() {
                 {!ready ? (
                   <div className="flex gap-8 mx-auto" style={{ flexWrap: "nowrap" }}>
                     {[80, 120, 96].map((w, i) => (
-                      <div key={i} className="h-4 rounded bg-[#1a1a1a]/10 animate-pulse flex-shrink-0" style={{ width: w }} />
+                      <div key={i} className="h-3 rounded bg-white/10 animate-pulse flex-shrink-0" style={{ width: w }} />
                     ))}
                   </div>
                 ) : (
@@ -303,8 +290,10 @@ function LexiconInner() {
                       display: "inline-flex",
                       flexWrap: "nowrap",
                       whiteSpace: "nowrap",
-                      gap: "40px",
+                      gap: "36px",
                       margin: "0 auto",
+                      paddingLeft: "40%",
+                      paddingRight: "40%",
                     }}
                   >
                     {view?.siblings.map((sibling) => {
@@ -312,29 +301,28 @@ function LexiconInner() {
                       return (
                         <button
                           key={sibling.id}
+                          data-selected={isSelected ? "true" : "false"}
                           onClick={() => !isSelected && navigateTo(sibling.label)}
-                          className={`relative pb-2 flex-shrink-0 ${isSelected ? "cursor-default" : "cursor-pointer group"}`}
-                          style={{ flexShrink: 0 }}
+                          className={`relative flex-shrink-0 pb-1.5 ${isSelected ? "cursor-default" : "cursor-pointer group"}`}
                         >
                           <span
-                            className={`text-sm md:text-base tracking-[0.2em] font-normal uppercase transition-colors duration-200 ${
-                              isSelected ? "text-[#1a1a1a]" : "text-[#1a1a1a]/30 group-hover:text-[#1a1a1a]/70"
+                            className={`font-sans text-sm tracking-[0.22em] font-normal uppercase transition-colors duration-150 ${
+                              isSelected ? "text-white" : "text-white/28 group-hover:text-white/60"
                             }`}
-                            style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
                           >
                             {sibling.label}
                           </span>
-                          {isSelected && (
-                            <span
-                              className="absolute bottom-0 left-0 right-0 block"
-                              style={{
-                                height: 2,
-                                background: "#1a1a1a",
-                                // CSS-only underline slide — no layout change
-                                animation: "underline-in 0.25s ease forwards",
-                              }}
-                            />
-                          )}
+                          {/* Animated underline — scaleX from 0→1 on selection */}
+                          <span
+                            className="absolute bottom-0 left-0 right-0 block"
+                            style={{
+                              height: 1.5,
+                              background: "rgba(255,255,255,0.85)",
+                              transformOrigin: "left",
+                              transform: isSelected ? "scaleX(1)" : "scaleX(0)",
+                              transition: "transform 0.22s cubic-bezier(0.4,0,0.2,1)",
+                            }}
+                          />
                         </button>
                       )
                     })}
@@ -343,14 +331,15 @@ function LexiconInner() {
               </DragScroll>
 
               {/* Divider */}
-              <div className="h-px bg-[#1a1a1a]/10 mb-10" />
+              <div className="h-px bg-white/8 mb-6" />
 
-              {/* ── ROW 3: Children ── fixed height 32px, drag-scrollable */}
+              {/* ── ROW 3: Children — height 24px, drag-to-scroll ── */}
               <DragScroll
                 className="drag-scroll"
+                innerRef={childrenRef}
                 style={{
-                  height: 32,
-                  lineHeight: "32px",
+                  height: 24,
+                  lineHeight: "24px",
                   display: "flex",
                   alignItems: "center",
                   flexWrap: "nowrap",
@@ -360,7 +349,7 @@ function LexiconInner() {
                 {!ready ? (
                   <div className="flex gap-6 mx-auto" style={{ flexWrap: "nowrap" }}>
                     {[64, 96, 80, 72].map((w, i) => (
-                      <div key={i} className="h-3 rounded bg-[#1a1a1a]/10 animate-pulse flex-shrink-0" style={{ width: w }} />
+                      <div key={i} className="h-2 rounded bg-white/10 animate-pulse flex-shrink-0" style={{ width: w }} />
                     ))}
                   </div>
                 ) : (
@@ -370,8 +359,10 @@ function LexiconInner() {
                       display: "inline-flex",
                       flexWrap: "nowrap",
                       whiteSpace: "nowrap",
-                      gap: "32px",
+                      gap: "28px",
                       margin: "0 auto",
+                      paddingLeft: "40%",
+                      paddingRight: "40%",
                     }}
                   >
                     {view?.children && view.children.length > 0 ? (
@@ -379,22 +370,15 @@ function LexiconInner() {
                         <button
                           key={child.id}
                           onClick={() => navigateTo(child.label)}
-                          className="cursor-pointer group"
-                          style={{ flexShrink: 0 }}
+                          className="cursor-pointer group flex-shrink-0"
                         >
-                          <span
-                            className="text-xs md:text-sm tracking-[0.2em] font-light uppercase text-[#1a1a1a]/30 group-hover:text-[#1a1a1a]/70 transition-colors duration-200"
-                            style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
-                          >
+                          <span className="font-sans text-[11px] tracking-[0.22em] font-light uppercase text-white/28 group-hover:text-white/65 transition-colors duration-150">
                             {child.label}
                           </span>
                         </button>
                       ))
                     ) : (
-                      <span
-                        className="text-[#1a1a1a]/15 text-xs tracking-[0.3em] uppercase italic"
-                        style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
-                      >
+                      <span className="font-sans text-white/15 text-[10px] tracking-[0.28em] uppercase">
                         leaf node
                       </span>
                     )}
@@ -405,28 +389,17 @@ function LexiconInner() {
             </div>
 
             {/* Bottom bar */}
-            <div className="h-px bg-[#1a1a1a]/10" />
+            <div className="h-px bg-white/8" />
             <div className="px-6 py-3 md:px-10 flex items-center justify-between">
-              <span className="text-[#1a1a1a]/20 text-[10px] tracking-[0.3em] uppercase"
-                style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
-                Lexicon
-              </span>
-              <span className="text-[#1a1a1a]/20 text-[10px] tracking-[0.3em] uppercase"
-                style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
+              <span className="font-sans text-white/15 text-[10px] tracking-[0.3em] uppercase">Lexicon</span>
+              <span className="font-sans text-white/15 text-[10px] tracking-[0.3em] uppercase">
                 {view?.selected.label ?? "—"}
               </span>
             </div>
+
           </div>
         </div>
       </main>
-
-      {/* CSS-only keyframe — no JS animation library needed for the underline */}
-      <style>{`
-        @keyframes underline-in {
-          from { transform: scaleX(0); transform-origin: left; }
-          to   { transform: scaleX(1); transform-origin: left; }
-        }
-      `}</style>
     </div>
   )
 }
