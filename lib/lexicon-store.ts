@@ -105,7 +105,7 @@ export function computeView(termId?: string): LexiconView | null {
   if (!selected) return null
 
   // Parent edge
-  const parentEdge = store.edges.find(e => e.child_id === termId)
+  const parentEdge = store.edges.find(e => e.child_id === id)
   const parent = parentEdge ? (termMap.get(parentEdge.parent_id) ?? null) : null
 
   // Siblings: all children of the same parent, sorted
@@ -122,7 +122,7 @@ export function computeView(termId?: string): LexiconView | null {
 
   // Children: direct children of selected
   const children = store.edges
-    .filter(e => e.parent_id === termId)
+    .filter(e => e.parent_id === id)
     .sort((a, b) => a.sort_order - b.sort_order)
     .map(e => termMap.get(e.child_id))
     .filter(Boolean) as LexiconTerm[]
