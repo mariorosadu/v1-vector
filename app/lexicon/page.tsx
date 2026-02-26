@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useTransition, Suspense, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useTransition, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { SimpleHeader } from "@/components/simple-header"
 import { ChevronUp } from "lucide-react"
@@ -14,79 +14,68 @@ import {
   type LexiconView,
 } from "@/lib/lexicon-store"
 
-// ─── CSS ─────────────────────────────────────────────────────────────────────
-const STYLES = `
-  .drag-scroll::-webkit-scrollbar { display:none; }
-`
+const ROW_H = {
+  parent:   28,
+  siblings: 40,
+  children: 28,
+  divider:  20,
+}
+const TOTAL_H = ROW_H.parent + ROW_H.divider + ROW_H.siblings + ROW_H.divider + ROW_H.children
 
 // ─── DragScroll ──────────────────────────────────────────────────────────────
-function DragScroll({
-  children, style, className, innerRef,
-}: {
+function DragScroll({ children, style, className, scrollRef }: {
   children: React.ReactNode
   style?: React.CSSProperties
   className?: string
-  innerRef?: React.RefObject<HTMLDivElement | null>
+  scrollRef: React.RefObject<HTMLDivElement | null>
 }) {
-  const ownRef = useRef<HTMLDivElement>(null)
-  const ref = (innerRef ?? ownRef) as React.RefObject<HTMLDivElement>
   const drag = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false })
 
-  const onMouseDown = (e: React.MouseEvent) => {
-    const el = ref.current; if (!el) return
-    drag.current = { active: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft, moved: false }
+  const down  = (e: React.MouseEvent) => {
+    const el = scrollRef.current; if (!el) return
+    drag.current = { active: true, startX: e.pageX, scrollLeft: el.scrollLeft, moved: false }
     el.style.cursor = "grabbing"
   }
-  const onMouseMove = (e: React.MouseEvent) => {
-    const el = ref.current; if (!drag.current.active || !el) return
+  const move  = (e: React.MouseEvent) => {
+    const el = scrollRef.current; if (!drag.current.active || !el) return
     e.preventDefault()
-    const dist = (e.pageX - el.offsetLeft) - drag.current.startX
-    if (Math.abs(dist) > 4) drag.current.moved = true
-    el.scrollLeft = drag.current.scrollLeft - dist
+    const d = e.pageX - drag.current.startX
+    if (Math.abs(d) > 4) drag.current.moved = true
+    el.scrollLeft = drag.current.scrollLeft - d
   }
-  const stop = () => { const el = ref.current; if (el) { drag.current.active = false; el.style.cursor = "grab" } }
-  const onClickCapture = (e: React.MouseEvent) => {
-    if (drag.current.moved) { e.stopPropagation(); drag.current.moved = false }
-  }
+  const up    = () => { const el = scrollRef.current; if (el) { drag.current.active = false; el.style.cursor = "grab" } }
+  const click = (e: React.MouseEvent) => { if (drag.current.moved) { e.stopPropagation(); drag.current.moved = false } }
 
   return (
-    <div ref={ref} className={className}
-      style={{ overflowX:"auto", overflowY:"hidden", cursor:"grab", userSelect:"none", scrollbarWidth:"none", ...style }}
-      onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={stop} onMouseLeave={stop} onClickCapture={onClickCapture}
+    <div
+      ref={scrollRef as React.RefObject<HTMLDivElement>}
+      className={className}
+      style={{ overflowX: "auto", overflowY: "hidden", cursor: "grab", userSelect: "none", scrollbarWidth: "none", ...style }}
+      onMouseDown={down} onMouseMove={move} onMouseUp={up} onMouseLeave={up} onClickCapture={click}
     >
+      <style>{`.drag-scroll::-webkit-scrollbar{display:none}`}</style>
       {children}
     </div>
   )
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-type Direction = "down" | "up" | "lateral" | "none"
-
-function scrollToLabel(container: HTMLDivElement | null, label: string, behavior: ScrollBehavior) {
-  if (!container) return
+// ─── Center a labelled element inside a scroll container ─────────────────────
+function scrollLabelToCenter(container: HTMLDivElement | null, label: string, behavior: ScrollBehavior) {
+  if (!container) return 0
   const el = container.querySelector(`[data-label="${CSS.escape(label)}"]`) as HTMLElement | null
-  if (!el) return
-  const containerCenter = container.offsetWidth / 2
-  const elCenter = el.offsetLeft + el.offsetWidth / 2
-  container.scrollTo({ left: elCenter - containerCenter, behavior })
+  if (!el) return 0
+  const to = el.offsetLeft + el.offsetWidth / 2 - container.offsetWidth / 2
+  container.scrollTo({ left: to, behavior })
+  return to
 }
 
-function ensureCenterPadding(container: HTMLDivElement | null, inner: HTMLDivElement | null) {
+// Ensure edge-words can reach center by padding inner flex wrapper
+function applyHalfPad(container: HTMLDivElement | null, inner: HTMLDivElement | null) {
   if (!container || !inner) return
   const half = container.offsetWidth / 2
-  inner.style.paddingLeft = `${half}px`
+  inner.style.paddingLeft  = `${half}px`
   inner.style.paddingRight = `${half}px`
 }
-
-// ─── Layout constants ────────────────────────────────────────────────────────
-// Parent row: 24px, gap: 8px divider + 24px margin = 32px, Siblings row: 36px, gap: same 32px, Children: 24px
-// Row step (center-to-center): parentHeight/2 + gap + siblingsHeight/2 = 12 + 32 + 18 = 62
-// We use the distance from one row container top to the next
-const PARENT_H = 24
-const SIBLINGS_H = 36
-const CHILDREN_H = 24
-const GAP = 32 // divider height + margin
-const ROW_STEP = PARENT_H + GAP // distance from parent top to siblings top = 56
 
 // ─── Page shell ──────────────────────────────────────────────────────────────
 export default function LexiconPage() {
@@ -99,26 +88,26 @@ export default function LexiconPage() {
 
 function LexiconSkeleton() {
   return (
-    <div className="bg-[#0a0a0a] min-h-dvh w-full flex flex-col">
+    <div className="bg-[#0a0a0a] min-h-dvh flex flex-col">
       <SimpleHeader />
-      <main className="flex-1 flex flex-col items-center justify-center pt-16 px-4">
+      <main className="flex-1 flex items-center justify-center pt-16 px-4">
         <div className="w-full max-w-2xl">
-          <div className="bg-[#1c1c1c] rounded-sm shadow-2xl shadow-black/60 overflow-hidden border border-white/5">
+          <div className="bg-[#1c1c1c] rounded-sm border border-white/5 overflow-hidden">
             <div className="h-px bg-white/20" />
-            <div className="px-6 py-6 md:px-10 md:py-8 border-b border-white/10 text-center">
-              <div className="h-6 w-36 mx-auto rounded bg-white/10 animate-pulse" />
+            <div className="px-10 py-6 border-b border-white/10 text-center">
+              <div className="h-6 w-32 mx-auto rounded bg-white/10 animate-pulse" />
             </div>
-            <div className="px-6 py-8 md:px-10 md:py-10">
-              <div className="flex items-center justify-center" style={{ height: PARENT_H }}>
+            <div className="px-10 py-10" style={{ height: TOTAL_H + 80 }}>
+              <div className="flex items-center justify-center" style={{ height: ROW_H.parent }}>
                 <div className="h-2 w-20 rounded bg-white/10 animate-pulse" />
               </div>
-              <div className="h-px bg-white/8 my-4" />
-              <div className="flex items-center justify-center" style={{ height: SIBLINGS_H }}>
-                {[80,120,96].map((w,i) => <div key={i} className="h-3 rounded bg-white/10 animate-pulse mx-4" style={{ width:w }} />)}
+              <div className="my-5 h-px bg-white/8" />
+              <div className="flex items-center justify-center gap-8" style={{ height: ROW_H.siblings }}>
+                {[80,120,96].map((w,i) => <div key={i} className="h-3 rounded bg-white/10 animate-pulse" style={{ width: w }} />)}
               </div>
-              <div className="h-px bg-white/8 my-4" />
-              <div className="flex items-center justify-center" style={{ height: CHILDREN_H }}>
-                {[64,96,80,72].map((w,i) => <div key={i} className="h-2 rounded bg-white/10 animate-pulse mx-3" style={{ width:w }} />)}
+              <div className="my-5 h-px bg-white/8" />
+              <div className="flex items-center justify-center gap-6" style={{ height: ROW_H.children }}>
+                {[64,96,80,72].map((w,i) => <div key={i} className="h-2 rounded bg-white/10 animate-pulse" style={{ width: w }} />)}
               </div>
             </div>
             <div className="h-px bg-white/8" />
@@ -130,27 +119,28 @@ function LexiconSkeleton() {
 }
 
 // ─── Inner ───────────────────────────────────────────────────────────────────
+type Phase = "idle" | "phase1" | "phase2"
+
 function LexiconInner() {
-  const router = useRouter()
-  const params = useSearchParams()
+  const router  = useRouter()
+  const params  = useSearchParams()
   const [, startT] = useTransition()
 
-  const [view, setView] = useState<LexiconView | null>(null)
+  const [view,  setView]  = useState<LexiconView | null>(null)
   const [ready, setReady] = useState(false)
 
-  // Refs for scroll containers + inner wrappers
-  const siblingsRef    = useRef<HTMLDivElement>(null)
+  // Refs
+  const siblingsScroll = useRef<HTMLDivElement>(null)
   const siblingsInner  = useRef<HTMLDivElement>(null)
-  const childrenRef    = useRef<HTMLDivElement>(null)
+  const childrenScroll = useRef<HTMLDivElement>(null)
   const childrenInner  = useRef<HTMLDivElement>(null)
-  const parentRef      = useRef<HTMLDivElement>(null)
+  const parentScroll   = useRef<HTMLDivElement>(null)
 
-  // Vertical slide state
-  const rowsWrapperRef = useRef<HTMLDivElement>(null)
-  const [slideY, setSlideY] = useState(0)
-  const [sliding, setSliding] = useState(false)
-  const transitioning = useRef(false)
+  // Vertical slide: we animate a single wrapper div
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const phase      = useRef<Phase>("idle")
 
+  // ── Store subscription ──────────────────────────────────────────────────────
   const recompute = useCallback(() => {
     const s = getStore()
     if (!s.loaded || !s.selectedId) return
@@ -164,129 +154,116 @@ function LexiconInner() {
     return unsub
   }, [recompute])
 
-  // URL sync on load
+  // URL sync
   useEffect(() => {
-    const termLabel = params.get("term")
-    if (!termLabel) return
+    const label = params.get("term")
+    if (!label) return
     const s = getStore()
     if (!s.loaded) return
-    const term = findByLabel(termLabel)
-    if (term && term.id !== s.selectedId) setSelectedId(term.id)
+    const t = findByLabel(label)
+    if (t && t.id !== s.selectedId) setSelectedId(t.id)
   }, [params])
 
-  // Set URL if missing
+  useEffect(() => {
+    if (!ready || params.get("term") || !view) return
+    router.replace(`/lexicon?term=${encodeURIComponent(view.selected.label)}`, { scroll: false })
+  }, [ready, view, params, router])
+
+  // Center siblings on first load
   useEffect(() => {
     if (!ready) return
-    const termLabel = params.get("term")
-    if (!termLabel && view) {
-      router.replace(`/lexicon?term=${encodeURIComponent(view.selected.label)}`, { scroll: false })
-    }
-  }, [ready, params, router, view])
+    requestAnimationFrame(() => {
+      applyHalfPad(siblingsScroll.current, siblingsInner.current)
+      const container = siblingsScroll.current
+      if (!container) return
+      const sel = container.querySelector("[data-selected='true']") as HTMLElement | null
+      if (sel) {
+        container.scrollLeft = sel.offsetLeft + sel.offsetWidth / 2 - container.offsetWidth / 2
+      }
+    })
+  }, [ready])
 
-  // ── Center selected sibling ──
-  const centerSiblings = useCallback((behavior: ScrollBehavior) => {
-    ensureCenterPadding(siblingsRef.current, siblingsInner.current)
-    const container = siblingsRef.current
-    if (!container) return
-    const selected = container.querySelector("[data-selected='true']") as HTMLElement | null
-    if (!selected) return
-    const containerCenter = container.offsetWidth / 2
-    const elCenter = selected.offsetLeft + selected.offsetWidth / 2
-    container.scrollTo({ left: elCenter - containerCenter, behavior })
-  }, [])
-
-  // Center on initial load
-  useEffect(() => {
-    if (!ready) return
-    requestAnimationFrame(() => centerSiblings("instant"))
-  }, [ready, centerSiblings])
-
-  // ── Two-phase navigation ──
-  const navigateTo = useCallback((label: string, dir: Direction) => {
-    if (transitioning.current) return
+  // ── Navigate ──────────────────────────────────────────────────────────────
+  const navigateTo = useCallback((label: string, from: "parent" | "children" | "siblings") => {
+    if (phase.current !== "idle") return
     const term = findByLabel(label)
     if (!term) return
-    transitioning.current = true
+    phase.current = "phase1"
 
-    if (dir === "lateral") {
-      // Lateral: just swap data, center the new selected word
+    if (from === "siblings") {
+      // Lateral: just swap + re-center immediately
       startT(() => {
         setSelectedId(term.id)
         router.push(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
       })
-      // Center after data swap
       setTimeout(() => {
-        centerSiblings("smooth")
-        transitioning.current = false
-      }, 30)
+        applyHalfPad(siblingsScroll.current, siblingsInner.current)
+        const container = siblingsScroll.current
+        if (container) {
+          const sel = container.querySelector("[data-selected='true']") as HTMLElement | null
+          if (sel) container.scrollTo({ left: sel.offsetLeft + sel.offsetWidth / 2 - container.offsetWidth / 2, behavior: "smooth" })
+        }
+        phase.current = "idle"
+      }, 50)
       return
     }
 
-    // ── Phase 1: Scroll clicked word to center in its current row ──
-    const sourceContainer = dir === "down" ? childrenRef.current : parentRef.current
-    if (sourceContainer) {
-      scrollToLabel(sourceContainer, label, "smooth")
-    }
+    // ── PHASE 1: scroll clicked word to center of its row ──────────────────
+    const sourceRef = from === "children" ? childrenScroll.current : parentScroll.current
+    scrollLabelToCenter(sourceRef, label, "smooth")
 
-    // Wait for horizontal scroll to complete
+    // ── PHASE 2 (after 400ms): slide rows wrapper ───────────────────────────
     setTimeout(() => {
-      // ── Phase 2: Slide entire rows wrapper vertically ──
-      // Measure the actual distance between the source row and the siblings row
-      const wrapper = rowsWrapperRef.current
-      if (!wrapper) { transitioning.current = false; return }
+      phase.current = "phase2"
+      const wrapper = wrapperRef.current
+      if (!wrapper) { phase.current = "idle"; return }
 
-      const sourceRow = dir === "down"
-        ? wrapper.querySelector("[data-row='children']") as HTMLElement
-        : wrapper.querySelector("[data-row='parent']") as HTMLElement
-      const middleRow = wrapper.querySelector("[data-row='siblings']") as HTMLElement
+      // Measure the pixel distance from the source row to the siblings row
+      const sourceRowEl = wrapper.querySelector(`[data-row="${from}"]`) as HTMLElement | null
+      const middleRowEl = wrapper.querySelector(`[data-row="siblings"]`) as HTMLElement | null
+      if (!sourceRowEl || !middleRowEl) { phase.current = "idle"; return }
 
-      if (!sourceRow || !middleRow) { transitioning.current = false; return }
+      const srcMid    = sourceRowEl.getBoundingClientRect().top + sourceRowEl.offsetHeight / 2
+      const midMid    = middleRowEl.getBoundingClientRect().top + middleRowEl.offsetHeight / 2
+      const distance  = srcMid - midMid  // + = source is below, - = source is above
 
-      const sourceTop = sourceRow.getBoundingClientRect().top
-      const middleTop = middleRow.getBoundingClientRect().top
-      const distance = sourceTop - middleTop // positive if source is below, negative if above
+      // Slide wrapper so source row aligns with where siblings row was
+      wrapper.style.transition = "transform 0.45s cubic-bezier(0.4, 0, 0.2, 1)"
+      wrapper.style.transform  = `translateY(${-distance}px)`
 
-      // Apply translateY to move the source row to where the middle row is
-      setSliding(true)
-      setSlideY(-distance) // negate: if child is 60px below, we slide wrapper up by 60px
-
-      // After the vertical slide transition ends, swap data and reset
+      // After slide finishes, snap new data and reset
       setTimeout(() => {
-        // Disable transition, reset position, swap data
-        setSliding(false)
-        setSlideY(0)
+        // Disable transition, reset
+        wrapper.style.transition = "none"
+        wrapper.style.transform  = "translateY(0)"
 
+        // Swap data
         startT(() => {
           setSelectedId(term.id)
           router.push(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
         })
 
-        // Center the new selected word after data swap
+        // Center the newly selected word after data swap
         setTimeout(() => {
-          centerSiblings("instant")
-          transitioning.current = false
-        }, 30)
-      }, 420) // matches transition duration
+          applyHalfPad(siblingsScroll.current, siblingsInner.current)
+          const container = siblingsScroll.current
+          if (container) {
+            const sel = container.querySelector("[data-selected='true']") as HTMLElement | null
+            if (sel) container.scrollLeft = sel.offsetLeft + sel.offsetWidth / 2 - container.offsetWidth / 2
+          }
+          phase.current = "idle"
+        }, 50)
+      }, 480)
+    }, 400)
 
-    }, 350) // wait for Phase 1 horizontal scroll
-
-  }, [router, centerSiblings])
-
-  // Wrapper style for vertical sliding
-  const wrapperStyle: React.CSSProperties = {
-    transform: `translateY(${slideY}px)`,
-    transition: sliding ? "transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)" : "none",
-  }
+  }, [router])
 
   return (
-    <div className="bg-[#0a0a0a] min-h-dvh w-full flex flex-col">
-      <style>{STYLES}</style>
+    <div className="bg-[#0a0a0a] min-h-dvh flex flex-col">
       <SimpleHeader />
-
-      <main className="flex-1 flex flex-col items-center justify-center pt-16 px-4">
+      <main className="flex-1 flex items-center justify-center pt-16 px-4">
         <div className="w-full max-w-2xl">
-          <div className="bg-[#1c1c1c] rounded-sm shadow-2xl shadow-black/60 overflow-hidden border border-white/5">
-
+          <div className="bg-[#1c1c1c] rounded-sm shadow-2xl shadow-black/60 border border-white/5 overflow-hidden">
             <div className="h-px bg-white/20" />
 
             {/* Title */}
@@ -296,117 +273,130 @@ function LexiconInner() {
               </h1>
             </div>
 
-            {/* Clip container — hides rows sliding out */}
-            <div className="overflow-hidden">
-              <div ref={rowsWrapperRef} className="px-6 py-8 md:px-10 md:py-10" style={wrapperStyle}>
+            {/* Row clip window — keeps sliding rows from overflowing */}
+            <div style={{ overflow: "hidden" }}>
+              <div ref={wrapperRef} className="px-6 py-8 md:px-10 md:py-10">
 
-                {/* ── ROW 1: Parent ── */}
+                {/* ROW 1 — Parent */}
                 <div
                   data-row="parent"
-                  ref={parentRef}
-                  style={{ height: PARENT_H, display:"flex", alignItems:"center", justifyContent:"center", marginBottom: GAP/2 }}
+                  style={{ height: ROW_H.parent, display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
-                  {!ready ? (
-                    <div className="h-2 w-20 rounded bg-white/10 animate-pulse" />
-                  ) : view?.parent ? (
-                    <button
-                      onClick={() => navigateTo(view.parent!.label, "up")}
-                      className="flex items-center gap-2 group cursor-pointer"
-                      data-label={view.parent.label}
-                    >
-                      <ChevronUp className="w-3 h-3 text-white/25 group-hover:text-white/60 transition-colors" />
-                      <span className="font-sans text-white/35 text-[10px] tracking-[0.28em] uppercase group-hover:text-white/70 transition-colors duration-150">
-                        {view.parent.label}
-                      </span>
-                    </button>
+                  {ready && view?.parent ? (
+                    <DragScroll scrollRef={parentScroll} style={{ maxWidth: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ display: "inline-flex", gap: 32, padding: "0 50%", alignItems: "center", height: "100%" }}>
+                        <button
+                          onClick={() => navigateTo(view.parent!.label, "parent")}
+                          className="flex items-center gap-2 group cursor-pointer flex-shrink-0"
+                          data-label={view.parent.label}
+                        >
+                          <ChevronUp className="w-3 h-3 text-white/25 group-hover:text-white/60 transition-colors" />
+                          <span className="font-sans text-white/35 text-[10px] tracking-[0.28em] uppercase group-hover:text-white/70 transition-colors">
+                            {view.parent.label}
+                          </span>
+                        </button>
+                      </div>
+                    </DragScroll>
+                  ) : ready ? (
+                    <span className="font-sans text-white/15 text-[10px] tracking-[0.28em] uppercase">root</span>
                   ) : (
-                    <span className="invisible text-[10px]">ROOT</span>
+                    <div className="h-2 w-20 rounded bg-white/10 animate-pulse" />
                   )}
                 </div>
 
-                <div className="h-px bg-white/8" style={{ marginBottom: GAP/2 }} />
+                {/* Divider */}
+                <div className="h-px bg-white/8" style={{ margin: `${ROW_H.divider / 2}px 0` }} />
 
-                {/* ── ROW 2: Siblings ── */}
-                <DragScroll
+                {/* ROW 2 — Siblings (selected word always centered) */}
+                <div
                   data-row="siblings"
-                  className="drag-scroll"
-                  innerRef={siblingsRef}
-                  style={{ height: SIBLINGS_H, lineHeight:`${SIBLINGS_H}px`, display:"flex", alignItems:"center", flexWrap:"nowrap", whiteSpace:"nowrap", marginBottom: GAP/2 }}
+                  style={{ height: ROW_H.siblings }}
                 >
                   {!ready ? (
-                    <div className="flex gap-8 mx-auto">
-                      {[80,120,96].map((w,i) => <div key={i} className="h-3 rounded bg-white/10 animate-pulse flex-shrink-0" style={{ width:w }} />)}
+                    <div className="flex items-center justify-center gap-8 h-full">
+                      {[80,120,96].map((w,i) => <div key={i} className="h-3 rounded bg-white/10 animate-pulse flex-shrink-0" style={{ width: w }} />)}
                     </div>
                   ) : (
-                    <div
-                      ref={siblingsInner}
-                      style={{ display:"inline-flex", flexWrap:"nowrap", whiteSpace:"nowrap", gap:36 }}
+                    <DragScroll
+                      scrollRef={siblingsScroll}
+                      className="drag-scroll"
+                      style={{ height: "100%", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}
                     >
-                      {view?.siblings.map((sibling) => {
-                        const isSel = sibling.id === view.selected.id
-                        return (
-                          <button
-                            key={sibling.id}
-                            data-selected={isSel ? "true" : "false"}
-                            data-label={sibling.label}
-                            onClick={() => !isSel && navigateTo(sibling.label, "lateral")}
-                            className={`relative flex-shrink-0 pb-1.5 ${isSel ? "cursor-default" : "cursor-pointer group"}`}
-                          >
-                            <span className={`font-sans text-sm tracking-[0.22em] font-normal uppercase transition-colors duration-150 ${
-                              isSel ? "text-white" : "text-white/30 group-hover:text-white/60"
-                            }`}>
-                              {sibling.label}
-                            </span>
-                            {/* Animated underline */}
-                            <span className="absolute bottom-0 left-0 right-0 block" style={{
-                              height: 1.5, background:"rgba(255,255,255,0.85)", transformOrigin:"left",
-                              transform: isSel ? "scaleX(1)" : "scaleX(0)",
-                              transition:"transform 0.22s cubic-bezier(0.4,0,0.2,1)",
-                            }} />
-                          </button>
-                        )
-                      })}
-                    </div>
+                      <div
+                        ref={siblingsInner}
+                        style={{ display: "inline-flex", gap: 36, alignItems: "center" }}
+                      >
+                        {view?.siblings.map((s) => {
+                          const isSel = s.id === view.selected.id
+                          return (
+                            <button
+                              key={s.id}
+                              data-selected={isSel ? "true" : "false"}
+                              data-label={s.label}
+                              onClick={() => !isSel && navigateTo(s.label, "siblings")}
+                              className={`relative flex-shrink-0 pb-2 ${isSel ? "cursor-default" : "cursor-pointer group"}`}
+                            >
+                              <span className={`font-sans text-sm tracking-[0.22em] uppercase font-normal transition-colors duration-200 ${
+                                isSel ? "text-white" : "text-white/30 group-hover:text-white/60"
+                              }`}>
+                                {s.label}
+                              </span>
+                              <span style={{
+                                position: "absolute", bottom: 0, left: 0, right: 0, height: 1.5,
+                                background: "rgba(255,255,255,0.8)", transformOrigin: "left",
+                                transform: isSel ? "scaleX(1)" : "scaleX(0)",
+                                transition: "transform 0.25s cubic-bezier(0.4,0,0.2,1)",
+                              }} />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </DragScroll>
                   )}
-                </DragScroll>
+                </div>
 
-                <div className="h-px bg-white/8" style={{ marginBottom: GAP/2 }} />
+                {/* Divider */}
+                <div className="h-px bg-white/8" style={{ margin: `${ROW_H.divider / 2}px 0` }} />
 
-                {/* ── ROW 3: Children ── */}
-                <DragScroll
+                {/* ROW 3 — Children */}
+                <div
                   data-row="children"
-                  className="drag-scroll"
-                  innerRef={childrenRef}
-                  style={{ height: CHILDREN_H, lineHeight:`${CHILDREN_H}px`, display:"flex", alignItems:"center", flexWrap:"nowrap", whiteSpace:"nowrap" }}
+                  style={{ height: ROW_H.children }}
                 >
                   {!ready ? (
-                    <div className="flex gap-6 mx-auto">
-                      {[64,96,80,72].map((w,i) => <div key={i} className="h-2 rounded bg-white/10 animate-pulse flex-shrink-0" style={{ width:w }} />)}
+                    <div className="flex items-center justify-center gap-6 h-full">
+                      {[64,96,80,72].map((w,i) => <div key={i} className="h-2 rounded bg-white/10 animate-pulse flex-shrink-0" style={{ width: w }} />)}
                     </div>
                   ) : (
-                    <div
-                      ref={childrenInner}
-                      style={{ display:"inline-flex", flexWrap:"nowrap", whiteSpace:"nowrap", gap:28, margin:"0 auto" }}
+                    <DragScroll
+                      scrollRef={childrenScroll}
+                      className="drag-scroll"
+                      style={{ height: "100%", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}
                     >
-                      {view?.children && view.children.length > 0 ? (
-                        view.children.map((child) => (
-                          <button
-                            key={child.id}
-                            data-label={child.label}
-                            onClick={() => navigateTo(child.label, "down")}
-                            className="cursor-pointer group flex-shrink-0"
-                          >
-                            <span className="font-sans text-[11px] tracking-[0.22em] font-light uppercase text-white/30 group-hover:text-white/65 transition-colors duration-150">
-                              {child.label}
-                            </span>
-                          </button>
-                        ))
-                      ) : (
-                        <span className="font-sans text-white/15 text-[10px] tracking-[0.28em] uppercase mx-auto">leaf node</span>
-                      )}
-                    </div>
+                      <div
+                        ref={childrenInner}
+                        style={{ display: "inline-flex", gap: 28, alignItems: "center", paddingLeft: "50%", paddingRight: "50%" }}
+                      >
+                        {view?.children && view.children.length > 0 ? (
+                          view.children.map((c) => (
+                            <button
+                              key={c.id}
+                              data-label={c.label}
+                              onClick={() => navigateTo(c.label, "children")}
+                              className="cursor-pointer group flex-shrink-0"
+                            >
+                              <span className="font-sans text-[11px] tracking-[0.22em] uppercase font-light text-white/30 group-hover:text-white/65 transition-colors">
+                                {c.label}
+                              </span>
+                            </button>
+                          ))
+                        ) : (
+                          <span className="font-sans text-white/15 text-[10px] tracking-[0.28em] uppercase">leaf node</span>
+                        )}
+                      </div>
+                    </DragScroll>
                   )}
-                </DragScroll>
+                </div>
 
               </div>
             </div>
