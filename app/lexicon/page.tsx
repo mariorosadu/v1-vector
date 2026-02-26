@@ -52,13 +52,72 @@ function DragScroll({ children, style, innerRef }: {
   )
 }
 
-// ─── Center a word inside a scrollable container ──────────────────────────────
-function centerWord(container: HTMLDivElement | null, label: string, instant: boolean) {
+// ─── Center helpers ───────────────────────────────────────────────────────────
+function centerLeft(container: HTMLDivElement, el: HTMLElement) {
+  return el.offsetLeft + el.offsetWidth / 2 - container.offsetWidth / 2
+}
+
+function centerWordInstant(container: HTMLDivElement | null, label: string) {
   if (!container) return
   const el = container.querySelector(`[data-label="${CSS.escape(label)}"]`) as HTMLElement | null
   if (!el) return
-  const to = el.offsetLeft + el.offsetWidth / 2 - container.offsetWidth / 2
-  container.scrollTo({ left: to, behavior: instant ? "instant" : "smooth" })
+  container.scrollLeft = centerLeft(container, el)
+}
+
+function centerWordAnimated(container: HTMLDivElement | null, label: string, duration = 380): Promise<void> {
+  return new Promise<void>((resolve) => {
+    if (!container) return resolve()
+    const el = container.querySelector(`[data-label="${CSS.escape(label)}"]`) as HTMLElement | null
+    if (!el) return resolve()
+    const from = container.scrollLeft
+    const to = centerLeft(container, el)
+    if (!Number.isFinite(to) || Math.abs(to - from) < 0.5) {
+      container.scrollLeft = to
+      return resolve()
+    }
+    const start = performance.now()
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3)
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration)
+      container.scrollLeft = from + (to - from) * ease(t)
+      if (t < 1) requestAnimationFrame(tick)
+      else resolve()
+    }
+    requestAnimationFrame(tick)
+  })
+}
+
+function nextFrame() {
+  return new Promise<void>((r) => requestAnimationFrame(() => r()))
+}
+
+function waitTransitionEnd(el: HTMLElement, prop = "transform", timeoutMs = 800): Promise<void> {
+  return new Promise<void>((resolve) => {
+    let done = false
+    const cleanup = () => {
+      if (done) return
+      done = true
+      el.removeEventListener("transitionend", onEnd)
+      clearTimeout(t)
+      resolve()
+    }
+    const onEnd = (e: TransitionEvent) => {
+      if (e.target === el && e.propertyName === prop) cleanup()
+    }
+    const t = window.setTimeout(cleanup, timeoutMs)
+    el.addEventListener("transitionend", onEnd)
+  })
+}
+
+async function animateWrapperShift(wrapper: HTMLDivElement | null, deltaY: number, duration = 480) {
+  if (!wrapper) return
+  wrapper.style.transition = "none"
+  wrapper.style.transform = "translateY(0px)"
+  wrapper.getBoundingClientRect() // force reflow
+  wrapper.style.transition = `transform ${duration}ms cubic-bezier(0.33, 1, 0.68, 1)`
+  wrapper.style.transform = `translateY(${deltaY}px)`
+  await waitTransitionEnd(wrapper, "transform", duration + 250)
+  wrapper.style.transition = "none"
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
@@ -143,86 +202,74 @@ function LexiconInner() {
     const half = sc.offsetWidth / 2
     si.style.paddingLeft  = `${half}px`
     si.style.paddingRight = `${half}px`
-    centerWord(sc, view.selected.label, true)
+    centerWordInstant(sc, view.selected.label)
   }, [ready]) // eslint-disable-line
 
   // ─── Navigate ───────────────────────────────────────────────────────────────
   const navigate = useCallback(async (label: string, from: "parent" | "sibling" | "child") => {
     if (busy.current) return
     const term = findByLabel(label)
-    if (!term || term.id === (view?.selected.id)) return
+    if (!term || term.id === view?.selected.id) return
     busy.current = true
 
-    // ── Sibling: horizontal only ─────────────────────────────────────────────
-    if (from === "sibling") {
-      setSelectedId(term.id)
-      const newView = computeView()
-      setView(newView)
-      router.replace(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
-      // Center after React re-renders
-      setTimeout(() => {
+    try {
+      // ── Sibling: horizontal only ─────────────────────────────────────────
+      if (from === "sibling") {
+        setSelectedId(term.id)
+        const newView = computeView()
+        setView(newView)
+        router.replace(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
+        await nextFrame()
         const sc = siblingsRef.current
         const si = siblingsInnerRef.current
         if (sc && si) {
           const half = sc.offsetWidth / 2
           si.style.paddingLeft  = `${half}px`
           si.style.paddingRight = `${half}px`
-          centerWord(sc, newView.selected.label, false)
+          await centerWordAnimated(sc, newView!.selected.label, 260)
         }
-        busy.current = false
-      }, 30)
-      return
-    }
-
-    // ── Parent / Child: two-phase ────────────────────────────────────────────
-
-    // PHASE 1 — scroll clicked word to center of its row (smooth, 380ms)
-    const sourceContainer = from === "child" ? childrenRef.current : parentRef.current
-    centerWord(sourceContainer, label, false)
-    await sleep(480) // 380ms scroll + 100ms pause
-
-    // PHASE 2 — physically slide wrapper so source row reaches siblings position
-    const wrapper = wrapperRef.current
-    if (wrapper) {
-      // Measure pixel distance between source row midpoint and siblings row midpoint
-      const srcRowSel  = from === "child" ? "[data-row='children']" : "[data-row='parent']"
-      const srcRow     = wrapper.querySelector(srcRowSel) as HTMLElement | null
-      const sibRow     = wrapper.querySelector("[data-row='siblings']") as HTMLElement | null
-
-      if (srcRow && sibRow) {
-        const srcMid = srcRow.offsetTop + srcRow.offsetHeight / 2
-        const sibMid = sibRow.offsetTop + sibRow.offsetHeight / 2
-        const delta  = sibMid - srcMid  // positive = siblings is below source (navigating up)
-
-        wrapper.style.transition = "transform 480ms cubic-bezier(0.33, 1, 0.68, 1)"
-        wrapper.style.transform  = `translateY(${delta}px)`
-        await sleep(500) // slide complete
-
-        // Snap reset + swap data
-        wrapper.style.transition = "none"
-        wrapper.style.transform  = "translateY(0)"
+        return
       }
-    }
 
-    // Swap data
-    setSelectedId(term.id)
-    const newView = computeView()
-    setView(newView)
-    router.replace(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
+      // ── Parent / Child: two-phase ─────────────────────────────────────────
+      // PHASE 1 — center clicked word in its row (rAF-driven, no scrollTo)
+      const sourceContainer = from === "child" ? childrenRef.current : parentRef.current
+      await centerWordAnimated(sourceContainer, label, 380)
 
-    // Re-center siblings on new data (instant)
-    requestAnimationFrame(() => {
+      // 100ms pause so user sees it centered before the vertical slide
+      await new Promise<void>((r) => setTimeout(r, 100))
+
+      // PHASE 2 — slide wrapper using fixed height constants (no DOM measurement drift)
+      const delta = from === "child"
+        ? -(H.divider + (H.siblings + H.children) / 2 + H.divider / 2)
+        :   H.divider + (H.parent  + H.siblings) / 2 + H.divider / 2
+
+      await animateWrapperShift(wrapperRef.current, delta, 480)
+
+      // Swap data while wrapper is still shifted
+      setSelectedId(term.id)
+      const newView = computeView()
+      setView(newView)
+      router.replace(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
+
+      // Next paint: snap wrapper back + center selected instantly
+      await nextFrame()
+      const wrapper = wrapperRef.current
+      if (wrapper) {
+        wrapper.style.transition = "none"
+        wrapper.style.transform  = "translateY(0px)"
+      }
       const sc = siblingsRef.current
       const si = siblingsInnerRef.current
-      if (sc && si) {
+      if (sc && si && newView) {
         const half = sc.offsetWidth / 2
         si.style.paddingLeft  = `${half}px`
         si.style.paddingRight = `${half}px`
-        centerWord(sc, newView.selected.label, true)
+        centerWordInstant(sc, newView.selected.label)
       }
+    } finally {
       busy.current = false
-    })
-
+    }
   }, [view, router])
 
   if (!ready || !view) return <Skeleton />
@@ -348,4 +395,4 @@ function LexiconInner() {
   )
 }
 
-function sleep(ms: number) { return new Promise<void>((r) => setTimeout(r, ms)) }
+
