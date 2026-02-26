@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback, Suspense } from "react"
+import { useState, useEffect, useRef, useCallback, useLayoutEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { SimpleHeader } from "@/components/simple-header"
 import { ChevronUp } from "lucide-react"
@@ -111,12 +111,14 @@ function waitTransitionEnd(el: HTMLElement, prop = "transform", timeoutMs = 800)
 
 async function animateWrapperShift(wrapper: HTMLDivElement | null, deltaY: number, duration = 480) {
   if (!wrapper) return
+  wrapper.style.willChange = "transform"
   wrapper.style.transition = "none"
   wrapper.style.transform = "translateY(0px)"
   wrapper.getBoundingClientRect() // force reflow
   wrapper.style.transition = `transform ${duration}ms cubic-bezier(0.33, 1, 0.68, 1)`
   wrapper.style.transform = `translateY(${deltaY}px)`
   await waitTransitionEnd(wrapper, "transform", duration + 250)
+  // keep shifted — useLayoutEffect will snap pre-paint
   wrapper.style.transition = "none"
 }
 
@@ -176,6 +178,9 @@ function LexiconInner() {
 
   // Lock to prevent overlapping navigations
   const busy = useRef(false)
+  // Pre-paint finalization refs
+  const pendingCenter = useRef<string | null>(null)
+  const pendingWrapperReset = useRef(false)
 
   // Load graph + subscribe
   useEffect(() => {
@@ -193,17 +198,29 @@ function LexiconInner() {
     })
   }, []) // eslint-disable-line
 
-  // On load: set half-padding + center selected word instantly
-  useEffect(() => {
+  // Pre-paint: snap wrapper + center selected word (no blink)
+  useLayoutEffect(() => {
     if (!ready || !view) return
     const sc = siblingsRef.current
     const si = siblingsInnerRef.current
     if (!sc || !si) return
+
     const half = sc.offsetWidth / 2
     si.style.paddingLeft  = `${half}px`
     si.style.paddingRight = `${half}px`
-    centerWordInstant(sc, view.selected.label)
-  }, [ready]) // eslint-disable-line
+
+    if (pendingWrapperReset.current) {
+      const w = wrapperRef.current
+      if (w) {
+        w.style.transition = "none"
+        w.style.transform  = "translateY(0px)"
+      }
+      pendingWrapperReset.current = false
+    }
+
+    centerWordInstant(sc, pendingCenter.current ?? view.selected.label)
+    pendingCenter.current = null
+  }, [ready, view?.selected?.id, view?.siblings?.length]) // eslint-disable-line
 
   // ─── Navigate ───────────────────────────────────────────────────────────────
   const navigate = useCallback(async (label: string, from: "parent" | "sibling" | "child") => {
@@ -215,62 +232,35 @@ function LexiconInner() {
     try {
       // ── Sibling: horizontal only ─────────────────────────────────────────
       if (from === "sibling") {
-        setSelectedId(term.id)
-        const newView = computeView()
-        setView(newView)
+        pendingCenter.current = label
+        setSelectedId(term.id) // subscribe() → setView
         router.replace(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
-        await nextFrame()
-        const sc = siblingsRef.current
-        const si = siblingsInnerRef.current
-        if (sc && si) {
-          const half = sc.offsetWidth / 2
-          si.style.paddingLeft  = `${half}px`
-          si.style.paddingRight = `${half}px`
-          await centerWordAnimated(sc, newView!.selected.label, 260)
-        }
         return
       }
 
       // ── Parent / Child: two-phase ─────────────────────────────────────────
-      // PHASE 1 — center clicked word in its row (rAF-driven, no scrollTo)
+      // PHASE 1 — center clicked word in its row
       const sourceContainer = from === "child" ? childrenRef.current : parentRef.current
-      await centerWordAnimated(sourceContainer, label, 380)
+      await centerWordAnimated(sourceContainer, label, 360)
 
-      // 100ms pause so user sees it centered before the vertical slide
-      await new Promise<void>((r) => setTimeout(r, 100))
-
-      // PHASE 2 — slide wrapper using fixed height constants (no DOM measurement drift)
+      // PHASE 2 — slide wrapper by fixed height constants
       const delta = from === "child"
-        ? -(H.divider + (H.siblings + H.children) / 2 + H.divider / 2)
-        :   H.divider + (H.parent  + H.siblings) / 2 + H.divider / 2
+        ? -(H.divider + (H.siblings + H.children) / 2)
+        :   H.divider + (H.parent  + H.siblings) / 2
 
       await animateWrapperShift(wrapperRef.current, delta, 480)
 
-      // Swap data while wrapper is still shifted
-      setSelectedId(term.id)
-      const newView = computeView()
-      setView(newView)
+      // Single render: useLayoutEffect will snap + center pre-paint
+      pendingCenter.current = label
+      pendingWrapperReset.current = true
+      setSelectedId(term.id) // subscribe() → setView
       router.replace(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
 
-      // Next paint: snap wrapper back + center selected instantly
       await nextFrame()
-      const wrapper = wrapperRef.current
-      if (wrapper) {
-        wrapper.style.transition = "none"
-        wrapper.style.transform  = "translateY(0px)"
-      }
-      const sc = siblingsRef.current
-      const si = siblingsInnerRef.current
-      if (sc && si && newView) {
-        const half = sc.offsetWidth / 2
-        si.style.paddingLeft  = `${half}px`
-        si.style.paddingRight = `${half}px`
-        centerWordInstant(sc, newView.selected.label)
-      }
     } finally {
       busy.current = false
     }
-  }, [view, router])
+  }, [view?.selected?.id, router])
 
   if (!ready || !view) return <Skeleton />
 
