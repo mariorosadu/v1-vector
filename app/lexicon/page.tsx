@@ -110,7 +110,13 @@ function LexiconSkeleton() {
       <main className="flex-1 flex flex-col items-center justify-center pt-16 px-4">
         <div className="w-full max-w-2xl">
           <div className="bg-[#1c1c1c] rounded-sm shadow-2xl shadow-black/60 overflow-hidden border border-white/5">
-            <div className="h-px bg-white/10" />
+            <div className="h-px bg-white/20" />
+            
+            {/* Title skeleton */}
+            <div className="px-6 py-6 md:px-10 md:py-8 border-b border-white/10">
+              <div className="h-8 w-32 rounded bg-white/10 animate-pulse" />
+            </div>
+
             <div className="px-6 py-8 md:px-10 md:py-10">
               <div className="flex items-center justify-center mb-8" style={{ height: 24 }}>
                 <div className="h-2 w-20 rounded bg-white/10 animate-pulse" />
@@ -133,9 +139,8 @@ function LexiconSkeleton() {
               </div>
             </div>
             <div className="h-px bg-white/8" />
-            <div className="px-6 py-3 md:px-10 flex items-center justify-between">
+            <div className="px-6 py-3 md:px-10">
               <span className="font-sans text-white/15 text-[10px] tracking-[0.3em] uppercase">Lexicon</span>
-              <span className="font-sans text-white/15 text-[10px] tracking-[0.3em] uppercase">—</span>
             </div>
           </div>
         </div>
@@ -235,6 +240,13 @@ function LexiconInner() {
 
             {/* Top accent line */}
             <div className="h-px bg-white/20" />
+
+            {/* Title */}
+            <div className="px-6 py-6 md:px-10 md:py-8 border-b border-white/10">
+              <h1 className="font-sans text-2xl md:text-3xl font-bold tracking-tight text-white uppercase">
+                Lexicon
+              </h1>
+            </div>
 
             <div className="px-6 py-8 md:px-10 md:py-10">
 
@@ -390,11 +402,8 @@ function LexiconInner() {
 
             {/* Bottom bar */}
             <div className="h-px bg-white/8" />
-            <div className="px-6 py-3 md:px-10 flex items-center justify-between">
+            <div className="px-6 py-3 md:px-10">
               <span className="font-sans text-white/15 text-[10px] tracking-[0.3em] uppercase">Lexicon</span>
-              <span className="font-sans text-white/15 text-[10px] tracking-[0.3em] uppercase">
-                {view?.selected.label ?? "—"}
-              </span>
             </div>
 
           </div>
