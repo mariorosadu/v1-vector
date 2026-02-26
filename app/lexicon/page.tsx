@@ -14,25 +14,15 @@ import {
   type LexiconView,
 } from "@/lib/lexicon-store"
 
-// ─── CSS keyframes injected once ─────────────────────────────────────────────
+// ─── CSS keyframes ───────────────────────────────────────────────────────────
 const KEYFRAMES = `
-  /* Navigating DOWN (clicked child): rows slide up */
-  @keyframes row-enter-from-below   { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:translateY(0) } }
-  @keyframes row-exit-to-above      { from { opacity:1; transform:translateY(0)    } to { opacity:0; transform:translateY(-18px) } }
-  @keyframes row-rise               { from { opacity:1; transform:translateY(0)    } to { opacity:1; transform:translateY(0) } }
-
-  /* Navigating UP (clicked parent): rows slide down */
-  @keyframes row-enter-from-above   { from { opacity:0; transform:translateY(-18px) } to { opacity:1; transform:translateY(0) } }
-  @keyframes row-exit-to-below      { from { opacity:1; transform:translateY(0)     } to { opacity:0; transform:translateY(18px) } }
-
-  /* Lateral (sibling click): cross-fade only */
-  @keyframes row-fade-in            { from { opacity:0 } to { opacity:1 } }
-  @keyframes row-fade-out           { from { opacity:1 } to { opacity:0 } }
-
+  @keyframes slide-in-from-below  { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
+  @keyframes slide-in-from-above  { from { opacity:0; transform:translateY(-16px) } to { opacity:1; transform:translateY(0) } }
+  @keyframes fade-in              { from { opacity:0 } to { opacity:1 } }
   .drag-scroll::-webkit-scrollbar { display:none; }
 `
 
-// ─── DragScroll ───────────────────────────────────────────────────────────────
+// ─── DragScroll ──────────────────────────────────────────────────────────────
 function DragScroll({
   children,
   style,
@@ -75,47 +65,28 @@ function DragScroll({
   )
 }
 
-// ─── Animation helpers ────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 type Direction = "down" | "up" | "lateral" | "none"
 
-function rowAnim(
-  row: "parent" | "siblings" | "children",
-  dir: Direction,
-  phase: "enter" | "exit"
-): React.CSSProperties {
-  const dur = "0.22s"
-  const ease = "cubic-bezier(0.4,0,0.2,1)"
-
-  if (dir === "none") return { opacity: 1 }
-
-  // Map: which animation name for each row/dir/phase combo
-  const map: Record<Direction, Record<"parent"|"siblings"|"children", [string, string]>> = {
-    // [enterAnim, exitAnim]
-    down: {
-      parent:   ["row-rise",            "row-exit-to-above"],
-      siblings: ["row-enter-from-below","row-exit-to-above"],
-      children: ["row-enter-from-below","row-fade-out"],
-    },
-    up: {
-      parent:   ["row-fade-in",         "row-exit-to-below"],
-      siblings: ["row-enter-from-above","row-exit-to-below"],
-      children: ["row-rise",            "row-exit-to-below"],
-    },
-    lateral: {
-      parent:   ["row-fade-in","row-fade-out"],
-      siblings: ["row-fade-in","row-fade-out"],
-      children: ["row-fade-in","row-fade-out"],
-    },
-    none: { parent:["",""], siblings:["",""], children:["",""] },
-  }
-
-  const [enterName, exitName] = map[dir][row]
-  const name = phase === "enter" ? enterName : exitName
-  if (!name) return { opacity: phase === "enter" ? 1 : 0 }
-  return { animation: `${name} ${dur} ${ease} both` }
+/** Scroll a container so the element with data-label=label is centered */
+function scrollToLabel(container: HTMLDivElement | null, label: string, behavior: ScrollBehavior) {
+  if (!container) return
+  const el = container.querySelector(`[data-label="${CSS.escape(label)}"]`) as HTMLElement | null
+  if (!el) return
+  const containerCenter = container.offsetWidth / 2
+  const elCenter = el.offsetLeft + el.offsetWidth / 2
+  container.scrollTo({ left: elCenter - containerCenter, behavior })
 }
 
-// ─── Page shell ───────────────────────────────────────────────────────────────
+/** Ensure a DragScroll inner wrapper has enough padding for edge-words to center */
+function ensureCenterPadding(container: HTMLDivElement | null, inner: HTMLDivElement | null) {
+  if (!container || !inner) return
+  const half = container.offsetWidth / 2
+  inner.style.paddingLeft = `${half}px`
+  inner.style.paddingRight = `${half}px`
+}
+
+// ─── Page shell ──────────────────────────────────────────────────────────────
 export default function LexiconPage() {
   return (
     <Suspense fallback={<LexiconSkeleton />}>
@@ -124,7 +95,6 @@ export default function LexiconPage() {
   )
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
 function LexiconSkeleton() {
   return (
     <div className="bg-[#0a0a0a] min-h-dvh w-full flex flex-col">
@@ -157,26 +127,25 @@ function LexiconSkeleton() {
   )
 }
 
-// ─── Inner (requires Suspense for useSearchParams) ────────────────────────────
+// ─── Inner ───────────────────────────────────────────────────────────────────
 function LexiconInner() {
   const router   = useRouter()
   const params   = useSearchParams()
   const [, startT] = useTransition()
 
-  const [view, setView]     = useState<LexiconView | null>(null)
-  const [ready, setReady]   = useState(false)
-
-  // Navigation direction state
+  const [view, setView]       = useState<LexiconView | null>(null)
+  const [ready, setReady]     = useState(false)
   const [direction, setDirection] = useState<Direction>("none")
-  const [animKey, setAnimKey]     = useState(0)   // bumped on every navigation to re-trigger animations
+  const [animEpoch, setAnimEpoch] = useState(0)
 
-  // Stable key per navigation — used to re-trigger CSS animations
-  const [parentKey,   setParentKey]   = useState("pk0")
-  const [siblingsKey, setSiblingsKey] = useState("sk0")
-  const [childrenKey, setChildrenKey] = useState("ck0")
-
+  // Refs for scroll containers and inner wrappers
   const siblingsRef   = useRef<HTMLDivElement>(null)
   const siblingsInner = useRef<HTMLDivElement>(null)
+  const childrenRef   = useRef<HTMLDivElement>(null)
+  const childrenInner = useRef<HTMLDivElement>(null)
+
+  // Track whether we're mid-transition (to block rapid clicks)
+  const transitioning = useRef(false)
 
   const recompute = useCallback(() => {
     const s = getStore()
@@ -191,6 +160,7 @@ function LexiconInner() {
     return unsub
   }, [recompute])
 
+  // URL sync: read term from URL on load
   useEffect(() => {
     const termLabel = params.get("term")
     if (!termLabel) return
@@ -200,6 +170,7 @@ function LexiconInner() {
     if (term && term.id !== s.selectedId) setSelectedId(term.id)
   }, [params])
 
+  // URL sync: set URL from selection on first load
   useEffect(() => {
     if (!ready) return
     const termLabel = params.get("term")
@@ -212,86 +183,92 @@ function LexiconInner() {
     }
   }, [ready, params, router])
 
-  // Center selected sibling — runs after every navigation AND on initial load
-  const centerSelected = useCallback((instant: boolean) => {
+  // ── Center the selected word in siblings row ──
+  const centerSiblings = useCallback((behavior: ScrollBehavior) => {
     const container = siblingsRef.current
     const inner = siblingsInner.current
     if (!container || !inner) return
-
-    // Set padding so edge words can reach the center
-    const half = container.offsetWidth / 2
-    inner.style.paddingLeft  = `${half}px`
-    inner.style.paddingRight = `${half}px`
-
+    ensureCenterPadding(container, inner)
     const selected = container.querySelector("[data-selected='true']") as HTMLElement | null
     if (!selected) return
-
     const containerCenter = container.offsetWidth / 2
     const elCenter = selected.offsetLeft + selected.offsetWidth / 2
-    container.scrollTo({ left: elCenter - containerCenter, behavior: instant ? "instant" : "smooth" })
+    container.scrollTo({ left: elCenter - containerCenter, behavior })
   }, [])
 
-  // After navigation: wait for enter-animation to begin, then center
+  // Center on initial load (instant)
   useEffect(() => {
     if (!ready) return
-    const t = setTimeout(() => centerSelected(false), 40)
+    // Give DOM time to render, then center
+    requestAnimationFrame(() => {
+      centerSiblings("instant")
+    })
+  }, [ready, centerSiblings])
+
+  // Center after each navigation (smooth)
+  useEffect(() => {
+    if (!ready || animEpoch === 0) return
+    // Wait for new content to render + animation to start
+    const t = setTimeout(() => centerSiblings("smooth"), 60)
     return () => clearTimeout(t)
-  }, [animKey, ready, centerSelected])
+  }, [animEpoch, ready, centerSiblings])
 
-  // On initial load: center immediately with no animation
-  useEffect(() => {
-    if (!ready) return
-    centerSelected(true)
-  }, [ready, centerSelected])
-
+  // ── Two-phase navigation ──
+  // Phase 1: Scroll clicked word to center in its CURRENT row
+  // Phase 2: Swap the data (new view) + trigger vertical CSS animations
   const navigateTo = useCallback((label: string, dir: Direction) => {
+    if (transitioning.current) return
     const term = findByLabel(label)
     if (!term) return
-    const n = Date.now()
-    setDirection(dir)
-    setAnimKey(k => k + 1)
-    setParentKey(`p${n}`)
-    setSiblingsKey(`s${n}`)
-    setChildrenKey(`c${n}`)
-    startT(() => {
-      setSelectedId(term.id)
-      router.push(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
-    })
+
+    transitioning.current = true
+
+    // Phase 1: horizontally center the clicked word in its row
+    const sourceContainer = dir === "down" ? childrenRef.current : dir === "up" ? null : siblingsRef.current
+    if (sourceContainer) {
+      scrollToLabel(sourceContainer, label, "smooth")
+    }
+
+    // Phase 2: after horizontal scroll completes, swap data
+    const delay = sourceContainer ? 280 : 0
+    setTimeout(() => {
+      setDirection(dir)
+      setAnimEpoch(k => k + 1)
+      startT(() => {
+        setSelectedId(term.id)
+        router.push(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
+      })
+      // Allow clicks again after vertical animation finishes
+      setTimeout(() => { transitioning.current = false }, 250)
+    }, delay)
   }, [router])
 
-  // ── Computed animation styles per row ────────────────────────────────────
-  const DUR = "0.22s"
-  const EASE = "cubic-bezier(0.4,0,0.2,1)"
-
-  function anim(row: "parent"|"siblings"|"children"): React.CSSProperties {
+  // ── Animation style per row ──
+  function animStyle(row: "parent"|"siblings"|"children"): React.CSSProperties {
     if (direction === "none" || !ready) return { opacity: 1 }
-
-    // All rows show NEW content, so all use ENTER animations.
-    // Direction determines WHERE the new content slides in FROM:
-    //   down (clicked child)  = hierarchy moved up   → new parent fades in, new siblings rise from below, new children rise from below
-    //   up   (clicked parent) = hierarchy moved down  → new parent drops from above, new siblings drop from above, new children fade in
-    //   lateral (clicked sibling) = pure cross-fade, no vertical movement
-    const table: Record<Direction, Record<"parent"|"siblings"|"children", string>> = {
+    const dur = "0.24s"
+    const ease = "cubic-bezier(0.25,0.1,0.25,1)"
+    const map: Record<Direction, Record<"parent"|"siblings"|"children", string>> = {
       down: {
-        parent:   "row-fade-in",             // parent quietly fades in
-        siblings: "row-enter-from-below",    // new siblings rise up (the child that was clicked is now here)
-        children: "row-enter-from-below",    // new children appear from below
+        parent:   "fade-in",
+        siblings: "slide-in-from-below",
+        children: "slide-in-from-below",
       },
       up: {
-        parent:   "row-enter-from-above",    // new parent drops down from above
-        siblings: "row-enter-from-above",    // new siblings drop down (parent that was clicked is now here)
-        children: "row-fade-in",             // children quietly fade in
+        parent:   "slide-in-from-above",
+        siblings: "slide-in-from-above",
+        children: "fade-in",
       },
       lateral: {
-        parent:   "row-fade-in",
-        siblings: "row-fade-in",
-        children: "row-fade-in",
+        parent:   "fade-in",
+        siblings: "fade-in",
+        children: "fade-in",
       },
       none: { parent:"", siblings:"", children:"" },
     }
-    const name = table[direction][row]
+    const name = map[direction][row]
     if (!name) return { opacity: 1 }
-    return { animation: `${name} ${DUR} ${EASE} both` }
+    return { animation: `${name} ${dur} ${ease} both` }
   }
 
   return (
@@ -319,11 +296,12 @@ function LexiconInner() {
                 {!ready ? (
                   <div className="h-2 w-20 rounded bg-white/10 animate-pulse" />
                 ) : (
-                  <div key={parentKey} style={anim("parent")}>
+                  <div key={`p-${animEpoch}`} style={animStyle("parent")}>
                     {view?.parent ? (
                       <button
                         onClick={() => navigateTo(view.parent!.label, "up")}
                         className="flex items-center gap-2 group cursor-pointer"
+                        data-label={view.parent.label}
                       >
                         <ChevronUp className="w-3 h-3 text-white/25 group-hover:text-white/60 transition-colors" />
                         <span className="font-sans text-white/35 text-[10px] tracking-[0.28em] uppercase group-hover:text-white/70 transition-colors duration-150">
@@ -339,7 +317,7 @@ function LexiconInner() {
 
               <div className="h-px bg-white/8 mb-6" />
 
-              {/* ── ROW 2: Siblings ── */}
+              {/* ── ROW 2: Siblings (selected word always centered) ── */}
               <DragScroll
                 className="drag-scroll mb-6"
                 innerRef={siblingsRef}
@@ -351,12 +329,11 @@ function LexiconInner() {
                   </div>
                 ) : (
                   <div
-                    key={siblingsKey}
+                    key={`s-${animEpoch}`}
                     ref={siblingsInner}
                     style={{
-                      ...anim("siblings"),
-                      display:"inline-flex", flexWrap:"nowrap", whiteSpace:"nowrap",
-                      gap:36,
+                      ...animStyle("siblings"),
+                      display:"inline-flex", flexWrap:"nowrap", whiteSpace:"nowrap", gap:36,
                     }}
                   >
                     {view?.siblings.map((sibling) => {
@@ -365,6 +342,7 @@ function LexiconInner() {
                         <button
                           key={sibling.id}
                           data-selected={isSel ? "true" : "false"}
+                          data-label={sibling.label}
                           onClick={() => !isSel && navigateTo(sibling.label, "lateral")}
                           className={`relative flex-shrink-0 pb-1.5 ${isSel ? "cursor-default" : "cursor-pointer group"}`}
                         >
@@ -373,6 +351,7 @@ function LexiconInner() {
                           }`}>
                             {sibling.label}
                           </span>
+                          {/* Animated underline */}
                           <span className="absolute bottom-0 left-0 right-0 block" style={{
                             height:1.5, background:"rgba(255,255,255,0.85)", transformOrigin:"left",
                             transform: isSel ? "scaleX(1)" : "scaleX(0)",
@@ -390,6 +369,7 @@ function LexiconInner() {
               {/* ── ROW 3: Children ── */}
               <DragScroll
                 className="drag-scroll"
+                innerRef={childrenRef}
                 style={{ height:24, lineHeight:"24px", display:"flex", alignItems:"center", flexWrap:"nowrap", whiteSpace:"nowrap" }}
               >
                 {!ready ? (
@@ -398,23 +378,28 @@ function LexiconInner() {
                   </div>
                 ) : (
                   <div
-                    key={childrenKey}
+                    key={`c-${animEpoch}`}
+                    ref={childrenInner}
                     style={{
-                      ...anim("children"),
-                      display:"inline-flex", flexWrap:"nowrap", whiteSpace:"nowrap",
-                      gap:28, margin:"0 auto", paddingLeft:"40%", paddingRight:"40%",
+                      ...animStyle("children"),
+                      display:"inline-flex", flexWrap:"nowrap", whiteSpace:"nowrap", gap:28, margin:"0 auto",
                     }}
                   >
                     {view?.children && view.children.length > 0 ? (
                       view.children.map((child) => (
-                        <button key={child.id} onClick={() => navigateTo(child.label, "down")} className="cursor-pointer group flex-shrink-0">
+                        <button
+                          key={child.id}
+                          data-label={child.label}
+                          onClick={() => navigateTo(child.label, "down")}
+                          className="cursor-pointer group flex-shrink-0"
+                        >
                           <span className="font-sans text-[11px] tracking-[0.22em] font-light uppercase text-white/30 group-hover:text-white/65 transition-colors duration-150">
                             {child.label}
                           </span>
                         </button>
                       ))
                     ) : (
-                      <span className="font-sans text-white/15 text-[10px] tracking-[0.28em] uppercase">leaf node</span>
+                      <span className="font-sans text-white/15 text-[10px] tracking-[0.28em] uppercase mx-auto">leaf node</span>
                     )}
                   </div>
                 )}
@@ -422,6 +407,7 @@ function LexiconInner() {
 
             </div>
 
+            {/* Bottom bar */}
             <div className="h-px bg-white/8" />
           </div>
         </div>
