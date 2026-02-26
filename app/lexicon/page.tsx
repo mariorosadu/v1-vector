@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useTransition, Suspense } from "react"
+import { useState, useEffect, useCallback, useTransition, Suspense, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { SimpleHeader } from "@/components/simple-header"
 import { ChevronUp } from "lucide-react"
@@ -13,6 +13,84 @@ import {
   setSelectedId,
   type LexiconView,
 } from "@/lib/lexicon-store"
+
+// ─── DragScroll wrapper ───────────────────────────────────────────────────────
+// Hides the scrollbar, enables mouse-drag + touch-drag horizontal scroll.
+// Fires onDragEnd(true) if the pointer moved < 6px (i.e. a click), false if a drag.
+function DragScroll({
+  children,
+  style,
+  className,
+}: {
+  children: React.ReactNode
+  style?: React.CSSProperties
+  className?: string
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const drag = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false })
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    const el = ref.current
+    if (!el) return
+    drag.current = { active: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft, moved: false }
+    el.style.cursor = "grabbing"
+  }
+  const onMouseMove = (e: React.MouseEvent) => {
+    const el = ref.current
+    if (!drag.current.active || !el) return
+    e.preventDefault()
+    const x = e.pageX - el.offsetLeft
+    const dist = x - drag.current.startX
+    if (Math.abs(dist) > 4) drag.current.moved = true
+    el.scrollLeft = drag.current.scrollLeft - dist
+  }
+  const onMouseUp = () => {
+    const el = ref.current
+    if (!el) return
+    drag.current.active = false
+    el.style.cursor = "grab"
+  }
+  const onMouseLeave = () => {
+    const el = ref.current
+    if (!el) return
+    drag.current.active = false
+    el.style.cursor = "grab"
+  }
+
+  // Prevent click-firing on children when the pointer moved (it was a drag)
+  const onClickCapture = (e: React.MouseEvent) => {
+    if (drag.current.moved) {
+      e.stopPropagation()
+      drag.current.moved = false
+    }
+  }
+
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        overflowX: "auto",
+        overflowY: "hidden",
+        cursor: "grab",
+        userSelect: "none",
+        // Hide scrollbar cross-browser
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+        ...style,
+      }}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseLeave}
+      onClickCapture={onClickCapture}
+    >
+      {/* Hide webkit scrollbar */}
+      <style>{`.drag-scroll::-webkit-scrollbar { display: none; }`}</style>
+      {children}
+    </div>
+  )
+}
 
 // ─── Tiny fade+slide hook ────────────────────────────────────────────────────
 function useViewTransition(view: LexiconView | null) {
@@ -200,16 +278,14 @@ function LexiconInner() {
               {/* Divider */}
               <div className="h-px bg-[#1a1a1a]/10 mb-8" />
 
-              {/* ── ROW 2: Siblings ── fixed height 48px, no reflow */}
-              <div
-                className="mb-8"
+              {/* ── ROW 2: Siblings ── fixed height 48px, drag-scrollable */}
+              <DragScroll
+                className="drag-scroll mb-8"
                 style={{
                   height: 48,
                   lineHeight: "48px",
                   display: "flex",
                   alignItems: "center",
-                  overflowX: "auto",
-                  overflowY: "hidden",
                   flexWrap: "nowrap",
                   whiteSpace: "nowrap",
                 }}
@@ -264,20 +340,19 @@ function LexiconInner() {
                     })}
                   </div>
                 )}
-              </div>
+              </DragScroll>
 
               {/* Divider */}
               <div className="h-px bg-[#1a1a1a]/10 mb-10" />
 
-              {/* ── ROW 3: Children ── fixed height 32px, no reflow */}
-              <div
+              {/* ── ROW 3: Children ── fixed height 32px, drag-scrollable */}
+              <DragScroll
+                className="drag-scroll"
                 style={{
                   height: 32,
                   lineHeight: "32px",
                   display: "flex",
                   alignItems: "center",
-                  overflowX: "auto",
-                  overflowY: "hidden",
                   flexWrap: "nowrap",
                   whiteSpace: "nowrap",
                 }}
@@ -325,7 +400,7 @@ function LexiconInner() {
                     )}
                   </div>
                 )}
-              </div>
+              </DragScroll>
 
             </div>
 
