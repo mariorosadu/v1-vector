@@ -175,7 +175,8 @@ function LexiconInner() {
   const [siblingsKey, setSiblingsKey] = useState("sk0")
   const [childrenKey, setChildrenKey] = useState("ck0")
 
-  const siblingsRef = useRef<HTMLDivElement>(null)
+  const siblingsRef   = useRef<HTMLDivElement>(null)
+  const siblingsInner = useRef<HTMLDivElement>(null)
 
   const recompute = useCallback(() => {
     const s = getStore()
@@ -211,20 +212,37 @@ function LexiconInner() {
     }
   }, [ready, params, router])
 
-  // Auto-center selected sibling after navigation
-  useEffect(() => {
-    if (!view || !siblingsRef.current) return
+  // Center selected sibling — runs after every navigation AND on initial load
+  const centerSelected = useCallback((instant: boolean) => {
     const container = siblingsRef.current
-    // Small delay to let the enter animation start before scrolling
-    const t = setTimeout(() => {
-      const selected = container.querySelector("[data-selected='true']") as HTMLElement | null
-      if (!selected) return
-      const containerCenter = container.offsetWidth / 2
-      const elCenter = selected.offsetLeft + selected.offsetWidth / 2
-      container.scrollTo({ left: elCenter - containerCenter, behavior: "smooth" })
-    }, 60)
+    const inner = siblingsInner.current
+    if (!container || !inner) return
+
+    // Set padding so edge words can reach the center
+    const half = container.offsetWidth / 2
+    inner.style.paddingLeft  = `${half}px`
+    inner.style.paddingRight = `${half}px`
+
+    const selected = container.querySelector("[data-selected='true']") as HTMLElement | null
+    if (!selected) return
+
+    const containerCenter = container.offsetWidth / 2
+    const elCenter = selected.offsetLeft + selected.offsetWidth / 2
+    container.scrollTo({ left: elCenter - containerCenter, behavior: instant ? "instant" : "smooth" })
+  }, [])
+
+  // After navigation: wait for enter-animation to begin, then center
+  useEffect(() => {
+    if (!ready) return
+    const t = setTimeout(() => centerSelected(false), 40)
     return () => clearTimeout(t)
-  }, [animKey])
+  }, [animKey, ready, centerSelected])
+
+  // On initial load: center immediately with no animation
+  useEffect(() => {
+    if (!ready) return
+    centerSelected(true)
+  }, [ready, centerSelected])
 
   const navigateTo = useCallback((label: string, dir: Direction) => {
     const term = findByLabel(label)
@@ -334,10 +352,11 @@ function LexiconInner() {
                 ) : (
                   <div
                     key={siblingsKey}
+                    ref={siblingsInner}
                     style={{
                       ...anim("siblings"),
                       display:"inline-flex", flexWrap:"nowrap", whiteSpace:"nowrap",
-                      gap:36, margin:"0 auto", paddingLeft:"40%", paddingRight:"40%",
+                      gap:36,
                     }}
                   >
                     {view?.siblings.map((sibling) => {
