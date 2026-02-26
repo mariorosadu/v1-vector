@@ -113,8 +113,8 @@ function LexiconSkeleton() {
             <div className="h-px bg-white/20" />
             
             {/* Title skeleton */}
-            <div className="px-6 py-6 md:px-10 md:py-8 border-b border-white/10">
-              <div className="h-8 w-32 rounded bg-white/10 animate-pulse" />
+            <div className="px-6 py-6 md:px-10 md:py-8 border-b border-white/10 text-center">
+              <div className="h-8 w-40 mx-auto rounded bg-white/10 animate-pulse" />
             </div>
 
             <div className="px-6 py-8 md:px-10 md:py-10">
@@ -139,9 +139,6 @@ function LexiconSkeleton() {
               </div>
             </div>
             <div className="h-px bg-white/8" />
-            <div className="px-6 py-3 md:px-10">
-              <span className="font-sans text-white/15 text-[10px] tracking-[0.3em] uppercase">Lexicon</span>
-            </div>
           </div>
         </div>
       </main>
@@ -242,8 +239,8 @@ function LexiconInner() {
             <div className="h-px bg-white/20" />
 
             {/* Title */}
-            <div className="px-6 py-6 md:px-10 md:py-8 border-b border-white/10">
-              <h1 className="font-sans text-2xl md:text-3xl font-bold tracking-tight text-white uppercase">
+            <div className="px-6 py-6 md:px-10 md:py-8 border-b border-white/10 text-center">
+              <h1 className="font-sans text-xl md:text-2xl font-normal tracking-[0.2em] text-white uppercase">
                 Lexicon
               </h1>
             </div>
@@ -402,9 +399,6 @@ function LexiconInner() {
 
             {/* Bottom bar */}
             <div className="h-px bg-white/8" />
-            <div className="px-6 py-3 md:px-10">
-              <span className="font-sans text-white/15 text-[10px] tracking-[0.3em] uppercase">Lexicon</span>
-            </div>
 
           </div>
         </div>
