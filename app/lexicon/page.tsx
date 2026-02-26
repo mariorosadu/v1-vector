@@ -1,58 +1,106 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useTransition } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { SimpleHeader } from "@/components/simple-header"
-import { motion, AnimatePresence } from "framer-motion"
 import { ChevronUp } from "lucide-react"
+import {
+  ensureLoaded,
+  subscribe,
+  getStore,
+  computeView,
+  findByLabel,
+  setSelectedId,
+  type LexiconView,
+} from "@/lib/lexicon-store"
 
-interface Term {
-  id: string
-  label: string
+// ─── Tiny fade+slide hook ────────────────────────────────────────────────────
+function useViewTransition(view: LexiconView | null) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    if (!view) return
+    setVisible(false)
+    const t = requestAnimationFrame(() => setVisible(true))
+    return () => cancelAnimationFrame(t)
+  }, [view?.selected.id])
+  return visible
 }
 
-interface NavigationData {
-  selected: Term
-  parent: Term | null
-  siblings: Term[]
-  children: Term[]
-}
-
+// ─── Page ────────────────────────────────────────────────────────────────────
 export default function LexiconPage() {
-  const [navData, setNavData] = useState<NavigationData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [currentTerm, setCurrentTerm] = useState("KNOWLEDGE")
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [, startTransition] = useTransition()
 
-  const fetchNavigation = useCallback(async (term: string) => {
-    setIsLoading(true)
-    try {
-      const res = await fetch(`/api/lexicon/navigate?term=${encodeURIComponent(term)}`)
-      if (!res.ok) throw new Error('Navigation failed')
-      const data = await res.json()
-      setNavData(data)
-      setCurrentTerm(term)
-    } catch (error) {
-      console.error('Navigation error:', error)
-    } finally {
-      setIsLoading(false)
+  const [view, setView] = useState<LexiconView | null>(null)
+  const [ready, setReady] = useState(false) // true once graph is in memory
+
+  // Recompute view whenever the store emits
+  const recompute = useCallback(() => {
+    const s = getStore()
+    if (!s.loaded || !s.selectedId) return
+    const v = computeView(s.selectedId)
+    if (v) {
+      setView(v)
+      setReady(true)
     }
   }, [])
 
+  // Bootstrap: load graph once, subscribe to store changes
   useEffect(() => {
-    // Read term from URL hash or default to KNOWLEDGE
-    const urlParams = new URLSearchParams(window.location.search)
-    const term = urlParams.get('term') || 'KNOWLEDGE'
-    fetchNavigation(term)
-  }, [fetchNavigation])
+    const unsub = subscribe(recompute)
+    ensureLoaded().then(recompute)
+    return unsub
+  }, [recompute])
 
-  const navigateTo = (label: string) => {
-    window.history.pushState({}, '', `/lexicon?term=${encodeURIComponent(label)}`)
-    fetchNavigation(label)
-  }
-
-  const navigateUp = () => {
-    if (navData?.parent) {
-      navigateTo(navData.parent.label)
+  // Sync selectedId with URL param on mount + URL changes
+  useEffect(() => {
+    const termLabel = searchParams.get("term")
+    if (!termLabel) return
+    const s = getStore()
+    if (!s.loaded) return
+    const term = findByLabel(termLabel)
+    if (term && term.id !== s.selectedId) {
+      setSelectedId(term.id)
     }
+  }, [searchParams])
+
+  // On initial load, if URL has no ?term, set it to KNOWLEDGE after graph loads
+  useEffect(() => {
+    if (!ready) return
+    const termLabel = searchParams.get("term")
+    if (!termLabel) {
+      const s = getStore()
+      if (s.selectedId) {
+        const v = computeView(s.selectedId)
+        if (v) {
+          router.replace(`/lexicon?term=${encodeURIComponent(v.selected.label)}`, { scroll: false })
+        }
+      }
+    }
+  }, [ready, searchParams, router])
+
+  const navigateTo = useCallback((label: string) => {
+    const term = findByLabel(label)
+    if (!term) return
+    startTransition(() => {
+      setSelectedId(term.id)
+      router.push(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
+    })
+  }, [router])
+
+  const visible = useViewTransition(view)
+
+  // ─── Transition style helper ────────────────────────────────────────────
+  const fade = {
+    opacity: visible ? 1 : 0,
+    transform: visible ? "translateY(0)" : "translateY(6px)",
+    transition: "opacity 0.22s ease, transform 0.22s ease",
+  }
+  const fadeUp = {
+    opacity: visible ? 1 : 0,
+    transform: visible ? "translateY(0)" : "translateY(-6px)",
+    transition: "opacity 0.22s ease, transform 0.22s ease",
   }
 
   return (
@@ -60,118 +108,113 @@ export default function LexiconPage() {
       <SimpleHeader />
 
       <main className="flex-1 flex flex-col items-center justify-center pt-16 px-4">
-        {/* Paper card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+        {/* Card — dimensions are FIXED. No reflow ever. */}
+        <div
           className="w-full max-w-2xl"
+          style={{ opacity: 1, transform: "translateY(0)", transition: "opacity 0.4s ease" }}
         >
           <div className="bg-[#f5f0e8] rounded-sm shadow-2xl shadow-black/40 overflow-hidden">
-            {/* Top bar */}
+            {/* Top accent bar */}
             <div className="h-1 bg-[#1a1a1a]" />
 
             <div className="px-6 py-10 md:px-10 md:py-14">
 
-              {/* Row 1: Parent */}
-              <div className="flex items-center justify-center mb-10 min-h-[32px]">
-                <AnimatePresence mode="wait">
-                  {navData?.parent ? (
-                    <motion.button
-                      key={navData.parent.label}
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.25 }}
-                      onClick={navigateUp}
-                      className="flex items-center gap-2 group cursor-pointer"
-                    >
-                      <ChevronUp className="w-3.5 h-3.5 text-[#1a1a1a]/30 group-hover:text-[#1a1a1a]/70 transition-colors" />
-                      <span className="text-[#1a1a1a]/40 text-xs tracking-[0.25em] font-light uppercase group-hover:text-[#1a1a1a]/70 transition-colors">
-                        {navData.parent.label}
-                      </span>
-                    </motion.button>
-                  ) : (
-                    <motion.div
-                      key="root"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="h-4"
-                    />
-                  )}
-                </AnimatePresence>
+              {/* ── ROW 1: Parent ── fixed height 32px, no reflow */}
+              <div className="flex items-center justify-center mb-10" style={{ height: 32 }}>
+                {!ready ? (
+                  // Skeleton — same height as real content
+                  <div className="h-3 w-24 rounded bg-[#1a1a1a]/10 animate-pulse" />
+                ) : (
+                  <div style={fadeUp}>
+                    {view?.parent ? (
+                      <button
+                        onClick={() => navigateTo(view.parent!.label)}
+                        className="flex items-center gap-2 group cursor-pointer"
+                      >
+                        <ChevronUp className="w-3.5 h-3.5 text-[#1a1a1a]/30 group-hover:text-[#1a1a1a]/70 transition-colors" />
+                        <span
+                          className="text-[#1a1a1a]/40 text-xs tracking-[0.25em] font-light uppercase group-hover:text-[#1a1a1a]/70 transition-colors"
+                          style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+                        >
+                          {view.parent.label}
+                        </span>
+                      </button>
+                    ) : (
+                      // Root node — keep height occupied with invisible spacer
+                      <span className="invisible text-xs">ROOT</span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Divider */}
               <div className="h-px bg-[#1a1a1a]/10 mb-8" />
 
-              {/* Row 2: Siblings with selected centered + underlined */}
-              <div className="flex items-center justify-center gap-6 md:gap-10 mb-8 flex-wrap min-h-[48px]">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={navData?.selected?.label || 'loading'}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+              {/* ── ROW 2: Siblings ── fixed height 48px, no reflow */}
+              <div className="flex items-center justify-center mb-8" style={{ minHeight: 48 }}>
+                {!ready ? (
+                  <div className="flex gap-8">
+                    {[80, 120, 96].map((w, i) => (
+                      <div key={i} className="h-4 rounded bg-[#1a1a1a]/10 animate-pulse" style={{ width: w }} />
+                    ))}
+                  </div>
+                ) : (
+                  <div
                     className="flex items-center justify-center gap-6 md:gap-10 flex-wrap"
+                    style={fade}
                   >
-                    {isLoading ? (
-                      <div className="text-[#1a1a1a]/20 text-sm tracking-[0.2em]">...</div>
-                    ) : (
-                      navData?.siblings.map((sibling) => {
-                        const isSelected = sibling.id === navData.selected.id
-                        return (
-                          <button
-                            key={sibling.id}
-                            onClick={() => !isSelected && navigateTo(sibling.label)}
-                            className={`relative pb-2 transition-all duration-200 ${
-                              isSelected
-                                ? 'cursor-default'
-                                : 'cursor-pointer group'
+                    {view?.siblings.map((sibling) => {
+                      const isSelected = sibling.id === view.selected.id
+                      return (
+                        <button
+                          key={sibling.id}
+                          onClick={() => !isSelected && navigateTo(sibling.label)}
+                          className={`relative pb-2 ${isSelected ? "cursor-default" : "cursor-pointer group"}`}
+                        >
+                          <span
+                            className={`text-sm md:text-base tracking-[0.2em] font-normal uppercase transition-colors duration-200 ${
+                              isSelected ? "text-[#1a1a1a]" : "text-[#1a1a1a]/30 group-hover:text-[#1a1a1a]/70"
                             }`}
+                            style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
                           >
+                            {sibling.label}
+                          </span>
+                          {isSelected && (
                             <span
-                              className={`text-sm md:text-base tracking-[0.2em] font-normal uppercase transition-colors duration-200 ${
-                                isSelected
-                                  ? 'text-[#1a1a1a]'
-                                  : 'text-[#1a1a1a]/30 group-hover:text-[#1a1a1a]/70'
-                              }`}
-                              style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
-                            >
-                              {sibling.label}
-                            </span>
-                            {isSelected && (
-                              <motion.div
-                                layoutId="underline"
-                                className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#1a1a1a]"
-                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                              />
-                            )}
-                          </button>
-                        )
-                      })
-                    )}
-                  </motion.div>
-                </AnimatePresence>
+                              className="absolute bottom-0 left-0 right-0 block"
+                              style={{
+                                height: 2,
+                                background: "#1a1a1a",
+                                // CSS-only underline slide — no layout change
+                                animation: "underline-in 0.25s ease forwards",
+                              }}
+                            />
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Divider */}
               <div className="h-px bg-[#1a1a1a]/10 mb-10" />
 
-              {/* Row 3: Children */}
-              <div className="flex items-center justify-center gap-5 md:gap-8 flex-wrap min-h-[32px]">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={navData?.selected?.label || 'loading-children'}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    transition={{ duration: 0.3, delay: 0.1 }}
+              {/* ── ROW 3: Children ── fixed height 32px, no reflow */}
+              <div className="flex items-center justify-center" style={{ minHeight: 32 }}>
+                {!ready ? (
+                  <div className="flex gap-6">
+                    {[64, 96, 80, 72].map((w, i) => (
+                      <div key={i} className="h-3 rounded bg-[#1a1a1a]/10 animate-pulse" style={{ width: w }} />
+                    ))}
+                  </div>
+                ) : (
+                  <div
                     className="flex items-center justify-center gap-5 md:gap-8 flex-wrap"
+                    style={fade}
                   >
-                    {navData?.children && navData.children.length > 0 ? (
-                      navData.children.map((child) => (
+                    {view?.children && view.children.length > 0 ? (
+                      view.children.map((child) => (
                         <button
                           key={child.id}
                           onClick={() => navigateTo(child.label)}
@@ -185,13 +228,16 @@ export default function LexiconPage() {
                           </span>
                         </button>
                       ))
-                    ) : !isLoading ? (
-                      <span className="text-[#1a1a1a]/15 text-xs tracking-[0.3em] uppercase italic">
+                    ) : (
+                      <span
+                        className="text-[#1a1a1a]/15 text-xs tracking-[0.3em] uppercase italic"
+                        style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+                      >
                         leaf node
                       </span>
-                    ) : null}
-                  </motion.div>
-                </AnimatePresence>
+                    )}
+                  </div>
+                )}
               </div>
 
             </div>
@@ -199,16 +245,26 @@ export default function LexiconPage() {
             {/* Bottom bar */}
             <div className="h-px bg-[#1a1a1a]/10" />
             <div className="px-6 py-3 md:px-10 flex items-center justify-between">
-              <span className="text-[#1a1a1a]/20 text-[10px] tracking-[0.3em] uppercase">
+              <span className="text-[#1a1a1a]/20 text-[10px] tracking-[0.3em] uppercase"
+                style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
                 Lexicon
               </span>
-              <span className="text-[#1a1a1a]/20 text-[10px] tracking-[0.3em] uppercase">
-                {currentTerm}
+              <span className="text-[#1a1a1a]/20 text-[10px] tracking-[0.3em] uppercase"
+                style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
+                {view?.selected.label ?? "—"}
               </span>
             </div>
           </div>
-        </motion.div>
+        </div>
       </main>
+
+      {/* CSS-only keyframe — no JS animation library needed for the underline */}
+      <style>{`
+        @keyframes underline-in {
+          from { transform: scaleX(0); transform-origin: left; }
+          to   { transform: scaleX(1); transform-origin: left; }
+        }
+      `}</style>
     </div>
   )
 }

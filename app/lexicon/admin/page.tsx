@@ -5,6 +5,7 @@ import { SimpleHeader } from "@/components/simple-header"
 import { motion, AnimatePresence } from "framer-motion"
 import { Loader2, Plus, Trash2, ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { invalidate } from "@/lib/lexicon-store"
 
 interface Term {
   id: string
@@ -65,6 +66,7 @@ export default function LexiconAdminPage() {
         message: `"${data.term.label}" added under "${data.parent}" (${data.provenance})`,
       })
       setNewLabel("")
+      invalidate() // bust the client-side graph cache
       await fetchTerms()
     } catch (error) {
       setFeedback({ type: 'error', message: 'Network error' })
@@ -87,6 +89,7 @@ export default function LexiconAdminPage() {
       if (!res.ok) throw new Error('Failed to delete')
 
       setFeedback({ type: 'success', message: `"${label}" deleted` })
+      invalidate() // bust the client-side graph cache
       await fetchTerms()
     } catch (error) {
       setFeedback({ type: 'error', message: 'Failed to delete term' })
