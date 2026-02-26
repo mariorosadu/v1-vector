@@ -201,17 +201,35 @@ function LexiconInner() {
               <div className="h-px bg-[#1a1a1a]/10 mb-8" />
 
               {/* ── ROW 2: Siblings ── fixed height 48px, no reflow */}
-              <div className="flex items-center justify-center mb-8" style={{ minHeight: 48 }}>
+              <div
+                className="mb-8"
+                style={{
+                  height: 48,
+                  lineHeight: "48px",
+                  display: "flex",
+                  alignItems: "center",
+                  overflowX: "auto",
+                  overflowY: "hidden",
+                  flexWrap: "nowrap",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {!ready ? (
-                  <div className="flex gap-8">
+                  <div className="flex gap-8 mx-auto" style={{ flexWrap: "nowrap" }}>
                     {[80, 120, 96].map((w, i) => (
-                      <div key={i} className="h-4 rounded bg-[#1a1a1a]/10 animate-pulse" style={{ width: w }} />
+                      <div key={i} className="h-4 rounded bg-[#1a1a1a]/10 animate-pulse flex-shrink-0" style={{ width: w }} />
                     ))}
                   </div>
                 ) : (
                   <div
-                    className="flex items-center justify-center gap-6 md:gap-10 flex-wrap"
-                    style={fade}
+                    style={{
+                      ...fade,
+                      display: "inline-flex",
+                      flexWrap: "nowrap",
+                      whiteSpace: "nowrap",
+                      gap: "40px",
+                      margin: "0 auto",
+                    }}
                   >
                     {view?.siblings.map((sibling) => {
                       const isSelected = sibling.id === view.selected.id
@@ -219,7 +237,8 @@ function LexiconInner() {
                         <button
                           key={sibling.id}
                           onClick={() => !isSelected && navigateTo(sibling.label)}
-                          className={`relative pb-2 ${isSelected ? "cursor-default" : "cursor-pointer group"}`}
+                          className={`relative pb-2 flex-shrink-0 ${isSelected ? "cursor-default" : "cursor-pointer group"}`}
+                          style={{ flexShrink: 0 }}
                         >
                           <span
                             className={`text-sm md:text-base tracking-[0.2em] font-normal uppercase transition-colors duration-200 ${
@@ -251,17 +270,34 @@ function LexiconInner() {
               <div className="h-px bg-[#1a1a1a]/10 mb-10" />
 
               {/* ── ROW 3: Children ── fixed height 32px, no reflow */}
-              <div className="flex items-center justify-center" style={{ minHeight: 32 }}>
+              <div
+                style={{
+                  height: 32,
+                  lineHeight: "32px",
+                  display: "flex",
+                  alignItems: "center",
+                  overflowX: "auto",
+                  overflowY: "hidden",
+                  flexWrap: "nowrap",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {!ready ? (
-                  <div className="flex gap-6">
+                  <div className="flex gap-6 mx-auto" style={{ flexWrap: "nowrap" }}>
                     {[64, 96, 80, 72].map((w, i) => (
-                      <div key={i} className="h-3 rounded bg-[#1a1a1a]/10 animate-pulse" style={{ width: w }} />
+                      <div key={i} className="h-3 rounded bg-[#1a1a1a]/10 animate-pulse flex-shrink-0" style={{ width: w }} />
                     ))}
                   </div>
                 ) : (
                   <div
-                    className="flex items-center justify-center gap-5 md:gap-8 flex-wrap"
-                    style={fade}
+                    style={{
+                      ...fade,
+                      display: "inline-flex",
+                      flexWrap: "nowrap",
+                      whiteSpace: "nowrap",
+                      gap: "32px",
+                      margin: "0 auto",
+                    }}
                   >
                     {view?.children && view.children.length > 0 ? (
                       view.children.map((child) => (
@@ -269,6 +305,7 @@ function LexiconInner() {
                           key={child.id}
                           onClick={() => navigateTo(child.label)}
                           className="cursor-pointer group"
+                          style={{ flexShrink: 0 }}
                         >
                           <span
                             className="text-xs md:text-sm tracking-[0.2em] font-light uppercase text-[#1a1a1a]/30 group-hover:text-[#1a1a1a]/70 transition-colors duration-200"
