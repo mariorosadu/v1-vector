@@ -157,59 +157,6 @@ function LexiconSkeleton() {
   )
 }
 
-// ─── Two-phase animated row ───────────────────────────────────────────────────
-// Renders `current` immediately (enter anim), then swaps to `next` after `exitDur` ms
-function AnimRow({
-  rowKey,
-  direction,
-  children,
-  style,
-  className,
-  innerRef,
-  isDragRow,
-}: {
-  rowKey: string         // changes when content changes → triggers animation
-  direction: Direction
-  children: React.ReactNode
-  style?: React.CSSProperties
-  className?: string
-  innerRef?: React.RefObject<HTMLDivElement | null>
-  isDragRow?: boolean    // whether to wrap in DragScroll
-}) {
-  // We track the previous key to detect changes
-  const [displayed, setDisplayed] = useState(rowKey)
-  const [phase, setPhase] = useState<"enter"|"exit">("enter")
-  const [prevChildren, setPrevChildren] = useState(children)
-  const [curChildren, setCurChildren]   = useState(children)
-
-  useEffect(() => {
-    if (rowKey === displayed) {
-      // Same key, just update children in-place
-      setCurChildren(children)
-      return
-    }
-    // Key changed → animate out old, animate in new
-    setPrevChildren(curChildren)
-    setPhase("exit")
-    const exitDur = 120 // ms — matches 0.12s fast exit
-    const t = setTimeout(() => {
-      setCurChildren(children)
-      setDisplayed(rowKey)
-      setPhase("enter")
-    }, exitDur)
-    return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowKey])
-
-  // When direction or children update mid-cycle, keep children fresh
-  useEffect(() => {
-    if (phase === "enter") setCurChildren(children)
-  }, [children, phase])
-
-  // The row name is inferred from className for animation lookup — caller passes it explicitly
-  return null // we use the HOC approach below
-}
-
 // ─── Inner (requires Suspense for useSearchParams) ────────────────────────────
 function LexiconInner() {
   const router   = useRouter()
@@ -298,21 +245,24 @@ function LexiconInner() {
   const DUR = "0.22s"
   const EASE = "cubic-bezier(0.4,0,0.2,1)"
 
-  type AnimDef = { keyframe: string; direction: string; duration: string }
-
   function anim(row: "parent"|"siblings"|"children"): React.CSSProperties {
     if (direction === "none" || !ready) return { opacity: 1 }
 
+    // All rows show NEW content, so all use ENTER animations.
+    // Direction determines WHERE the new content slides in FROM:
+    //   down (clicked child)  = hierarchy moved up   → new parent fades in, new siblings rise from below, new children rise from below
+    //   up   (clicked parent) = hierarchy moved down  → new parent drops from above, new siblings drop from above, new children fade in
+    //   lateral (clicked sibling) = pure cross-fade, no vertical movement
     const table: Record<Direction, Record<"parent"|"siblings"|"children", string>> = {
       down: {
-        parent:   "row-exit-to-above",
-        siblings: "row-enter-from-below",
-        children: "row-enter-from-below",
+        parent:   "row-fade-in",             // parent quietly fades in
+        siblings: "row-enter-from-below",    // new siblings rise up (the child that was clicked is now here)
+        children: "row-enter-from-below",    // new children appear from below
       },
       up: {
-        parent:   "row-enter-from-above",
-        siblings: "row-enter-from-above",
-        children: "row-exit-to-below",
+        parent:   "row-enter-from-above",    // new parent drops down from above
+        siblings: "row-enter-from-above",    // new siblings drop down (parent that was clicked is now here)
+        children: "row-fade-in",             // children quietly fade in
       },
       lateral: {
         parent:   "row-fade-in",
