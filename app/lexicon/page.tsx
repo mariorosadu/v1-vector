@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useTransition } from "react"
+import { useState, useEffect, useCallback, useTransition, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { SimpleHeader } from "@/components/simple-header"
 import { ChevronUp } from "lucide-react"
@@ -26,8 +26,58 @@ function useViewTransition(view: LexiconView | null) {
   return visible
 }
 
-// ─── Page ────────────────────────────────────────────────────────────────────
+// ─── Page shell (Suspense boundary required for useSearchParams) ─────────────
 export default function LexiconPage() {
+  return (
+    <Suspense fallback={<LexiconSkeleton />}>
+      <LexiconInner />
+    </Suspense>
+  )
+}
+
+function LexiconSkeleton() {
+  return (
+    <div className="bg-[#0a0a0a] min-h-dvh w-full flex flex-col">
+      <SimpleHeader />
+      <main className="flex-1 flex flex-col items-center justify-center pt-16 px-4">
+        <div className="w-full max-w-2xl">
+          <div className="bg-[#f5f0e8] rounded-sm shadow-2xl shadow-black/40 overflow-hidden">
+            <div className="h-1 bg-[#1a1a1a]" />
+            <div className="px-6 py-10 md:px-10 md:py-14">
+              <div className="flex items-center justify-center mb-10" style={{ height: 32 }}>
+                <div className="h-3 w-24 rounded bg-[#1a1a1a]/10 animate-pulse" />
+              </div>
+              <div className="h-px bg-[#1a1a1a]/10 mb-8" />
+              <div className="flex items-center justify-center mb-8" style={{ minHeight: 48 }}>
+                <div className="flex gap-8">
+                  {[80, 120, 96].map((w, i) => (
+                    <div key={i} className="h-4 rounded bg-[#1a1a1a]/10 animate-pulse" style={{ width: w }} />
+                  ))}
+                </div>
+              </div>
+              <div className="h-px bg-[#1a1a1a]/10 mb-10" />
+              <div className="flex items-center justify-center" style={{ minHeight: 32 }}>
+                <div className="flex gap-6">
+                  {[64, 96, 80, 72].map((w, i) => (
+                    <div key={i} className="h-3 rounded bg-[#1a1a1a]/10 animate-pulse" style={{ width: w }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="h-px bg-[#1a1a1a]/10" />
+            <div className="px-6 py-3 md:px-10 flex items-center justify-between">
+              <span className="text-[#1a1a1a]/20 text-[10px] tracking-[0.3em] uppercase" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>Lexicon</span>
+              <span className="text-[#1a1a1a]/20 text-[10px] tracking-[0.3em] uppercase" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>—</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// ─── Inner component (uses useSearchParams — must be inside Suspense) ─────────
+function LexiconInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
