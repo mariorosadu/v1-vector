@@ -160,7 +160,7 @@ export default function LexiconPage() {
   return <Suspense fallback={<Skeleton />}><LexiconInner /></Suspense>
 }
 
-// ─── Inner ────────────────────────────────────────────────────────────────────
+// ─── Inner ────────────────────────────────────────────────────────��───────────
 function LexiconInner() {
   const router = useRouter()
   const params = useSearchParams()
@@ -179,7 +179,7 @@ function LexiconInner() {
   // Lock to prevent overlapping navigations
   const busy = useRef(false)
   // Pre-paint finalization refs
-  const pendingCenter = useRef<string | null>(null)
+  const pendingCenter = useRef<{ label: string; mode: "instant" | "animate" } | null>(null)
   const pendingWrapperReset = useRef(false)
 
   // Load graph + subscribe
@@ -199,6 +199,7 @@ function LexiconInner() {
   }, []) // eslint-disable-line
 
   // Pre-paint: snap wrapper + center selected word (no blink)
+  // IMPORTANT: skip centering when mode === "animate" (useEffect handles that)
   useLayoutEffect(() => {
     if (!ready || !view) return
     const sc = siblingsRef.current
@@ -218,8 +219,25 @@ function LexiconInner() {
       pendingWrapperReset.current = false
     }
 
-    centerWordInstant(sc, pendingCenter.current ?? view.selected.label)
+    const p = pendingCenter.current
+    if (!p || p.mode === "instant") {
+      centerWordInstant(sc, p?.label ?? view.selected.label)
+      pendingCenter.current = null
+    }
+  }, [ready, view?.selected?.id, view?.siblings?.length]) // eslint-disable-line
+
+  // Post-commit: animated centering for sibling clicks
+  useEffect(() => {
+    if (!ready || !view) return
+    const p = pendingCenter.current
+    if (!p || p.mode !== "animate") return
+    const sc = siblingsRef.current
+    if (!sc) return
+    const label = p.label
     pendingCenter.current = null
+    requestAnimationFrame(() => {
+      centerWordAnimated(sc, label, 260)
+    })
   }, [ready, view?.selected?.id, view?.siblings?.length]) // eslint-disable-line
 
   // ─── Navigate ───────────────────────────────────────────────────────────────
@@ -232,7 +250,7 @@ function LexiconInner() {
     try {
       // ── Sibling: horizontal only ─────────────────────────────────────────
       if (from === "sibling") {
-        pendingCenter.current = label
+        pendingCenter.current = { label, mode: "animate" }
         setSelectedId(term.id) // subscribe() → setView
         router.replace(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
         return
@@ -251,7 +269,7 @@ function LexiconInner() {
       await animateWrapperShift(wrapperRef.current, delta, 480)
 
       // Single render: useLayoutEffect will snap + center pre-paint
-      pendingCenter.current = label
+      pendingCenter.current = { label, mode: "instant" }
       pendingWrapperReset.current = true
       setSelectedId(term.id) // subscribe() → setView
       router.replace(`/lexicon?term=${encodeURIComponent(label)}`, { scroll: false })
