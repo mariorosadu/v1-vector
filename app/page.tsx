@@ -1,5 +1,6 @@
 import { NewHeader } from "@/components/new-header"
 import { AboutSection } from "@/components/about-section"
+import { DualInstanceDiagram } from "@/components/dual-instance-diagram"
 import { ProcessSection } from "@/components/process-section"
 import { Footer } from "@/components/footer"
 import { MobileScrollReveal } from "@/components/mobile-scroll-reveal"
@@ -17,6 +18,7 @@ export default function HomePage() {
       <MobileScrollReveal />
       <NewHeader />
       <AboutSection />
+      <DualInstanceDiagram />
       <ProcessSection />
       <Footer />
     </main>
