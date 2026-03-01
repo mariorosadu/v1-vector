@@ -51,54 +51,56 @@ export function DualInstanceDiagram() {
 }
 
 function DiagramSVG() {
-  // Viewbox: 1200 x 660
+  // Viewbox: 1200 x 820 (taller to accommodate bottom module)
   const W = 1200
-  const H = 660
+  const H = 820
   const CX = W / 2   // 600
-  const CY = H / 2   // 330
+  const CY = 340     // slightly above center to leave room at bottom
 
-  // ---- Sentinel Node (center) ----
-  // Hexagon vertices for a flat-top hex of radius 62
-  const hexR = 62
-  const hexPoints = Array.from({ length: 6 }, (_, i) => {
-    const angle = (Math.PI / 180) * (60 * i - 30)
-    return `${CX + hexR * Math.cos(angle)},${CY + hexR * Math.sin(angle)}`
-  }).join(" ")
+  // ---- Central Hex ----
+  const hexR = 68
+  const hexRI = 52
+  const makeHexPoints = (cx: number, cy: number, r: number) =>
+    Array.from({ length: 6 }, (_, i) => {
+      const angle = (Math.PI / 180) * (60 * i - 30)
+      return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`
+    }).join(" ")
 
-  // Inner hexagon (slightly smaller)
-  const hexRI = 48
-  const hexPointsInner = Array.from({ length: 6 }, (_, i) => {
-    const angle = (Math.PI / 180) * (60 * i - 30)
-    return `${CX + hexRI * Math.cos(angle)},${CY + hexRI * Math.sin(angle)}`
-  }).join(" ")
+  const hexPoints = makeHexPoints(CX, CY, hexR)
+  const hexPointsInner = makeHexPoints(CX, CY, hexRI)
 
-  // ---- Defensive shield arc (left) ----
-  // Semi-circle arc from top-left to bottom-left, curving outward
-  const shieldRX = 220
-  const shieldRY = 200
-  // Arc path: from (CX - 30, CY - 200) curving left to (CX - 30, CY + 200)
-  const shieldPath = `M ${CX - 40},${CY - 195} A ${shieldRX} ${shieldRY} 0 0 0 ${CX - 40},${CY + 195}`
-
-  // Defensive node positions (left side)
+  // ---- Defensive nodes (left) — new order: COMPLIANCE, ETHICS, DATA SECURITY, BIAS ----
   const defNodes = [
-    { x: CX - 310, y: CY - 145, label: "ETHICS",       sub: "Scales of Equity" },
-    { x: CX - 350, y: CY - 45,  label: "BIAS",         sub: "Fairness Engine" },
-    { x: CX - 350, y: CY + 65,  label: "COMPLIANCE",   sub: "Regulatory Gavel" },
-    { x: CX - 295, y: CY + 160, label: "DATA SECURITY", sub: "Perimeter Lock" },
+    { x: CX - 330, y: CY - 155, label: "COMPLIANCE",    sub: "(Regulatory Gavel)",  icon: "gavel" },
+    { x: CX - 370, y: CY - 40,  label: "ETHICS",        sub: "(Scales of Equity)",  icon: "scales" },
+    { x: CX - 370, y: CY + 80,  label: "DATA SECURITY", sub: "(Perimeter Lock)",    icon: "lock" },
+    { x: CX - 315, y: CY + 190, label: "BIAS",          sub: "(Fairness Engine)",   icon: "bias" },
   ]
 
-  // ---- Offensive S-curve (right) ----
-  // Cubic bezier S-curve going bottom-right to top-right
-  const sStart = { x: CX + 80, y: CY + 180 }
-  const sEnd   = { x: CX + 460, y: CY - 195 }
-  const sCurve = `M ${sStart.x},${sStart.y} C ${sStart.x + 60},${sStart.y - 50} ${sStart.x + 100},${sStart.y - 120} ${CX + 260},${CY + 10} S ${sEnd.x - 80},${sEnd.y + 120} ${sEnd.x},${sEnd.y}`
+  // Lines from center hex to each defensive node
+  const centerConnectLeft = (i: number) => ({
+    x: CX - hexR * 0.85,
+    y: CY - 90 + i * 65,
+  })
 
-  // Milestones along the S-curve (approximate positions)
-  const milestones = [
-    { x: CX + 115,  y: CY + 155,  label: "LAYER 1",          sub: "Brittle Tech — DEFER",           align: "start" },
-    { x: CX + 265,  y: CY + 10,   label: "MATURITY SIGNAL",  sub: "Radar Tracker Active",           align: "middle" },
-    { x: CX + 430,  y: CY - 175,  label: "LAYER 2",          sub: "Standardized Value — EXECUTE",   align: "end" },
+  // ---- Offensive horizontal timeline (right) ----
+  // Track Y level
+  const trackY = CY
+  const trackX1 = CX + 90
+  const trackX2 = CX + 530
+
+  // Three timeline points
+  const timelinePoints = [
+    { x: CX + 135, y: trackY, label: "UNSTABLE TECH",     sub: "(Discard)",               isPinger: false },
+    { x: CX + 310, y: trackY, label: "MATURITY SIGNAL",   sub: "(Threshold Evaluation)",  isPinger: true  },
+    { x: CX + 490, y: trackY, label: "STANDARDIZED VALUE", sub: "(Execute)",              isPinger: false },
   ]
+
+  // ---- Bottom Add-on module ----
+  const modW = 460
+  const modH = 78
+  const modX = CX - modW / 2
+  const modY = H - 145
 
   return (
     <svg
@@ -109,379 +111,421 @@ function DiagramSVG() {
       role="img"
     >
       <defs>
-        {/* Amber glow filter */}
-        <filter id="amber-glow" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
+        {/* Glow filters */}
+        <filter id="amber-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
-        {/* Cyan glow filter */}
-        <filter id="cyan-glow" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
+        <filter id="cyan-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
-        {/* Sentinel glow */}
-        <filter id="sentinel-glow" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="10" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
+        <filter id="sentinel-glow" x="-70%" y="-70%" width="240%" height="240%">
+          <feGaussianBlur stdDeviation="12" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
-        {/* Soft radial for center */}
+        <filter id="module-glow" x="-20%" y="-40%" width="140%" height="180%">
+          <feGaussianBlur stdDeviation="8" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <filter id="pinger-glow" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="7" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+
+        {/* Gradients */}
         <radialGradient id="center-radial" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#00e5ff" stopOpacity="0.12" />
+          <stop offset="0%" stopColor="#00e5ff" stopOpacity="0.13" />
           <stop offset="100%" stopColor="transparent" stopOpacity="0" />
         </radialGradient>
-        {/* Amber radial for left */}
-        <radialGradient id="amber-radial" cx="30%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#ffb300" stopOpacity="0.07" />
+        <radialGradient id="amber-radial" cx="25%" cy="50%" r="55%">
+          <stop offset="0%" stopColor="#ffb300" stopOpacity="0.08" />
           <stop offset="100%" stopColor="transparent" stopOpacity="0" />
         </radialGradient>
-        {/* Cyan radial for right */}
-        <radialGradient id="cyan-radial" cx="70%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#00e5ff" stopOpacity="0.07" />
+        <radialGradient id="cyan-radial" cx="75%" cy="50%" r="55%">
+          <stop offset="0%" stopColor="#00e5ff" stopOpacity="0.08" />
           <stop offset="100%" stopColor="transparent" stopOpacity="0" />
         </radialGradient>
-        {/* Amber line gradient */}
         <linearGradient id="amber-line" x1="1" y1="0" x2="0" y2="0">
-          <stop offset="0%" stopColor="#ffb300" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#ffb300" stopOpacity="0.2" />
+          <stop offset="0%" stopColor="#ffb300" stopOpacity="0.95" />
+          <stop offset="100%" stopColor="#ffb300" stopOpacity="0.15" />
         </linearGradient>
-        {/* Cyan line gradient */}
         <linearGradient id="cyan-line" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#00e5ff" stopOpacity="0.2" />
-          <stop offset="100%" stopColor="#00e5ff" stopOpacity="0.9" />
+          <stop offset="0%" stopColor="#00e5ff" stopOpacity="0.15" />
+          <stop offset="100%" stopColor="#00e5ff" stopOpacity="0.95" />
         </linearGradient>
-        {/* Unifying line gradient */}
         <linearGradient id="unify-line" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#ffb300" stopOpacity="0.4" />
-          <stop offset="50%" stopColor="#ffffff" stopOpacity="0.15" />
-          <stop offset="100%" stopColor="#00e5ff" stopOpacity="0.4" />
+          <stop offset="0%"   stopColor="#ffb300" stopOpacity="0.5" />
+          <stop offset="50%"  stopColor="#ffffff" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#00e5ff" stopOpacity="0.5" />
+        </linearGradient>
+        <linearGradient id="module-border" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stopColor="#ffb300" stopOpacity="0.7" />
+          <stop offset="50%"  stopColor="#ffffff" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#00e5ff" stopOpacity="0.7" />
+        </linearGradient>
+        <linearGradient id="module-bg" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stopColor="#ffb300" stopOpacity="0.04" />
+          <stop offset="100%" stopColor="#00e5ff" stopOpacity="0.04" />
+        </linearGradient>
+        <linearGradient id="track-line" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stopColor="#00e5ff" stopOpacity="0.2" />
+          <stop offset="50%"  stopColor="#00e5ff" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#00e5ff" stopOpacity="0.5" />
         </linearGradient>
       </defs>
 
       {/* ── Background glow pools ── */}
       <rect x="0" y="0" width={W} height={H} fill="url(#amber-radial)" />
       <rect x="0" y="0" width={W} height={H} fill="url(#cyan-radial)" />
-      <ellipse cx={CX} cy={CY} rx={160} ry={160} fill="url(#center-radial)" />
+      <ellipse cx={CX} cy={CY} rx={180} ry={180} fill="url(#center-radial)" />
 
-      {/* ── Subtle grid lines ── */}
+      {/* ── Subtle grid ── */}
       {Array.from({ length: 13 }, (_, i) => (
-        <line
-          key={`vg${i}`}
-          x1={i * 100} y1={0} x2={i * 100} y2={H}
-          stroke="white" strokeOpacity="0.025" strokeWidth="1"
-        />
+        <line key={`vg${i}`} x1={i * 100} y1={0} x2={i * 100} y2={H}
+          stroke="white" strokeOpacity="0.022" strokeWidth="1" />
       ))}
-      {Array.from({ length: 7 }, (_, i) => (
-        <line
-          key={`hg${i}`}
-          x1={0} y1={i * 110} x2={W} y2={i * 110}
-          stroke="white" strokeOpacity="0.025" strokeWidth="1"
-        />
+      {Array.from({ length: 9 }, (_, i) => (
+        <line key={`hg${i}`} x1={0} y1={i * 100} x2={W} y2={i * 100}
+          stroke="white" strokeOpacity="0.022" strokeWidth="1" />
       ))}
 
       {/* ══════════════════════════════════════════
           LEFT — DEFENSIVE AI GOVERNANCE
       ══════════════════════════════════════════ */}
 
-      {/* Shield arc */}
-      <path
-        d={shieldPath}
-        fill="none"
-        stroke="url(#amber-line)"
-        strokeWidth="1.5"
-        strokeDasharray="6 4"
-        filter="url(#amber-glow)"
-        opacity="0.7"
-      />
-
-      {/* Connection lines: center → each defensive node */}
-      {defNodes.map((n, i) => (
-        <g key={`def-line-${i}`}>
-          <line
-            x1={CX - 55} y1={CY + (i - 1.5) * 35}
-            x2={n.x + 18} y2={n.y}
-            stroke="#ffb300"
-            strokeWidth="1"
-            strokeOpacity="0.35"
-            strokeDasharray="4 4"
-          />
-          {/* Deflect arrow (pointing away from center) */}
-          <polygon
-            points={`${n.x - 14},${n.y - 5} ${n.x - 24},${n.y} ${n.x - 14},${n.y + 5}`}
-            fill="#ffb300"
-            opacity="0.7"
-            filter="url(#amber-glow)"
-          />
-        </g>
-      ))}
-
-      {/* Defensive node circles */}
-      {defNodes.map((n, i) => (
-        <g key={`def-node-${i}`}>
-          {/* Outer ring */}
-          <circle cx={n.x} cy={n.y} r={26} fill="none" stroke="#ffb300" strokeWidth="1" strokeOpacity="0.35" />
-          {/* Inner fill */}
-          <circle cx={n.x} cy={n.y} r={18} fill="#0a0a0a" stroke="#ffb300" strokeWidth="1.5" filter="url(#amber-glow)" strokeOpacity="0.8" />
-          {/* Icon placeholder — amber dot */}
-          <circle cx={n.x} cy={n.y} r={4} fill="#ffb300" opacity="0.9" />
-          {/* Label */}
-          <text
-            x={n.x - 36}
-            y={n.y + 40}
-            textAnchor="middle"
-            fill="#ffb300"
-            fontSize="9"
-            fontFamily="var(--font-mono, monospace)"
-            letterSpacing="0.18em"
-            opacity="0.9"
-          >
-            {n.label}
-          </text>
-          <text
-            x={n.x - 36}
-            y={n.y + 52}
-            textAnchor="middle"
-            fill="#ffb300"
-            fontSize="7.5"
-            fontFamily="var(--font-mono, monospace)"
-            letterSpacing="0.08em"
-            opacity="0.45"
-          >
-            {n.sub}
-          </text>
-        </g>
-      ))}
-
-      {/* Left section title */}
-      <text
-        x={120}
-        y={48}
-        fill="#ffb300"
-        fontSize="11"
-        fontFamily="var(--font-mono, monospace)"
-        fontWeight="700"
-        letterSpacing="0.22em"
-        opacity="0.95"
-      >
+      {/* Section titles */}
+      <text x={50} y={54} fill="#ffb300" fontSize="13" fontFamily="var(--font-mono,monospace)"
+        fontWeight="700" letterSpacing="0.2em" opacity="0.95">
         DEFENSIVE AI GOVERNANCE
       </text>
-      <text
-        x={120}
-        y={64}
-        fill="#ffb300"
-        fontSize="8.5"
-        fontFamily="var(--font-mono, monospace)"
-        letterSpacing="0.12em"
-        opacity="0.45"
-      >
-        The Regulatory Perimeter (Risk Mitigation)
+      <text x={50} y={74} fill="#ffb300" fontSize="10" fontFamily="var(--font-mono,monospace)"
+        letterSpacing="0.1em" opacity="0.45">
+        (The Regulatory Perimeter — Risk Mitigation)
       </text>
 
-      {/* ══════════════════════════════════════════
-          RIGHT — OFFENSIVE DECISION INTELLIGENCE
-      ══════════════════════════════════════════ */}
-
-      {/* S-Curve trajectory */}
+      {/* Shield arc */}
       <path
-        d={sCurve}
-        fill="none"
-        stroke="url(#cyan-line)"
-        strokeWidth="2"
-        filter="url(#cyan-glow)"
-        opacity="0.85"
+        d={`M ${CX - 50},${CY - 210} A 240 210 0 0 0 ${CX - 50},${CY + 230}`}
+        fill="none" stroke="url(#amber-line)" strokeWidth="1.5"
+        strokeDasharray="6 5" filter="url(#amber-glow)" opacity="0.6"
       />
 
-      {/* Barrier line being broken through */}
-      <line
-        x1={CX + 340} y1={CY - 230}
-        x2={CX + 340} y2={CY + 50}
-        stroke="#00e5ff"
-        strokeWidth="1"
-        strokeOpacity="0.2"
-        strokeDasharray="3 6"
-      />
-      {/* Break marker */}
-      <rect x={CX + 331} y={CY - 100} width={18} height={8} fill="#0a0a0a" />
-      <line x1={CX + 332} y1={CY - 96} x2={CX + 348} y2={CY - 96} stroke="#00e5ff" strokeWidth="1.5" strokeOpacity="0.7" />
-
-      {/* Milestone dots + labels */}
-      {milestones.map((m, i) => {
-        const isPinger = i === 1
+      {/* Connection lines from center to each defensive node */}
+      {defNodes.map((n, i) => {
+        const cx0 = centerConnectLeft(i)
         return (
-          <g key={`mil-${i}`}>
-            {/* Connection tick */}
-            <line
-              x1={m.x} y1={m.y}
-              x2={m.x + (isPinger ? 0 : i === 0 ? -30 : 30)} y2={m.y - 38}
-              stroke="#00e5ff"
-              strokeWidth="1"
-              strokeOpacity="0.3"
+          <line key={`def-line-${i}`}
+            x1={cx0.x} y1={cx0.y}
+            x2={n.x + 26} y2={n.y}
+            stroke="#ffb300" strokeWidth="1"
+            strokeOpacity="0.3" strokeDasharray="4 5"
+          />
+        )
+      })}
+
+      {/* Defensive node modules */}
+      {defNodes.map((n, i) => {
+        const bw = 148, bh = 60
+        const bx = n.x - bw / 2
+        const by = n.y - bh / 2
+        return (
+          <g key={`def-node-${i}`}>
+            {/* Node box */}
+            <rect x={bx} y={by} width={bw} height={bh} rx={4}
+              fill="#0a0a0a" stroke="#ffb300" strokeWidth="1.2" strokeOpacity="0.45"
+              filter="url(#amber-glow)"
             />
-            {/* Pinger ring for milestone 2 */}
-            {isPinger && (
+            {/* Top accent bar */}
+            <rect x={bx} y={by} width={bw} height={2} rx={1}
+              fill="#ffb300" opacity="0.55"
+            />
+            {/* Deflect arrows on left side */}
+            <polygon
+              points={`${bx - 20},${n.y - 6} ${bx - 6},${n.y} ${bx - 20},${n.y + 6}`}
+              fill="#ffb300" opacity="0.0"
+            />
+            {/* Icon area — small amber glyph */}
+            <rect x={bx + 10} y={by + 10} width={22} height={22} rx={3}
+              fill="#ffb300" fillOpacity="0.08" stroke="#ffb300" strokeWidth="0.8" strokeOpacity="0.4"
+            />
+            {/* Icon symbol */}
+            {n.icon === "gavel" && (
               <>
-                <circle cx={m.x} cy={m.y} r={22} fill="none" stroke="#00e5ff" strokeWidth="1" strokeOpacity="0.2" />
-                <circle cx={m.x} cy={m.y} r={14} fill="none" stroke="#00e5ff" strokeWidth="1.5" strokeOpacity="0.5" filter="url(#cyan-glow)" />
+                <line x1={bx + 15} y1={by + 28} x2={bx + 27} y2={by + 16}
+                  stroke="#ffb300" strokeWidth="2" strokeLinecap="round" opacity="0.8"/>
+                <rect x={bx + 23} y={by + 11} width={8} height={5} rx={1}
+                  fill="#ffb300" opacity="0.7" transform={`rotate(-45,${bx + 27},${bx + 16})`}/>
               </>
             )}
-            {/* Main dot */}
-            <circle cx={m.x} cy={m.y} r={isPinger ? 6 : 5} fill="#00e5ff" opacity={isPinger ? 1 : 0.7} filter="url(#cyan-glow)" />
-            {/* Upward arrow on milestone 3 */}
-            {i === 2 && (
-              <polygon
-                points={`${m.x},${m.y - 34} ${m.x - 5},${m.y - 24} ${m.x + 5},${m.y - 24}`}
-                fill="#00e5ff"
-                opacity="0.8"
-                filter="url(#cyan-glow)"
-              />
+            {n.icon === "scales" && (
+              <>
+                <line x1={bx + 21} y1={by + 12} x2={bx + 21} y2={by + 30}
+                  stroke="#ffb300" strokeWidth="1.5" opacity="0.75"/>
+                <line x1={bx + 13} y1={by + 15} x2={bx + 29} y2={by + 15}
+                  stroke="#ffb300" strokeWidth="1.5" opacity="0.75"/>
+                <line x1={bx + 13} y1={by + 15} x2={bx + 13} y2={by + 22}
+                  stroke="#ffb300" strokeWidth="1" opacity="0.6"/>
+                <line x1={bx + 29} y1={by + 15} x2={bx + 29} y2={by + 20}
+                  stroke="#ffb300" strokeWidth="1" opacity="0.6"/>
+              </>
             )}
-            {/* Label box */}
-            <text
-              x={m.x + (i === 0 ? -32 : i === 2 ? 32 : 0)}
-              y={m.y - 48}
-              textAnchor={m.align}
-              fill="#00e5ff"
-              fontSize="9"
-              fontFamily="var(--font-mono, monospace)"
-              fontWeight="700"
-              letterSpacing="0.18em"
-              opacity="0.95"
-            >
-              {m.label}
+            {n.icon === "lock" && (
+              <>
+                <rect x={bx + 14} y={by + 19} width={14} height={11} rx={2}
+                  fill="none" stroke="#ffb300" strokeWidth="1.5" opacity="0.75"/>
+                <path d={`M ${bx + 17},${by + 19} a 4 4 0 0 1 8 0`}
+                  fill="none" stroke="#ffb300" strokeWidth="1.5" opacity="0.75"/>
+              </>
+            )}
+            {n.icon === "bias" && (
+              <>
+                <circle cx={bx + 21} cy={by + 21} r={7}
+                  fill="none" stroke="#ffb300" strokeWidth="1.5" opacity="0.75"/>
+                <line x1={bx + 21} y1={by + 14} x2={bx + 21} y2={by + 28}
+                  stroke="#ffb300" strokeWidth="1" opacity="0.5"/>
+                <line x1={bx + 14} y1={by + 21} x2={bx + 28} y2={by + 21}
+                  stroke="#ffb300" strokeWidth="1" opacity="0.5"/>
+              </>
+            )}
+            {/* Label text */}
+            <text x={bx + 40} y={by + 23} fill="#ffb300" fontSize="10.5"
+              fontFamily="var(--font-mono,monospace)" fontWeight="700"
+              letterSpacing="0.18em" opacity="0.95">
+              {n.label}
             </text>
-            <text
-              x={m.x + (i === 0 ? -32 : i === 2 ? 32 : 0)}
-              y={m.y - 36}
-              textAnchor={m.align}
-              fill="#00e5ff"
-              fontSize="7.5"
-              fontFamily="var(--font-mono, monospace)"
-              letterSpacing="0.08em"
-              opacity="0.5"
-            >
-              {m.sub}
+            <text x={bx + 40} y={by + 38} fill="#ffb300" fontSize="8.5"
+              fontFamily="var(--font-mono,monospace)"
+              letterSpacing="0.06em" opacity="0.45">
+              {n.sub}
             </text>
           </g>
         )
       })}
 
-      {/* Right section title */}
-      <text
-        x={W - 120}
-        y={48}
-        textAnchor="end"
-        fill="#00e5ff"
-        fontSize="11"
-        fontFamily="var(--font-mono, monospace)"
-        fontWeight="700"
-        letterSpacing="0.22em"
-        opacity="0.95"
-      >
+      {/* ══════════════════════════════════════════
+          RIGHT — OFFENSIVE DECISION INTELLIGENCE
+      ══════════════════════════════════════════ */}
+
+      {/* Section titles */}
+      <text x={W - 50} y={54} textAnchor="end" fill="#00e5ff" fontSize="13"
+        fontFamily="var(--font-mono,monospace)" fontWeight="700"
+        letterSpacing="0.2em" opacity="0.95">
         OFFENSIVE DECISION INTELLIGENCE
       </text>
-      <text
-        x={W - 120}
-        y={64}
-        textAnchor="end"
-        fill="#00e5ff"
-        fontSize="8.5"
-        fontFamily="var(--font-mono, monospace)"
-        letterSpacing="0.12em"
-        opacity="0.45"
-      >
-        The S-Curve Radar (Value Capture)
+      <text x={W - 50} y={74} textAnchor="end" fill="#00e5ff" fontSize="10"
+        fontFamily="var(--font-mono,monospace)" letterSpacing="0.1em" opacity="0.45">
+        (The S-Curve Jumpcut — Value Capture)
       </text>
 
+      {/* Horizontal timeline track */}
+      <line x1={trackX1} y1={trackY} x2={trackX2} y2={trackY}
+        stroke="url(#track-line)" strokeWidth="2" filter="url(#cyan-glow)"
+      />
+      {/* Track end arrow */}
+      <polygon
+        points={`${trackX2 + 10},${trackY} ${trackX2 - 2},${trackY - 6} ${trackX2 - 2},${trackY + 6}`}
+        fill="#00e5ff" opacity="0.7" filter="url(#cyan-glow)"
+      />
+
+      {/* Connection line from center to track start */}
+      <line
+        x1={CX + hexR * 0.85} y1={CY}
+        x2={trackX1} y2={trackY}
+        stroke="#00e5ff" strokeWidth="1" strokeOpacity="0.3" strokeDasharray="4 5"
+      />
+
+      {/* Timeline nodes */}
+      {timelinePoints.map((pt, i) => {
+        const labelY = trackY - 65
+        const isPinger = pt.isPinger
+        return (
+          <g key={`tp-${i}`}>
+            {/* Vertical tick from track to label */}
+            <line x1={pt.x} y1={trackY - 8} x2={pt.x} y2={labelY + 28}
+              stroke="#00e5ff" strokeWidth="1" strokeOpacity="0.25" />
+
+            {/* Pinger rings (animated via CSS would need a class; static rings here) */}
+            {isPinger && (
+              <>
+                <circle cx={pt.x} cy={pt.y} r={32} fill="none"
+                  stroke="#00e5ff" strokeWidth="0.8" strokeOpacity="0.12" />
+                <circle cx={pt.x} cy={pt.y} r={22} fill="none"
+                  stroke="#00e5ff" strokeWidth="1" strokeOpacity="0.25" />
+                <circle cx={pt.x} cy={pt.y} r={14} fill="none"
+                  stroke="#00e5ff" strokeWidth="1.5" strokeOpacity="0.55"
+                  filter="url(#pinger-glow)" />
+                {/* Radar crosshairs */}
+                <line x1={pt.x - 20} y1={pt.y} x2={pt.x + 20} y2={pt.y}
+                  stroke="#00e5ff" strokeWidth="0.8" strokeOpacity="0.3" />
+                <line x1={pt.x} y1={pt.y - 20} x2={pt.x} y2={pt.y + 20}
+                  stroke="#00e5ff" strokeWidth="0.8" strokeOpacity="0.3" />
+              </>
+            )}
+
+            {/* Main dot */}
+            <circle cx={pt.x} cy={pt.y} r={isPinger ? 7 : 5}
+              fill="#0a0a0a" stroke="#00e5ff"
+              strokeWidth={isPinger ? 2 : 1.5}
+              filter="url(#cyan-glow)"
+              strokeOpacity={isPinger ? 1 : 0.75}
+            />
+            <circle cx={pt.x} cy={pt.y} r={isPinger ? 3 : 2.5}
+              fill="#00e5ff" opacity={isPinger ? 1 : 0.75}
+            />
+
+            {/* Label box */}
+            <rect
+              x={pt.x - (isPinger ? 90 : 75)} y={labelY - 22}
+              width={isPinger ? 180 : 150} height={isPinger ? 52 : 46}
+              rx={3}
+              fill="#0a0a0a" stroke="#00e5ff"
+              strokeWidth={isPinger ? 1.2 : 0.8}
+              strokeOpacity={isPinger ? 0.7 : 0.35}
+              filter={isPinger ? "url(#cyan-glow)" : undefined}
+            />
+            {/* Top accent bar */}
+            <rect
+              x={pt.x - (isPinger ? 90 : 75)} y={labelY - 22}
+              width={isPinger ? 180 : 150} height={2} rx={1}
+              fill="#00e5ff" opacity={isPinger ? 0.8 : 0.4}
+            />
+
+            {/* If pinger: radar icon */}
+            {isPinger && (
+              <>
+                <circle cx={pt.x - 68} cy={labelY + 3} r={9}
+                  fill="none" stroke="#00e5ff" strokeWidth="1" strokeOpacity="0.5" />
+                <circle cx={pt.x - 68} cy={labelY + 3} r={4}
+                  fill="none" stroke="#00e5ff" strokeWidth="1" strokeOpacity="0.7" />
+                <circle cx={pt.x - 68} cy={labelY + 3} r={1.5}
+                  fill="#00e5ff" opacity="0.9" />
+              </>
+            )}
+
+            <text
+              x={isPinger ? pt.x + (isPinger ? -50 : 0) : pt.x - (i === 0 ? 0 : -0)}
+              y={labelY - 4}
+              textAnchor="middle"
+              fill="#00e5ff" fontSize={isPinger ? 11 : 10}
+              fontFamily="var(--font-mono,monospace)" fontWeight="700"
+              letterSpacing="0.16em" opacity="0.95"
+            >
+              {pt.label}
+            </text>
+            <text
+              x={isPinger ? pt.x - 50 : pt.x}
+              y={labelY + 12}
+              textAnchor="middle"
+              fill="#00e5ff" fontSize="9"
+              fontFamily="var(--font-mono,monospace)"
+              letterSpacing="0.07em" opacity="0.5"
+            >
+              {pt.sub}
+            </text>
+          </g>
+        )
+      })}
+
       {/* ══════════════════════════════════════════
-          CENTER — SENTINEL NODE
+          CENTER — VEKTHÖS HUB
       ══════════════════════════════════════════ */}
 
       {/* Outer pulse ring */}
-      <polygon
-        points={hexPoints}
-        fill="none"
-        stroke="white"
-        strokeWidth="1"
-        strokeOpacity="0.08"
-      />
+      <polygon points={makeHexPoints(CX, CY, hexR + 14)}
+        fill="none" stroke="white" strokeWidth="0.8" strokeOpacity="0.06" />
       {/* Main hex */}
-      <polygon
-        points={hexPoints}
-        fill="#0a0a0a"
-        stroke="white"
-        strokeWidth="1.2"
-        strokeOpacity="0.35"
-        filter="url(#sentinel-glow)"
-      />
+      <polygon points={hexPoints}
+        fill="#0a0a0a" stroke="white" strokeWidth="1.3" strokeOpacity="0.3"
+        filter="url(#sentinel-glow)" />
       {/* Inner hex */}
-      <polygon
-        points={hexPointsInner}
-        fill="none"
-        stroke="white"
-        strokeWidth="0.8"
-        strokeOpacity="0.18"
-      />
-      {/* Eye shape — outer ellipse */}
-      <ellipse cx={CX} cy={CY} rx={22} ry={13} fill="none" stroke="white" strokeWidth="1.2" strokeOpacity="0.7" />
-      {/* Iris */}
-      <circle cx={CX} cy={CY} r={8} fill="none" stroke="white" strokeWidth="1.2" strokeOpacity="0.55" />
-      {/* Pupil */}
-      <circle cx={CX} cy={CY} r={3.5} fill="white" opacity="0.9" />
-      {/* Cross-hairs on eye */}
-      <line x1={CX - 26} y1={CY} x2={CX - 14} y2={CY} stroke="white" strokeWidth="0.8" strokeOpacity="0.35" />
-      <line x1={CX + 14} y1={CY} x2={CX + 26} y2={CY} stroke="white" strokeWidth="0.8" strokeOpacity="0.35" />
-      <line x1={CX} y1={CY - 18} x2={CX} y2={CY - 10} stroke="white" strokeWidth="0.8" strokeOpacity="0.35" />
-      <line x1={CX} y1={CY + 10} x2={CX} y2={CY + 18} stroke="white" strokeWidth="0.8" strokeOpacity="0.35" />
+      <polygon points={hexPointsInner}
+        fill="none" stroke="white" strokeWidth="0.8" strokeOpacity="0.15" />
 
-      {/* Sentinel label */}
-      <text
-        x={CX}
-        y={CY + hexR + 20}
-        textAnchor="middle"
-        fill="white"
-        fontSize="8"
-        fontFamily="var(--font-mono, monospace)"
-        letterSpacing="0.25em"
-        opacity="0.4"
-      >
-        SENTINEL NODE
+      {/* Eye icon */}
+      <ellipse cx={CX} cy={CY - 12} rx={23} ry={13}
+        fill="none" stroke="white" strokeWidth="1.3" strokeOpacity="0.75" />
+      <circle cx={CX} cy={CY - 12} r={8}
+        fill="none" stroke="white" strokeWidth="1.2" strokeOpacity="0.55" />
+      <circle cx={CX} cy={CY - 12} r={3.5}
+        fill="white" opacity="0.9" />
+      {/* Eye crosshairs */}
+      <line x1={CX - 28} y1={CY - 12} x2={CX - 16} y2={CY - 12}
+        stroke="white" strokeWidth="0.8" strokeOpacity="0.3" />
+      <line x1={CX + 16} y1={CY - 12} x2={CX + 28} y2={CY - 12}
+        stroke="white" strokeWidth="0.8" strokeOpacity="0.3" />
+
+      {/* VEKTHÖS label (replaces SENTINEL NODE) */}
+      <text x={CX} y={CY + 16} textAnchor="middle"
+        fill="white" fontSize="12" fontFamily="var(--font-mono,monospace)"
+        fontWeight="700" letterSpacing="0.28em" opacity="0.85">
+        VEKTHÖS
       </text>
 
       {/* ══════════════════════════════════════════
-          BOTTOM — UNIFYING LINE + MESSAGE
+          BOTTOM — TAGLINE + ADD-ON MODULE
       ══════════════════════════════════════════ */}
-      <line
-        x1={80} y1={H - 52}
-        x2={W - 80} y2={H - 52}
-        stroke="url(#unify-line)"
-        strokeWidth="1"
-        opacity="0.6"
-      />
-      {/* Dots at ends */}
-      <circle cx={80} cy={H - 52} r={2.5} fill="#ffb300" opacity="0.5" />
-      <circle cx={W - 80} cy={H - 52} r={2.5} fill="#00e5ff" opacity="0.5" />
 
-      <text
-        x={CX}
-        y={H - 28}
-        textAnchor="middle"
-        fill="white"
-        fontSize="10"
-        fontFamily="var(--font-mono, monospace)"
-        fontWeight="700"
-        letterSpacing="0.3em"
-        opacity="0.55"
-      >
+      {/* Unifying line */}
+      <line x1={80} y1={modY - 42} x2={W - 80} y2={modY - 42}
+        stroke="url(#unify-line)" strokeWidth="1" opacity="0.6" />
+      <circle cx={80} cy={modY - 42} r={2.5} fill="#ffb300" opacity="0.5" />
+      <circle cx={W - 80} cy={modY - 42} r={2.5} fill="#00e5ff" opacity="0.5" />
+
+      {/* Tagline */}
+      <text x={CX} y={modY - 18} textAnchor="middle"
+        fill="white" fontSize="12" fontFamily="var(--font-mono,monospace)"
+        fontWeight="700" letterSpacing="0.3em" opacity="0.55">
         ONE PLATFORM. SYSTEMS-LEVEL DECISION INTELLIGENCE.
+      </text>
+
+      {/* Add-on module box */}
+      <rect x={modX} y={modY} width={modW} height={modH} rx={5}
+        fill="url(#module-bg)" filter="url(#module-glow)"
+      />
+      <rect x={modX} y={modY} width={modW} height={modH} rx={5}
+        fill="none" stroke="url(#module-border)" strokeWidth="1.4"
+      />
+      {/* Corner accents */}
+      <rect x={modX} y={modY} width={16} height={2} fill="#ffb300" opacity="0.7" />
+      <rect x={modX} y={modY} width={2} height={16} fill="#ffb300" opacity="0.7" />
+      <rect x={modX + modW - 16} y={modY} width={16} height={2} fill="#00e5ff" opacity="0.7" />
+      <rect x={modX + modW - 2} y={modY} width={2} height={16} fill="#00e5ff" opacity="0.7" />
+      <rect x={modX} y={modY + modH - 2} width={16} height={2} fill="#ffb300" opacity="0.5" />
+      <rect x={modX + modW - 16} y={modY + modH - 2} width={16} height={2} fill="#00e5ff" opacity="0.5" />
+
+      {/* Module icon — combined glyph */}
+      <circle cx={modX + 36} cy={modY + modH / 2} r={18}
+        fill="none" stroke="url(#module-border)" strokeWidth="1" opacity="0.6" />
+      <circle cx={modX + 36} cy={modY + modH / 2} r={10}
+        fill="none" stroke="url(#module-border)" strokeWidth="1.2" opacity="0.5" />
+      <circle cx={modX + 36} cy={modY + modH / 2} r={3}
+        fill="white" opacity="0.55" />
+      {/* Plus cross inside icon */}
+      <line x1={modX + 29} y1={modY + modH / 2} x2={modX + 43} y2={modY + modH / 2}
+        stroke="white" strokeWidth="1.2" strokeOpacity="0.35" />
+      <line x1={modX + 36} y1={modY + modH / 2 - 7} x2={modX + 36} y2={modY + modH / 2 + 7}
+        stroke="white" strokeWidth="1.2" strokeOpacity="0.35" />
+
+      {/* Module text */}
+      <text x={modX + 64} y={modY + 31} fill="white" fontSize="13"
+        fontFamily="var(--font-mono,monospace)" fontWeight="700"
+        letterSpacing="0.2em" opacity="0.9">
+        RISK ASSESSMENT FOR FULL MIGRATION
+      </text>
+      <text x={modX + 64} y={modY + 50} fill="white" fontSize="10"
+        fontFamily="var(--font-mono,monospace)"
+        letterSpacing="0.1em" opacity="0.4">
+        (Add-on)
       </text>
     </svg>
   )
+}
+
+// Helper exposed outside function for reuse (hex points calculation)
+function makeHexPoints(cx: number, cy: number, r: number): string {
+  return Array.from({ length: 6 }, (_, i) => {
+    const angle = (Math.PI / 180) * (60 * i - 30)
+    return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`
+  }).join(" ")
 }
