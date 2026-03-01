@@ -96,18 +96,50 @@ export function DualInstanceDiagram() {
 
   const handleTouchMove = useCallback(
     (e: TouchEvent) => {
-      const deltaY = lastTouchY.current - e.touches[0].clientY
-      handleWheel({ deltaY, preventDefault: () => {} } as unknown as WheelEvent)
-      lastTouchY.current = e.touches[0].clientY
+      e.preventDefault()
+      e.stopPropagation()
+      
+      const currentY = e.touches[0].clientY
+      const deltaY = lastTouchY.current - currentY
+      lastTouchY.current = currentY
+
+      setStepProgress((prevProgress) => {
+        const delta = deltaY * SENSITIVITY
+        const nextProgress = Math.max(0, Math.min(1.1, prevProgress + delta))
+
+        if (prevProgress >= 1 && delta > 0) {
+          setActiveStep((s) => {
+            if (s < TOTAL_STEPS - 1) {
+              setStepProgress(0.01)
+              return s + 1
+            }
+            return s
+          })
+          return 1
+        }
+
+        if (prevProgress <= 0 && delta < 0) {
+          setActiveStep((s) => {
+            if (s > 0) {
+              setStepProgress(0.99)
+              return s - 1
+            }
+            return s
+          })
+          return 0
+        }
+
+        return nextProgress
+      })
     },
-    [handleWheel]
+    []
   )
 
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
     el.addEventListener("wheel", handleWheel, { passive: false })
-    el.addEventListener("touchstart", handleTouchStart, { passive: false })
+    el.addEventListener("touchstart", handleTouchStart, { passive: true })
     el.addEventListener("touchmove", handleTouchMove, { passive: false })
     return () => {
       el.removeEventListener("wheel", handleWheel)
