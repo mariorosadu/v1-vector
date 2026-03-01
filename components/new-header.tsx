@@ -475,7 +475,7 @@ export function NewHeader() {
               transition={{ duration: 0.8, delay: 0.4 }}
               className="text-white/40 text-xs md:text-sm tracking-[0.3em] uppercase mb-8"
             >
-              Decision Intelligence
+              Decision Intelligence & AI Governance
             </motion.p>
 
             {/* Description with Typing Animation */}
