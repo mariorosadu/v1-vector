@@ -1,395 +1,345 @@
-"use client"
+'use client'
 
-import React, { useEffect, useRef, useState, useCallback } from "react"
-import {
-  Shield,
-  Scale,
-  Lock,
-  Zap,
-  Fingerprint,
-  Target,
-  ChevronDown,
-  AlertCircle,
-  LockKeyhole,
-} from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import React, { useState, useMemo } from 'react';
+import { BarChart2, Crosshair, TrendingUp, Database, Activity, AlertTriangle } from 'lucide-react';
 
-const DEFENSIVE_STACK = [
-  {
-    id: "compliance",
-    label: "Compliance",
-    icon: Shield,
-    explanation:
-      "A ceremonial performance of safety. We check boxes in a spreadsheet to ensure that when the system fails, the liability is legally transferred to a third-party contractor who no longer exists.",
-  },
-  {
-    id: "ethics",
-    label: "Ethics",
-    icon: Scale,
-    explanation:
-      "The department we 'restructure' first during a recession. Its primary function is to generate high-fidelity PDF reports that explain why our most profitable features are technically 'gray areas'.",
-  },
-  {
-    id: "bias",
-    label: "Bias",
-    icon: Zap,
-    explanation:
-      "Statistically significant prejudice automated for maximum efficiency. It turns out that 'optimizing for engagement' is just a fancy way of saying we've taught the machine to amplify our worst human impulses.",
-  },
-  {
-    id: "security",
-    label: "Data Security",
-    icon: Lock,
-    explanation:
-      "A shell game played with AWS configurations. We spend millions on encryption only to have the entire database leaked because a senior architect used 'Password123' for the staging environment.",
-  },
-]
+// --- DATA INGESTION ---
+const rawCsvData = `Category,Siblings
+Application Platform / Runtime Ecosystem,"Java (JVM), Microsoft .NET, Node.js, Python, PHP, Go, Ruby, Rust"
+Web Server,"Nginx, Apache HTTP Server, Microsoft IIS, LiteSpeed, Caddy"
+Operating System,"Windows, Linux, macOS"
+Web Browser,"Chrome, Safari, Edge, Firefox, Samsung Internet, Opera"
+UI Framework,"React, Angular, Vue, Svelte, Solid, Qwik"
+Server Runtime,"Java (JVM), Node.js, Python, .NET, PHP, Go, Ruby, Rust"
+Web Primitive,"HTML, CSS, JavaScript"
+Relational Database,"MySQL, PostgreSQL, SQL Server, Oracle Database, MariaDB, IBM Db2"
+CSS Framework,"Tailwind CSS, Bootstrap, Bulma, Foundation, UIkit, Materialize"
+Web App Framework,"Next.js, Nuxt, Astro, Remix, Gatsby, SvelteKit"
+Event Delivery Mechanism,"Webhooks, Pub/Sub (queues), WebSockets, Server-Sent Events, Event Streams, Polling, Long Polling"
+Search Engine,"Elasticsearch, OpenSearch, Algolia, Apache Solr, Meilisearch, Typesense"
+Auth Protocol,"OAuth 2.0, OpenID Connect, SAML, LDAP, Kerberos, WebAuthn"
+JavaScript Package Manager,"npm, yarn, pnpm, bun"
+Frontend Build Tool,"Webpack, Vite, Rollup, esbuild, Parcel, Turbopack"
+Container Platform,"Docker, containerd, Podman, LXC/LXD, rkt"
+Container Orchestrator,"Kubernetes, Amazon ECS, HashiCorp Nomad, Docker Swarm, Apache Mesos/Marathon"
+CI/CD Platform,"GitHub Actions, Jenkins, GitLab CI, Azure DevOps Pipelines, CircleCI, Bitbucket Pipelines"
+Code Hosting Platform,"GitHub, GitLab, Bitbucket, Azure Repos, SourceHut"
+Web App Hosting Platform,"Vercel, Netlify, Cloudflare Pages, Firebase Hosting, AWS Amplify, Render, Fly.io"
+Serverless Functions (FaaS),"AWS Lambda, Azure Functions, Google Cloud Functions, Cloudflare Workers, Netlify Functions, Vercel Functions, Fastly Compute"
+Virtual Machines (IaaS Compute),"Amazon EC2, Azure Virtual Machines, Google Compute Engine, DigitalOcean Droplets, OVHcloud, Linode"`;
 
-const TOTAL_STEPS = DEFENSIVE_STACK.length + 2
+// --- CYNICAL ANALYST LEXICON ---
+const diagnosticsDict = {
+  "Docker": "Put it on your CV 15 times. Still the only way to prove 'it works on my machine' to the QA team. Containerization is just sweeping dependency hell under a localized rug.",
+  "Kubernetes": "A platform built by Google so you can run your 3-container blog with the operational overhead of a Fortune 500 company. High risk of resume-driven development.",
+  "React": "The UI framework you choose because nobody gets fired for choosing it. Excellent for rendering a static button with 4MB of JavaScript payload.",
+  "Angular": "Enterprise Stockholm Syndrome. Heavy, opinionated, and beloved by people who miss writing Java in 2008.",
+  "Next.js": "Re-inventing PHP templating, but this time with a Vercel subscription and endless hydration errors.",
+  "Java (JVM)": "Write once, debug everywhere. The corporate cockroach that will survive a nuclear apocalypse and outlive us all. Reliable, but soulless.",
+  "Node.js": "Because backend developers got tired of context-switching and decided to bring frontend chaos directly to the server.",
+  "JavaScript": "A language designed in 10 days that somehow conquered the world. The duct tape holding the global economy together.",
+  "Relational Database": "The only part of your stack that actually matters. Everything else is just a temporary, highly volatile UI for it.",
+  "Web App Framework": "A constantly rotating carousel of meta-frameworks promising to fix the monumental architecture problems created by the previous meta-framework.",
+  "Serverless Functions (FaaS)": "For when you want to pay AWS per millisecond to experience agonizing cold starts. Serverless just means 'someone else's servers that you have less control over'.",
+  "Virtual Machines (IaaS Compute)": "Someone else's computer, but you still have to patch the OS. Truly the worst of both worlds.",
+  "CI/CD Platform": "Highly sophisticated automated pipelines designed to deploy your bugs to production faster and with more confidence than ever before.",
+  "JavaScript Package Manager": "A mechanism to download half the internet into a 'node_modules' folder just to center a div. The primary vector for supply chain attacks.",
+  "Webhooks": "The lazy engineer's event bus. 'Just throw an HTTP POST at it and hope they acknowledge it.'",
+  "HTML": "The one thing browsers actually understand before we bury it in 15 layers of abstraction and virtual DOMs.",
+  "Vercel": "Excellent developer experience, assuming you enjoy mortgaging your house to pay for bandwidth overages.",
+  "Tailwind CSS": "Inline styles but with a build step. We've come full circle and we're pretending it's innovation.",
+  "Rust": "The veganism of programming languages. Don't worry, the developer will tell you they use it within 5 minutes of meeting them.",
+  "default": "Market saturation is high. Expect 2-3 of these competitors to be deprecated or acquired by Broadcom within the next 36 months."
+};
+
+function getDiagnostic(label) {
+  for (const [key, value] of Object.entries(diagnosticsDict)) {
+    if (label.toLowerCase().includes(key.toLowerCase())) return value;
+  }
+  return diagnosticsDict.default;
+}
+
+// Generates a mock "price/trend" for the ticker items
+const generateMockTrend = (label) => {
+  const hash = label.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const isUp = hash % 2 === 0;
+  const change = ((hash % 150) / 10).toFixed(1);
+  return { isUp, change };
+};
 
 export function DualInstanceDiagram() {
-  const [activeStep, setActiveStep] = useState(0)
-  const [stepProgress, setStepProgress] = useState(0)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const lastTouchY = useRef(0)
+  const [selectedNode, setSelectedNode] = useState(null);
 
-  const SENSITIVITY = 0.002
-  const PROGRESS_GATE = 0.99
+  // 1. Parse Data into Rows
+  const rows = useMemo(() => {
+    const lines = rawCsvData.trim().split('\n').slice(1);
+    const parsedRows = [];
 
-  const handleWheel = useCallback((e: WheelEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    setStepProgress((prevProgress) => {
-      const delta = e.deltaY * SENSITIVITY
-      const nextProgress = Math.max(0, Math.min(1.1, prevProgress + delta))
-
-      if (prevProgress >= 1 && delta > 0) {
-        setActiveStep((s) => {
-          if (s < TOTAL_STEPS - 1) {
-            setStepProgress(0.01)
-            return s + 1
-          }
-          return s
-        })
-        return 1
-      }
-
-      if (prevProgress <= 0 && delta < 0) {
-        setActiveStep((s) => {
-          if (s > 0) {
-            setStepProgress(0.99)
-            return s - 1
-          }
-          return s
-        })
-        return 0
-      }
-
-      return nextProgress
-    })
-  }, [])
-
-  const handleTouchStart = (e: TouchEvent) => {
-    lastTouchY.current = e.touches[0].clientY
-  }
-
-  const handleTouchMove = useCallback(
-    (e: TouchEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
+    lines.forEach((line, i) => {
+      const match = line.match(/^([^,]+),"(.*)"$/);
+      if (!match) return;
       
-      const currentY = e.touches[0].clientY
-      const deltaY = lastTouchY.current - currentY
-      lastTouchY.current = currentY
+      const categoryLabel = match[1].trim();
+      const siblingsStr = match[2].trim();
+      const siblings = siblingsStr.split(',').map(s => s.trim());
+      
+      parsedRows.push({
+        id: `cat_${i}`,
+        category: categoryLabel,
+        items: siblings.map(sib => ({
+          id: `sib_${sib.replace(/\s+/g, '_')}`,
+          label: sib,
+          category: categoryLabel,
+          trend: generateMockTrend(sib)
+        }))
+      });
+    });
 
-      setStepProgress((prevProgress) => {
-        const delta = deltaY * SENSITIVITY
-        const nextProgress = Math.max(0, Math.min(1.1, prevProgress + delta))
+    return parsedRows;
+  }, []);
 
-        if (prevProgress >= 1 && delta > 0) {
-          setActiveStep((s) => {
-            if (s < TOTAL_STEPS - 1) {
-              setStepProgress(0.01)
-              return s + 1
-            }
-            return s
-          })
-          return 1
-        }
-
-        if (prevProgress <= 0 && delta < 0) {
-          setActiveStep((s) => {
-            if (s > 0) {
-              setStepProgress(0.99)
-              return s - 1
-            }
-            return s
-          })
-          return 0
-        }
-
-        return nextProgress
-      })
-    },
-    []
-  )
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    el.addEventListener("wheel", handleWheel, { passive: false })
-    el.addEventListener("touchstart", handleTouchStart, { passive: true })
-    el.addEventListener("touchmove", handleTouchMove, { passive: false })
-    return () => {
-      el.removeEventListener("wheel", handleWheel)
-      el.removeEventListener("touchstart", handleTouchStart)
-      el.removeEventListener("touchmove", handleTouchMove)
-    }
-  }, [handleWheel, handleTouchMove])
+  // 2. Compute related nodes for Inspector
+  const relatedNodes = useMemo(() => {
+    if (!selectedNode) return [];
+    const row = rows.find(r => r.category === selectedNode.category);
+    return row ? row.items.filter(item => item.id !== selectedNode.id) : [];
+  }, [selectedNode, rows]);
 
   return (
-    <section
-      ref={containerRef}
-      className="relative w-full h-screen bg-[#020202] text-white font-sans antialiased overflow-hidden select-none"
-      aria-label="Truth Matrix — Defensive AI Governance Framework"
-    >
-      {/* Background HUD Layer */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_#000000_90%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.01),rgba(0,255,0,0.005),rgba(0,0,255,0.01))] [background-size:100%_4px,4px_100%]" />
-
-        {/* Corner Brackets */}
-        <div className="absolute inset-8 border border-white/5 opacity-20">
-          <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-white/40" />
-          <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-white/40" />
-        </div>
-      </div>
-
-      {/* Status HUD — top left */}
-      <div className="absolute top-10 left-10 z-50 flex flex-col gap-1 opacity-40">
-        <div className="flex items-center gap-3">
-          <Target size={12} className="animate-pulse text-cyan-500" />
-          <span className="text-[9px] uppercase tracking-[0.5em] font-mono">
-            Archive_Oversight_Protocol
-          </span>
-        </div>
-        <div className="text-[7px] font-mono text-white/40">
-          AUTH_STATUS: ENFORCED_READ
-        </div>
-      </div>
-
-      {/* Input pressure HUD — bottom right */}
-      <div className="absolute bottom-10 right-10 z-50 flex flex-col items-end gap-3">
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <div className="text-[8px] uppercase tracking-[0.4em] text-white/20 mb-1">
-              Input_Pressure
-            </div>
-            <div className="w-32 h-[2px] bg-white/5 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-cyan-500"
-                animate={{ width: `${Math.min(100, stepProgress * 100)}%` }}
-              />
-            </div>
+    <div className="flex h-screen w-full bg-[#0a0f18] text-slate-300 font-sans overflow-hidden selection:bg-cyan-900">
+      
+      {/* LEFT: Ticker Board */}
+      <div className="flex-1 flex flex-col border-r border-slate-800 bg-[#05080f] relative z-10">
+        
+        {/* Terminal Header */}
+        <div className="px-6 py-4 border-b border-slate-800 bg-[#0a0f18] flex justify-between items-center shadow-md z-20">
+          <div className="flex items-center gap-3 text-cyan-500 font-mono text-sm tracking-widest uppercase">
+            <BarChart2 size={18} />
+            <span>Market Ontology Terminal</span>
+            <span className="text-xs text-slate-600 ml-4 border border-slate-700 px-2 py-0.5 rounded-full animate-pulse">LIVE EXCHANGES</span>
           </div>
-          <div className="flex flex-col items-end">
-            <span className="text-[14px] font-black text-white/10">
-              {activeStep + 1}
-            </span>
-            <div className="h-4 w-px bg-white/10" />
-            <span className="text-[10px] font-bold text-cyan-500/40">
-              {TOTAL_STEPS}
-            </span>
+          <div className="text-slate-500 font-mono text-[10px]">
+            SYS_ID: TRM-99 | ASSETS TRACKED: {rows.reduce((acc, row) => acc + row.items.length, 0)}
           </div>
         </div>
-      </div>
 
-      {/* Progress Gutter — left */}
-      <div className="absolute left-10 top-1/2 -translate-y-1/2 flex flex-col gap-10 opacity-20 z-50">
-        {[...Array(TOTAL_STEPS)].map((_, i) => (
-          <motion.div
-            key={i}
-            animate={{
-              scale: activeStep === i ? 1.5 : 1,
-              opacity: activeStep === i ? 1 : 0.3,
-              backgroundColor: activeStep === i ? "#22d3ee" : "#ffffff",
-            }}
-            className="w-1 h-1 rounded-full"
-          />
-        ))}
-      </div>
+        {/* Ticker Rows */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+          <div className="absolute inset-0 pointer-events-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wMykiLz48L3N2Zz4=')] mix-blend-screen opacity-50 z-0"></div>
+          
+          <div className="divide-y divide-slate-800/60 z-10 relative">
+            {rows.map((row, rowIndex) => {
+              // Duplicate items to create seamless loop
+              const loopedItems = [...row.items, ...row.items];
+              // Randomize animation speed slightly per row
+              const duration = 25 + (row.items.length * 2) + (rowIndex % 3) * 5; 
 
-      {/* Content Area */}
-      <div className="relative z-10 w-full h-full flex items-center justify-center">
-        <AnimatePresence mode="wait">
-
-          {/* STEP 0: INTRO */}
-          {activeStep === 0 && (
-            <motion.div
-              key="intro"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.1 }}
-              className="flex flex-col items-center text-center px-10"
-            >
-              <Fingerprint
-                size={64}
-                strokeWidth={0.5}
-                className="text-white/20 mb-10"
-              />
-              <h1 className="text-[36px] md:text-[42px] font-black uppercase tracking-[1.2em] mb-4 text-white text-balance">
-                Truth Matrix
-              </h1>
-              <p className="text-[11px] font-mono text-white/30 uppercase tracking-[0.5em] max-w-lg leading-loose">
-                Manual scroll intercept active.
-                <br />
-                You are required to decrypt every defensive vector before the
-                arena is unlocked.
-              </p>
-
-              <div className="mt-20 flex flex-col items-center gap-4 opacity-40">
-                <span className="text-[9px] uppercase tracking-[0.6em] animate-bounce">
-                  Apply Scroll Pressure
-                </span>
-                <ChevronDown size={16} />
-              </div>
-            </motion.div>
-          )}
-
-          {/* STEPS 1–4: THE STACK */}
-          {activeStep > 0 && activeStep <= DEFENSIVE_STACK.length && (
-            <motion.div
-              key={DEFENSIVE_STACK[activeStep - 1].id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center px-10 md:px-16"
-            >
-              {/* Visual Asset */}
-              <div className="flex flex-col items-center md:items-end">
-                <div
-                  className={`relative p-12 rounded-[2.5rem] border backdrop-blur-3xl transition-all duration-700 ${
-                    stepProgress > 0.1
-                      ? "border-cyan-500/40 bg-cyan-500/5 shadow-[0_0_50px_rgba(6,182,212,0.1)]"
-                      : "border-white/5 bg-white/[0.02]"
-                  }`}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-[2.5rem] pointer-events-none" />
-                  {React.createElement(DEFENSIVE_STACK[activeStep - 1].icon, {
-                    size: 64,
-                    strokeWidth: 1,
-                    className:
-                      stepProgress > 0.1 ? "text-cyan-400" : "text-white/10",
-                  })}
-                </div>
-                <h3
-                  className={`mt-8 text-[22px] md:text-[28px] font-black uppercase tracking-[0.8em] transition-all duration-500 ${
-                    stepProgress > 0.1
-                      ? "text-white translate-x-0"
-                      : "text-white/10 translate-x-4"
-                  }`}
-                >
-                  {DEFENSIVE_STACK[activeStep - 1].label}
-                </h3>
-              </div>
-
-              {/* Decrypting Text */}
-              <div className="flex flex-col justify-center min-h-[200px] border-l border-white/5 pl-8 md:pl-12">
-                <div className="flex items-start gap-4 mb-4">
-                  <div
-                    className={`mt-2 w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-500 ${
-                      stepProgress >= 1 ? "bg-cyan-500" : "bg-white/10"
-                    }`}
-                  />
-                  <p className="text-[13px] md:text-[15px] font-mono leading-relaxed tracking-[0.05em] text-white/90 uppercase text-justify">
-                    {DEFENSIVE_STACK[activeStep - 1].explanation.substring(
-                      0,
-                      Math.floor(
-                        stepProgress *
-                          DEFENSIVE_STACK[activeStep - 1].explanation.length
-                      )
-                    )}
-                    {stepProgress < 1 && (
-                      <motion.span
-                        animate={{ opacity: [1, 0] }}
-                        transition={{ repeat: Infinity, duration: 0.4 }}
-                        className="inline-block w-2 h-5 bg-cyan-500 ml-1 align-middle"
-                      />
-                    )}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4 mt-6">
-                  <div className="text-[9px] font-mono text-white/20 uppercase tracking-[0.4em]">
-                    Vector_Status:
+              return (
+                <div key={row.id} className="flex group hover:bg-slate-800/30 transition-colors duration-300">
+                  {/* Category Title Fixed on Left */}
+                  <div className="w-64 flex-shrink-0 px-4 py-3 border-r border-slate-800/60 bg-[#080c14] z-10 flex flex-col justify-center">
+                    <span className="font-mono text-[10px] text-slate-500 uppercase tracking-widest mb-1">Sector</span>
+                    <span className="font-semibold text-slate-200 text-sm leading-tight group-hover:text-cyan-400 transition-colors">
+                      {row.category}
+                    </span>
                   </div>
-                  <span
-                    className={`text-[9px] font-mono uppercase tracking-[0.2em] px-2 py-0.5 rounded border ${
-                      stepProgress >= 1
-                        ? "border-cyan-500 text-cyan-400 bg-cyan-500/10"
-                        : "border-white/10 text-white/20"
-                    }`}
-                  >
-                    {stepProgress >= 1
-                      ? "Decrypted"
-                      : `Processing_${Math.floor(stepProgress * 100)}%`}
-                  </span>
-                  {stepProgress >= 1 && (
-                    <motion.div
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center gap-2 text-[8px] text-white/40 uppercase tracking-[0.3em]"
+
+                  {/* Scrolling Ticker Container */}
+                  <div className="flex-1 overflow-hidden relative flex items-center bg-[#03050a] pause-on-hover cursor-pointer mask-edges">
+                    <div 
+                      className="flex animate-ticker whitespace-nowrap"
+                      style={{ animationDuration: `${duration}s` }}
                     >
-                      <LockKeyhole size={10} />
-                      Continue Scrolling
-                    </motion.div>
-                  )}
+                      {loopedItems.map((item, idx) => {
+                        const isSelected = selectedNode?.id === item.id;
+                        
+                        return (
+                          <div 
+                            key={`${item.id}_${idx}`}
+                            onClick={() => setSelectedNode(item)}
+                            className={`flex items-center gap-2 px-6 py-2 border-r border-slate-800/40 transition-all duration-200
+                              ${isSelected ? 'bg-cyan-950/50 text-cyan-300 shadow-[inset_0_0_15px_rgba(6,182,212,0.2)]' : 'hover:bg-slate-800/50 hover:text-white'}
+                            `}
+                          >
+                            <span className="font-mono font-medium text-sm">{item.label}</span>
+                            <div className={`flex items-center text-[10px] font-mono ${item.trend.isUp ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {item.trend.isUp ? '▲' : '▼'} {item.trend.change}%
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* STEP 5: FINAL VOID */}
-          {activeStep === TOTAL_STEPS - 1 && (
-            <motion.div
-              key="outro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center text-center px-8"
-            >
-              <AlertCircle
-                size={48}
-                strokeWidth={1}
-                className="text-cyan-500/40 mb-8 animate-pulse"
-              />
-              <h2 className="text-[16px] md:text-[18px] font-black uppercase tracking-[1em] mb-4 text-balance">
-                Indoctrination Complete
-              </h2>
-              <div className="w-24 h-px bg-white/20 mb-8" />
-              <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.4em] max-w-sm">
-                You have acknowledged the systemic flaws.
-                <br />
-                The board is now authorized for kinetic testing.
-              </p>
-
-              <button
-                onClick={() => {
-                  setActiveStep(0)
-                  setStepProgress(0)
-                }}
-                className="mt-16 px-8 py-3 border border-white/10 text-[10px] uppercase tracking-[0.5em] hover:bg-white/5 transition-colors cursor-pointer"
-              >
-                Reset_Sequence
-              </button>
-            </motion.div>
-          )}
-
-        </AnimatePresence>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      {/* Liquid depth vignette */}
-      <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_200px_rgba(0,0,0,0.9)]" />
-    </section>
-  )
+      {/* RIGHT: Inspector Panel */}
+      <div className="w-[420px] bg-[#080c14] flex flex-col shadow-2xl relative z-20 border-l border-slate-800">
+        
+        {/* Header */}
+        <div className="p-6 border-b border-slate-800 bg-[#0a0f18]">
+          <div className="flex items-center gap-3 text-slate-500 mb-3 font-mono text-xs uppercase tracking-widest">
+            <Crosshair size={14} className="text-cyan-500" />
+            <span>Asset Inspector</span>
+          </div>
+          {selectedNode ? (
+            <div>
+              <div className="flex justify-between items-start mb-2">
+                <h2 className="text-3xl font-bold text-slate-100 tracking-tight leading-tight">
+                  {selectedNode.label}
+                </h2>
+                <div className={`flex flex-col items-end ${selectedNode.trend.isUp ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  <span className="font-mono text-lg font-bold flex items-center gap-1">
+                    {selectedNode.trend.isUp ? '▲' : '▼'} {selectedNode.trend.change}%
+                  </span>
+                  <span className="text-[10px] uppercase text-slate-500">24H Volatility</span>
+                </div>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="px-2 py-1 rounded text-[10px] font-mono uppercase tracking-widest bg-purple-950/50 text-purple-400 border border-purple-900/50">
+                  {selectedNode.category}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="h-24 flex items-center text-slate-600 font-mono italic text-sm">
+              Awaiting asset lock... Click any ticker item.
+            </div>
+          )}
+        </div>
+
+        {/* Content Body */}
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 custom-scrollbar">
+          
+          {selectedNode && (
+            <>
+              {/* Analyst Notes Segment */}
+              <div className="bg-slate-900/50 rounded-lg p-5 border border-amber-900/30 relative overflow-hidden group shadow-[inset_0_4px_20px_rgba(0,0,0,0.5)]">
+                <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
+                <div className="flex items-center gap-2 mb-3 text-amber-500">
+                  <AlertTriangle size={16} />
+                  <h3 className="font-mono text-xs font-bold uppercase tracking-wider">Analyst Diagnostics</h3>
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed font-mono">
+                  {getDiagnostic(selectedNode.label)}
+                </p>
+              </div>
+
+              {/* Related Topology Segment */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <TrendingUp size={16} />
+                    <h3 className="font-mono text-xs font-bold uppercase tracking-wider">
+                      Sector Competitors
+                    </h3>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-mono uppercase">Lateral View</span>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  {relatedNodes.map(node => (
+                    <button
+                      key={node.id}
+                      onClick={() => setSelectedNode(node)}
+                      className="flex justify-between items-center px-4 py-2.5 rounded-md font-medium transition-all duration-200 border bg-[#05080f] text-slate-300 border-slate-800 hover:bg-slate-800 hover:border-slate-600 group"
+                    >
+                      <span className="text-sm font-mono group-hover:text-cyan-400">{node.label}</span>
+                      <span className={`text-xs font-mono ${node.trend.isUp ? 'text-emerald-500/70' : 'text-rose-500/70'}`}>
+                        {node.trend.isUp ? '+' : '-'}{node.trend.change}%
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Metadata Mock Segment */}
+              <div className="mt-auto pt-6 border-t border-slate-800/50">
+                <div className="flex items-center gap-2 mb-3 text-slate-500">
+                  <Database size={14} />
+                  <h3 className="font-mono text-xs uppercase tracking-wider">System Metadata</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-y-4 gap-x-2 font-mono text-[11px]">
+                  <div className="bg-[#05080f] p-2 rounded border border-slate-800">
+                    <span className="block text-slate-600 mb-1">Status</span>
+                    <span className="text-emerald-400 font-bold tracking-wider">OPERATIONAL</span>
+                  </div>
+                  <div className="bg-[#05080f] p-2 rounded border border-slate-800">
+                    <span className="block text-slate-600 mb-1">Market Saturation</span>
+                    <span className="text-rose-400 font-bold tracking-wider">HIGH RISK</span>
+                  </div>
+                  <div className="bg-[#05080f] p-2 rounded border border-slate-800">
+                    <span className="block text-slate-600 mb-1">Debt Load</span>
+                    <span className="text-amber-400 font-bold tracking-wider">CRITICAL</span>
+                  </div>
+                  <div className="bg-[#05080f] p-2 rounded border border-slate-800">
+                    <span className="block text-slate-600 mb-1">Asset Hash</span>
+                    <span className="text-slate-500 truncate w-full block">{selectedNode.id}</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {!selectedNode && (
+            <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-4">
+              <div className="w-16 h-16 rounded-full border border-slate-800 flex items-center justify-center bg-[#05080f]">
+                <Activity size={24} className="text-slate-600 animate-pulse" />
+              </div>
+              <div>
+                <p className="font-mono text-sm mb-1 text-slate-400">Monitoring Ecosystem.</p>
+                <p className="text-xs text-slate-600 px-4">Intercepting high-frequency data from the framework wars. Select a technology to run deep diagnostics.</p>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        /* Infinite Ticker Animation */
+        @keyframes ticker {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        
+        .animate-ticker {
+          animation-name: ticker;
+          animation-timing-function: linear;
+          animation-iteration-count: infinite;
+          width: fit-content;
+        }
+
+        /* Hover to pause all scrolling inside that row */
+        .pause-on-hover:hover .animate-ticker {
+          animation-play-state: paused;
+        }
+
+        /* Gradient mask to fade out the edges of the ticker */
+        .mask-edges {
+          mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+          -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+        }
+
+        /* Dark, slim scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #1e293b;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: #334155;
+        }
+      `}} />
+    </div>
+  );
 }
